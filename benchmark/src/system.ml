@@ -70,10 +70,49 @@ let check_problem_file_format config problem_path =
   else
     true
 
+let is_digit c = c >= '0' && c <= '9'
+
+(* Extract the longest number in `s` starting at position `i`. *)
+let extract_number s i =
+  let open String in
+  let rec aux l =
+    let j = i + l in
+    if length s = j then l
+    else if is_digit (get s j) then aux (l+1)
+    else l
+  in
+    let l = aux 0 in
+    let s' = sub s i l in
+    (int_of_string s', i + l)
+
+(* It compares two strings taking into account the number parts.
+   For example ["a1"; "a10"; "a2"] is sorted as ["a1"; "a2"; "a10"].  *)
+let natural_comparison x y =
+  let open String in
+  let rec aux i j =
+    if (length x) = i then -1
+    else if (length y) = j then 1
+    else
+      let a = get x i in
+      let b = get y j in
+      match Pervasives.compare a b with
+      | _ when is_digit a -> compare_number_sequence i j
+      | 0 -> aux (i+1) (j+1)
+      | r -> r
+  and compare_number_sequence i j =
+    let (n, i') = extract_number x i in
+    let (m, j') = extract_number y j in
+    (* let _ = Printf.printf "%d , %d\n" n m in *)
+    match Pervasives.compare n m with
+    | 0 -> aux i' j'
+    | r -> r
+  in
+    aux 0 0
+
 let list_of_problems config =
   if Sys.is_directory config.problem_set then
     let files = Sys.readdir config.problem_set in
-    Array.sort compare files;
+    Array.sort natural_comparison files;
     Array.to_list files |>
     List.map (fun x -> config.problem_set ^ x) |>
     List.filter (check_problem_file_format config)
