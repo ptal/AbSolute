@@ -1,21 +1,18 @@
 open Scanf
 
-(* The information on the number and kind of resources available. *)
+(* The information on the number and kind of resources available.
+   We only store renewable resources for now. *)
 type resources_info = {
   renewable: int;
   nonrenewable: int;
   doubly_constrained: int;
 }
 
-(* The information for one project. *)
-type project_info = {
-  project_idx: int;
-  jobs: int; (* without source and sink. *)
-  rel_date: int;
-  due_date: int;
-  tard_cost: int;
-  mpm_time: int
-}
+let check_resources_info r =
+  if r.nonrenewable > 0 || r.doubly_constrained > 0 then
+    failwith "ProGenMax model with nonrenewable or doubly constrained resources: not yet implemented."
+  else
+    r
 
 type precedence = {
   job_index: int;
@@ -30,19 +27,26 @@ type job = {
   job_index: int;
   mode: int;
   duration: int;
+  (* The length of `resources_usage` must match `rcpsp.resources_capacities`.
+     The resources really used by the project are given in `project.resources`. *)
   resources_usage: int list
 }
 
-type rcpsp = {
-  projects: int;
+type project = {
+  project_idx: int;
   jobs_number: int; (* including dummy source and sink. *)
   horizon: int;
-  resources_info: resources_info;
-  project_info: project_info;
   precedence_relations: precedence list;
   jobs: job list;
-  resources: int list
+  resources_idx: int list; (* The indexes of the resources used by the job. *)
 }
+
+type rcpsp = {
+  resources_capacities: int list;
+  projects: project list;
+}
+
+let map_projects f rcpsp = { rcpsp with projects = (List.map f rcpsp.projects) }
 
 (* Parsing/utility functions that are common across formats (Patterson, SM, ProGen/max).  *)
 
@@ -55,24 +59,13 @@ let read_trailing_int_list file n =
   let numbers = List.map (fun _ -> bscanf file " %d " (fun x->x)) (Tools.range 1 n) in
   numbers
 
-let make_dumb_project_info jobs_number = {
-  project_idx=0;
-  jobs=jobs_number-2;
-  rel_date=0;
-  due_date=0;
-  tard_cost=0;
-  mpm_time=0;
-}
+let number_of_resources rcpsp = List.length rcpsp.resources_capacities
 
-let number_of_resources rcpsp =
-  let r = rcpsp.resources_info in
-  r.renewable + r.nonrenewable + r.doubly_constrained
-
-let compute_horizon rcpsp =
+let compute_horizon project =
   let horizon = List.fold_left (fun a j ->
     let weights = List.flatten (List.map (fun (p:precedence) ->
-      if p.job_index = j.job_index then p.weights else []) rcpsp.precedence_relations) in
+      if p.job_index = j.job_index then p.weights else []) project.precedence_relations) in
     let max_dur = List.fold_left max j.duration weights in
     a + max_dur
-    ) 0 rcpsp.jobs in
-  {rcpsp with horizon = horizon}
+    ) 0 project.jobs in
+  {project with horizon = horizon}

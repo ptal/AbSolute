@@ -97,26 +97,26 @@ let string_of_2D_list name l =
   (List.fold_left (fun a r -> a ^ (string_of_list string_of_int r) ^ "\n  |") "" l) ^
   "];\n"
 
-let string_of_resources rcpsp =
+let string_of_resources project =
   let rr = List.map
-    (fun r_idx -> List.map (fun j -> List.nth j.resources_usage r_idx) rcpsp.jobs)
-    (Tools.range 0 (rcpsp.resources_info.renewable - 1)) in
+    (fun r_idx -> List.map (fun j -> List.nth j.resources_usage r_idx) project.jobs)
+    project.resources_idx in
   string_of_2D_list "rr" rr
 
-let string_of_difference_constraints rcpsp =
+let string_of_difference_constraints project =
   let dc = List.flatten (List.map (fun (p:precedence) ->
       List.map2 (fun w s -> [p.job_index; w; s]) p.weights p.job_successors
-    ) rcpsp.precedence_relations) in
+    ) project.precedence_relations) in
   string_of_2D_list "dcons" dc
 
-let make_dzn_data rcpsp =
-  (Printf.sprintf "n_res = %d;\n" rcpsp.resources_info.renewable) ^
-  (list_to_mzn "rcap" rcpsp.resources) ^
-  (Printf.sprintf "n_tasks = %d;\n" rcpsp.jobs_number) ^
-  (list_to_mzn "dur" (List.map (fun j -> j.duration) rcpsp.jobs)) ^
-  (string_of_resources rcpsp) ^
-  (Printf.sprintf "n_dc = %d;\n" (List.fold_left (+) 0 (List.map (fun j -> j.successors) rcpsp.precedence_relations))) ^
-  (string_of_difference_constraints rcpsp)
+let make_dzn_data rcpsp project =
+  (Printf.sprintf "n_res = %d;\n" (List.length rcpsp.resources_capacities)) ^
+  (list_to_mzn "rcap" (List.map (List.nth rcpsp.resources_capacities) project.resources_idx)) ^
+  (Printf.sprintf "n_tasks = %d;\n" project.jobs_number) ^
+  (list_to_mzn "dur" (List.map (fun j -> j.duration) project.jobs)) ^
+  (string_of_resources project) ^
+  (Printf.sprintf "n_dc = %d;\n" (List.fold_left (+) 0 (List.map (fun j -> j.successors) project.precedence_relations))) ^
+  (string_of_difference_constraints project)
 
 let benchmark_suite_minizinc config solver model =
   Printf.printf "      << %s(%s) >>\n\n" solver model;
@@ -125,7 +125,9 @@ let benchmark_suite_minizinc config solver model =
   Measurement.print_csv_header config;
   let info = List.fold_left (fun info problem_path ->
       let rcpsp = make_rcpsp config problem_path in
-      let data = make_dzn_data rcpsp in
+      if (List.length rcpsp.projects) > 1 then failwith "MiniZinc model for multi-project RCPSP is not yet supported.";
+      let project = List.hd rcpsp.projects in
+      let data = make_dzn_data rcpsp project in
       create_dzn_file data;
       bench_minizinc info config problem_path solver model dzn_file
     ) info problems in
