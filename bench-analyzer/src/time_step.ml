@@ -5,7 +5,7 @@ type strategy_2 = {
 	solver_name : string;
 	strategy_name : string;
 	all: (string, (float option * optimum)) Hashtbl.t;
-	steps : (int*int) list;
+	steps : (int*int) list; (*time * value*)
 }
 
 
@@ -14,6 +14,8 @@ type instances_set_2 = {
 	instance_name : string;
 	strategies : strategy_2 list;
 }
+
+
 
 let count_time_strategy (time : int) strategy =
 	let steps = (time, Hashtbl.fold (fun _ y z -> match y with
@@ -78,6 +80,43 @@ let print_steps_instance instance =
 let print_steps computed =
 	List.iter print_steps_instance computed 
 
+let steps_to_time one_step steps = 
+	let rec steps_to_time_rec one_step steps step time =
+	match steps with 
+	1 -> "[0,"^(time^(string_of_int step))^"]"
+	|_ -> let time = time^(string_of_int step)^"," in steps_to_time_rec one_step (steps-1) (step+one_step) time
+in steps_to_time_rec one_step steps one_step ""
+
+let steps_to_string steps =
+	let rec steps_to_string_rec steps str =
+	match steps with
+	[] -> "[0"^str^"]"	
+	|(_,s)::steps -> let str = str^","^(string_of_int s) in steps_to_string_rec steps str
+in steps_to_string_rec steps "" 
+
+let strategy_to_json_string str strategy =
+	let steps = steps_to_string strategy.steps in
+	let json = "{\"solver\":\""^strategy.solver_name^"\",\"strategy\":\""^strategy.strategy_name^"\",\"steps\":"^steps^"}," in
+	str^json
+
+let instances_to_json_string timeout steps str instance =
+    let one_step = timeout / steps in 
+	let time = steps_to_time one_step steps in
+	let strategies = List.fold_left strategy_to_json_string "" instance.strategies in
+	let strategies = (String.sub strategies 0 (String.length strategies -1))  in
+	let json = "{\"problem\":\""^instance.problem_name^"\",\"instance\":\""^instance.instance_name^"\",\"time\":"^time^",\"strategies\":["^strategies^"]}," in
+	str^json
+
+let database_to_json_string database timeout steps =
+	let name = "{\"name\":\"Timeout "^(string_of_int timeout)^" seconds with "^(string_of_int steps)^" steps\"," in
+	let instances = (List.fold_left (instances_to_json_string timeout steps) ("") database) in
+	let instances = (String.sub instances 0 (String.length instances -1))  in
+	let json = "\"instances\":["^instances^"]}" in 
+	let left = "{\"database\":[" in
+	let right = "]}" in
+	left^name^json^right
+
+
 let _ = let timeout = 60 in
 		let steps = 10 in 
 		let (database : database) = read_database "benchmark/database/" in
@@ -85,4 +124,6 @@ let _ = let timeout = 60 in
     	let database = append_problems database in
     	let one_step = timeout / steps in 
 		let computed = List.map (exec_step one_step timeout) database in
-		print_steps computed
+		let json = database_to_json_string computed timeout steps in
+		print_string ("exported json \n"^json^"\n")
+		(*print_steps computed*)	
