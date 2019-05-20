@@ -1,5 +1,12 @@
 open Absolute_analyzer
 
+type args = {
+	file : string;
+	problems : string;
+	instances : string;
+	solvers : string ;
+	strategies : string;
+}
 
 type strategy_2 = {
 	solver_name : string;
@@ -12,10 +19,34 @@ type strategy_2 = {
 type instances_set_2 = {
 	problem_name : string;
 	instance_name : string;
+	nb_instances: int;
 	strategies : strategy_2 list;
 }
 
+exception Json of string
+exception Arg of string
 
+let is_par arg =
+	let first = String.sub arg 0 1 in
+	String.equal first "-"
+
+(*
+let read_arg n args = 
+
+let read_args () =
+	let rec read_args n args  =
+	let arg = Sys.argv.(n) in 
+	begin if n = 0 then args end
+	match prev with 
+	|"-f"-> 
+	|"-p"-> 
+	|"-i"-> 
+	|"-sv"->
+	|"-sg"-> 
+	|_ -> read_args (n-1) args 
+
+in read_args_rec (Array.length Sys.argv-1) {file = ""; problems = ""; instances = ""; solvers = ""; strategies = ""} 
+*)
 
 let count_time_strategy (time : int) strategy =
 	let steps = (time, Hashtbl.fold (fun _ y z -> match y with
@@ -53,7 +84,8 @@ let append_solvers solvers =
 
 
 let convert_instance problem (instances_set : instances_set) =
-	{problem_name = problem.name; instance_name = instances_set.name; strategies = append_solvers instances_set.solvers}
+	let nb_instances = (Hashtbl.length (List.hd (List.hd instances_set.solvers).strategies).all) in
+	{problem_name = problem.name; instance_name = instances_set.name; nb_instances = nb_instances;strategies = append_solvers instances_set.solvers}
 
 (*  -> instances_set_temp list *)
 let append_problems (database : problem list) = 
@@ -104,7 +136,7 @@ let instances_to_json_string timeout steps str instance =
 	let time = steps_to_time one_step steps in
 	let strategies = List.fold_left strategy_to_json_string "" instance.strategies in
 	let strategies = (String.sub strategies 0 (String.length strategies -1))  in
-	let json = "{\"problem\":\""^instance.problem_name^"\",\"instance\":\""^instance.instance_name^"\",\"time\":"^time^",\"strategies\":["^strategies^"]}," in
+	let json = "{\"problem\":\""^instance.problem_name^"\",\"instance\":\""^instance.instance_name^"\",\"nb_instances\":"^(string_of_int instance.nb_instances)^",\"time\":"^time^",\"strategies\":["^strategies^"]}," in
 	str^json
 
 let database_to_json_string database timeout steps =
@@ -116,14 +148,49 @@ let database_to_json_string database timeout steps =
 	let right = "]}" in
 	left^name^json^right
 
+let check_file file =
+	if not (Sys.file_exists file) then 
+	begin
+		let cmd = "touch "^file in
+		let code = Sys.command cmd in
+		if not (code = 0) then 
+			raise (Sys_error ("shell error :"^(string_of_int code)^"\n"))
+	end
+	else 
+	begin
+		print_string (file^" content will be overwrite, continue ? [Y/n]");
+		let arg = read_line () in
+		if not (String.equal arg "Y") then
+			failwith ("execution stopped")
+	end
+
+let check_ext file =
+	let len = String.length file in
+	let ext_json = String.sub file (len-5) 5 in
+	if String.equal ext_json ".json" then
+		check_file file
+	else
+		raise (Json "not a json file")
 
 let _ = let timeout = 60 in
 		let steps = 10 in 
-		let (database : database) = read_database "benchmark/database/" in
-    	let (database : database) = process_database database in
-    	let database = append_problems database in
-    	let one_step = timeout / steps in 
-		let computed = List.map (exec_step one_step timeout) database in
-		let json = database_to_json_string computed timeout steps in
-		print_string ("exported json \n"^json^"\n")
-		(*print_steps computed*)	
+		let file = "bench-analyzer/src/time_step/data/arg.json" in
+		(*let args = read_args ()*)
+		try 
+			check_ext file;
+			let (database : database) = read_database "benchmark/database/" in
+	    	let (database : database) = process_database database in
+	    	let database = append_problems database in
+	    	let one_step = timeout / steps in 
+			let computed = List.map (exec_step one_step timeout) database in
+			let json = database_to_json_string computed timeout steps in
+			let oc = open_out file in    (* create or truncate file, return channel *)
+  			Printf.fprintf oc "%s\n" json;   (* write something *)   
+  			close_out oc; 
+			(*print_string ("exported json \n"^json^"\n")*)
+			(*print_steps computed*)
+		with e ->
+		  begin
+		    Printexc.print_backtrace stdout;
+		    Printf.printf "Exception: %s\n" (Printexc.to_string e);
+		  end 
