@@ -1,4 +1,4 @@
-open Printf
+(* open Printf
 open System
 open Factory
 open Rcpsp
@@ -67,7 +67,10 @@ let create_minizinc_measure stats config problem_path result =
   let (measure, status) = update_time config measure text in
   (measure, status)
 
+let mzn2fzn = "mzn2fzn --no-optimize -I"
+
 let bench_minizinc info config problem_path solver model dzn_file =
+  let solver_command = prepare_solver_command config model dzn_file in
   let mzn_command = "minizinc " ^ (minizinc_options config solver) ^ " " ^ model ^ " "
     ^ dzn_file ^ " >> " ^ output_file ^ " 2> /dev/null" in
   (* Printf.printf "%s\n" mzn_command; *)
@@ -154,16 +157,25 @@ let make_mzn_model model search_options =
   (Printf.sprintf "solve::int_search([%s], %s) minimize %s;\n"
     (string_of_list (fun x -> x) model.octagonal_vars) search_options model.makespan)
 
-let bench_flat_rcpsp config solver search_options =
-  let name = solver ^ "(" ^ search_options ^ ")" in
-  Printf.printf "      << %s >>\n\n" name;
-  let info = Measurement.empty_info in
-  let problems = list_of_problems config in
-  Measurement.print_csv_header config;
-  let info = List.fold_left (fun info problem_path ->
-      let model = Rcpsp_model.create_rcpsp (make_rcpsp config problem_path) in
-      let mzn_model = make_mzn_model model search_options in
-      create_mzn_file mzn_model;
-      bench_minizinc info config problem_path solver mzn_file ""
-    ) info problems in
-  Measurement.print_bench_results name info
+let lookup_solver_config solvers solver_name = List.find_opt (fun s -> s.name = solver_name) solvers
+
+let benchmark_suite_flatmzn config flatmzn =
+  match lookup_solver_config config.solvers_config flatmzn.name with
+  | None -> System.print_warning ("Solver `" ^ flatmzn.name ^ "` is not registered in the file \"benchmark/config/solvers.json\".")
+  | Some solver_config ->
+      Measurement.print_solver solver_config "flat" strategy;
+
+
+
+    let name = solver ^ "(" ^ search_options ^ ")" in
+    Printf.printf "      << %s >>\n\n" name;
+    let info = Measurement.empty_info in
+    let problems = list_of_problems config in
+    Measurement.print_csv_header config;
+    let info = List.fold_left (fun info problem_path ->
+        let model = Rcpsp_model.create_rcpsp (make_rcpsp config problem_path) in
+        let mzn_model = make_mzn_model model search_options in
+        create_mzn_file mzn_model;
+        bench_minizinc info config problem_path solver mzn_file ""
+      ) info problems in
+    Measurement.print_bench_results name info *)

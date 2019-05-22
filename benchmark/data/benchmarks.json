@@ -1,0 +1,54 @@
+{
+  "problem_sets" : [
+    { "path": "benchmark/data/rcpsp/patterson.rcp/",
+      "timeout": 60 },
+    { "path": "benchmark/data/rcpsp/j30.sm/",
+      "timeout": 60 },
+    { "path": "benchmark/data/rcpsp/j60.sm/",
+      "timeout": 60 }
+  ],
+  "solvers_kind": [
+    <AbSolute: {
+      "domains": [
+        { "name": "Octagon", "strategies": ["MSLF_simple"] },
+        { "name": "Box", "strategies": ["First_fail_LB"] }
+      ]
+    }>,
+    <MiniZinc: {
+      "solvers": ["gecode", "chuffed"],
+      "models": ["benchmark/data/minizinc/rcpsp-cumulative.mzn"],
+      "strategies": [
+        { "mzn_annot" : "int_search(s, smallest, indomain_min, complete)",
+          "short": "min_lb" }
+      ]
+    }>,
+    <DecomposedMzn: {
+      "solvers": ["gecode", "chuffed"],
+      "strategies": [
+        { "mzn_annot" : "int_search(s, smallest, indomain_min, complete)",
+          "short": "min_lb" }
+      ]
+    }>
+  ],
+  "csv" : {
+    "fields" : [<ProblemName>, <Time : <Sec>>, <Optimum>]
+  },
+  "solvers_config": [
+    { "name": "gecode",
+      "version": "6.1.0",
+      "exec": "fzn-gecode",
+      "globals": "/usr/share/minizinc-ide/share/minizinc/gecode" },
+    { "name": "chuffed",
+      "version": "0.10.3",
+      "exec": "/home/ptalbot/repositories/resources/solvers/chuffed/build/fzn-chuffed",
+      "globals": "/home/ptalbot/repositories/resources/solvers/chuffed/chuffed/flatzinc/mznlib" },
+    { "name": "choco",
+      "version": "4.10.1",
+      "exec": "/home/ptalbot/repositories/resources/solvers/choco-parsers/target/choco-parsers-4.0.5-SNAPSHOT-with-dependencies.jar",
+      "globals": "/home/ptalbot/repositories/resources/solvers/choco-parsers/src/main/mzn_lib" },
+    { "name": "absolute",
+      "version": "88ff83f",
+      "exec": "",
+      "globals": "" }
+  ]
+}

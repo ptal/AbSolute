@@ -1,20 +1,27 @@
 {
   "problem_set" : "benchmark/data/rcpsp/patterson.rcp/",
   "problem_kind" : <Patterson>,
-  "domains" : [<BoxedOctagon : <Integer>>],
   "solvers": [
-    <AbSolute>,
-    <MiniZinc: "gecode#benchmark/data/minizinc/rcpsp-cumulative-LB.mzn">,
-    <FlatMiniZinc : "gecode#smallest, indomain_min, complete">,
-    <FlatMiniZinc : "chuffed#smallest, indomain_min, complete">],
-  "precisions": [1],
-  "trials" : 0,
+    <AbSolute: {
+      "domains": [
+        { "name": "Octagon", "strategies": ["MSLF_simple"] },
+        { "name": "Box", "strategies": ["First_fail_LB"] },
+      ]
+    }>,
+    <MiniZinc: {
+      "solvers": ["gecode", "chuffed"],
+      "models": ["benchmark/data/minizinc/rcpsp-cumulative.mzn"],
+      "strategies": ["int_search(s, smallest, indomain_min, complete)"]
+    }>,
+    <FlatMiniZinc: {
+      "solvers": ["gecode", "chuffed"],
+      "strategies": ["int_search(s, smallest, indomain_min, complete)"]
+    }>
+  ],
   "timeout" : 60,
-  "center_of_trials": <Median>,
   "print_solutions": false,
-  "strategies": [],
   "csv" : {
     "human" : true,
-    "fields" : ["ProblemName", <Time : <Sec>>, <Optimum>]
+    "fields" : [<ProblemName>, <Time : <Sec>>, <Optimum>]
   }
 }

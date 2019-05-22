@@ -111,7 +111,7 @@ let all_cumulatives rcpsp project =
     project.resources_idx)
 
 (* The octagonal variables are the starting dates.
-   The box variables include the octagonal variables, and the boolean overlap variables. *)
+   The box variables are the boolean overlap variables. *)
 type rcpsp_model = {
   makespan: var;
   box_vars: var list;

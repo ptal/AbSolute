@@ -1,20 +1,13 @@
-open Bench_desc_j
-open System
+open Bench_instance_j
+(* open System
 open Rcpsp
 open Rcpsp_model
 open Factory
 
-let extract_config_from_json json_data =
-  try
-    benchmark_of_string json_data
-  with
-  | Atdgen_runtime__Oj_run.Error(msg)
-  | Yojson.Json_error(msg) ->
-      eprintf_and_exit (Printf.sprintf
-        "The benchmarks description file contains an error:\n\n\
-         %s\n\n\
-        [help] Be careful to the case: \"int\" is not the same as \"Int\".\n\
-        [help] You can find a full example of the JSON format in benchmark/data/example.json." msg)
+type config = {
+  bench: benchmark;
+  solvers: solvers;
+}
 
 module type RCPSP_sig =
 sig
@@ -27,7 +20,7 @@ module Bencher(Rcpsp_domain: RCPSP_sig) =
 struct
   type t = {
     domain_name: string;
-    config: benchmark;
+    config: config;
     info: Measurement.global_info;
   }
 
@@ -121,15 +114,13 @@ struct
 
   let bench_problem bench problem_path =
     (* Dumb parameters for future improvements. *)
-    let precision = 1. in
-    let domain_kind = `BoxedOctagon `Integer in
-    let config = bench.config in
+    let config = bench.config.bench in
     try
       let rcpsp = Rcpsp_model.create_rcpsp (make_rcpsp config problem_path) in
       let stats = State.init_global_stats () in
       let best = solve bench stats no_print no_print_makespan rcpsp in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
-      let measure = Measurement.init stats problem_path domain_kind precision in
+      let measure = Measurement.init stats problem_path in
       let measure = Measurement.update_time bench.config stats measure in
       let measure = update_with_optimum rcpsp best measure in
       Measurement.print_as_csv config measure;
@@ -211,27 +202,35 @@ end
 
 let benchmark_solver config solver =
 begin
-  Printf.printf "\n  <<<< Benchmark suite for \"%s\" >>>>\n" config.problem_set;
-  Printf.printf   "  <<<< Solver %s >>>>\n\n" (Measurement.name_of_solver solver);
   match solver with
   | `AbSolute ->
       (* benchmark_suite_box config; *)
       benchmark_suite_octagon config
-  | `MiniZinc desc ->
-      let desc = String.split_on_char '#' desc in
-      Minizinc.benchmark_suite_minizinc config (List.nth desc 0) (List.nth desc 1)
-  | `FlatMiniZinc desc ->
-      let desc = String.split_on_char '#' desc in
-      Minizinc.bench_flat_rcpsp config (List.nth desc 0) (List.nth desc 1)
+  | `MiniZinc mzn_config ->
+      Minizinc.benchmark_suite_mzn config mzn_config
+  | `FlatMiniZinc flatmzn_config ->
+      Minizinc.benchmark_suite_flatmzn config flatmzn_config
 end
 
 let benchmark_suite config =
 begin
   List.iter (benchmark_solver config) config.solvers
 end
+ *)
+
+let bench_from_json json_data =
+  try
+    bench_instance_of_string json_data
+  with
+  | Atdgen_runtime__Oj_run.Error(msg)
+  | Yojson.Json_error(msg) ->
+      System.eprintf_and_exit (Printf.sprintf
+        "The benchmarks description file contains an error:\n\n\
+         %s\n\n\
+        [help] Be careful to the case: \"int\" is not the same as \"Int\".\n\
+        [help] You can find a full example of the JSON format in benchmark/data/benchmarks.json." msg)
 
 let () =
   (* Printexc.record_backtrace true; *)
-  let input_desc = get_bench_desc () in
-  let config = extract_config_from_json input_desc in
-  benchmark_suite config
+  let bench = bench_from_json (System.get_bench_desc ()) in
+  Printf.printf "%s" (Yojson.Safe.prettify (string_of_bench_instance bench))

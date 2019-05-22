@@ -52,12 +52,18 @@ let file_to_string fname =
   end
 
 let get_bench_desc () =
-  if Array.length Sys.argv <> 2 then
+  if Array.length Sys.argv < 2 then
   begin
     eprintf_and_exit "Benchmarks description file missing (see benchmark/data/example.json)."
   end
   else file_to_string (Array.get Sys.argv 1)
 
+let get_config_desc () =
+  if Array.length Sys.argv > 2 then
+    Some (file_to_string (Array.get Sys.argv 2))
+  else
+    None
+(*
 let check_problem_file_format config problem_path =
   let ext = extension_of_problem_kind config.problem_kind in
   if Sys.is_directory problem_path then begin
@@ -69,7 +75,7 @@ let check_problem_file_format config problem_path =
     false end
   else
     true
-
+ *)
 let is_digit c = c >= '0' && c <= '9'
 
 (* Extract the longest number in `s` starting at position `i`. *)
@@ -108,7 +114,7 @@ let natural_comparison x y =
     | r -> r
   in
     aux 0 0
-
+(*
 let list_of_problems config =
   if Sys.is_directory config.problem_set then
     let files = Sys.readdir config.problem_set in
@@ -121,7 +127,7 @@ let list_of_problems config =
       [config.problem_set]
     else
       []
-
+ *)
 let call_command command =
   flush_all ();
   let status = Sys.command command in

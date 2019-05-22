@@ -1,10 +1,29 @@
+(library
+  (name libbench)
+  (wrapped false)
+  (libraries libabsolute rcpsp atdgen extlib mtime mtime.clock.os)
+  (flags (:standard -w "+a-4-32-27-42" -warn-error "+a-4-32-27-42"))
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules (:standard \ absolute_bench bench_generator))
+)
+
 (executable
  (name absolute_bench)
  (public_name absolute-bench)
  (package absolute-bench)
- (modules :standard)
+ (modules absolute_bench)
  (ocamlopt_flags (:standard -O3))
- (libraries rcpsp libabsolute atdgen extlib mtime mtime.clock.os)
+ (libraries libbench)
+)
+
+(executable
+ (name bench_generator)
+ (public_name bench-generator)
+ (package absolute-bench)
+ (modules bench_generator)
+ (ocamlopt_flags (:standard -O3))
+ (libraries libbench)
 )
 
 (rule
@@ -15,4 +34,14 @@
 (rule
  (targets bench_desc_t.ml bench_desc_t.mli)
  (deps    bench_desc.atd)
+ (action  (run atdgen -t %{deps})))
+
+(rule
+ (targets bench_instance_j.ml bench_instance_j.mli)
+ (deps    bench_instance.atd)
+ (action  (run atdgen -j -j-std -j-strict-fields %{deps})))
+
+(rule
+ (targets bench_instance_t.ml bench_instance_t.mli)
+ (deps    bench_instance.atd)
  (action  (run atdgen -t %{deps})))

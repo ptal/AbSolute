@@ -22,6 +22,7 @@
  (public_name absolute)
  (package absolute)
  ;(ocamlopt_flags (:standard -p))
+ (ocamlopt_flags (:standard -O3))
  (modules absolute)
  (libraries libabsolute)
 )
