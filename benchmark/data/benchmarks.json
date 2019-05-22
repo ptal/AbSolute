@@ -1,10 +1,12 @@
 {
+  "input_dir" : "benchmark/data/",
+  "output_dir" : "benchmark/database/",
   "problem_sets" : [
-    { "path": "benchmark/data/rcpsp/patterson.rcp/",
+    { "path": "rcpsp/patterson.rcp/",
       "timeout": 60 },
-    { "path": "benchmark/data/rcpsp/j30.sm/",
+    { "path": "rcpsp/j30.sm/",
       "timeout": 60 },
-    { "path": "benchmark/data/rcpsp/j60.sm/",
+    { "path": "rcpsp/j60.sm/",
       "timeout": 60 }
   ],
   "solvers_kind": [

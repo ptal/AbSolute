@@ -63,19 +63,22 @@ let get_config_desc () =
     Some (file_to_string (Array.get Sys.argv 2))
   else
     None
-(*
-let check_problem_file_format config problem_path =
-  let ext = extension_of_problem_kind config.problem_kind in
+
+let check_problem_set_ext ext =
+
+
+let check_problem_file_format config ext problem_path =
   if Sys.is_directory problem_path then begin
     print_warning ("subdirectory " ^ problem_path ^ " ignored.");
     false end
-  else if (String.lowercase_ascii (Filename.extension problem_path)) <> ext then begin
-    print_warning ("file \"" ^ problem_path ^
-      "\" ignored (expected extension `" ^ ext ^ "`).");
-    false end
   else
-    true
- *)
+    match ext with
+    | Some(ext) when (String.lowercase_ascii (Filename.extension problem_path)) <> ext -> begin
+          print_warning ("file \"" ^ problem_path ^
+          "\" ignored (expected extension `" ^ ext ^ "`).");
+          false end
+    | _ -> true
+
 let is_digit c = c >= '0' && c <= '9'
 
 (* Extract the longest number in `s` starting at position `i`. *)
@@ -114,20 +117,31 @@ let natural_comparison x y =
     | r -> r
   in
     aux 0 0
-(*
-let list_of_problems config =
-  if Sys.is_directory config.problem_set then
-    let files = Sys.readdir config.problem_set in
+
+let remove_trailing_slash dir1 =
+  let l = (String.length dir1) - 1 in
+  if dir1.[l] = '/' then String.sub dir1 0 l else dir1
+
+let concat_dir dir1 dir2 =
+  let dir1 = remove_trailing_slash dir1 in
+  dir1 ^ "/" ^ dir2
+
+let list_of_problems bench =
+  let path = concat_dir bench.input_dir bench.problem_set_path in
+  if Sys.is_directory path then
+    let ext = Filename.extension (remove_trailing_slash path) in
+    let _ = check_existing_extension ext in
+    let files = Sys.readdir path in
     Array.sort natural_comparison files;
     Array.to_list files |>
-    List.map (fun x -> config.problem_set ^ x) |>
-    List.filter (check_problem_file_format config)
+    List.map (fun x -> path ^ x) |>
+    List.filter (check_problem_file_format bench)
   else
-    if check_problem_file_format config config.problem_set then
-      [config.problem_set]
+    if check_problem_file_format bench path then
+      [path]
     else
       []
- *)
+
 let call_command command =
   flush_all ();
   let status = Sys.command command in

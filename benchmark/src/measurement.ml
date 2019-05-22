@@ -20,7 +20,7 @@ let update_time config stats measure =
   let open State in
   if Mtime.Span.compare time_out stats.elapsed <= 0 then measure
   else { measure with samples=(Some (Mtime.Span.to_uint64_ns stats.elapsed)) }
-
+*)
 let csv_line items = String.concat ", " items
 
 let string_of_time_unit = function
@@ -31,9 +31,7 @@ let string_of_time_unit = function
 let csv_field_name config = function
   | `ProblemPath -> "path"
   | `ProblemName -> "problem"
-  | `Time(u) -> "time(" ^ (string_of_time_unit u)
-      ^ "; " ^ (string_of_center config.center_of_trials) ^ " of " ^ (string_of_int config.trials) ^ " trials"
-      ^ "; timeout=" ^ (string_of_int config.timeout) ^ "s)"
+  | `Time(u) -> "time"
   | `Solutions -> "solutions"
   | `Fails -> "fails"
   | `Nodes -> "nodes"
@@ -42,6 +40,14 @@ let csv_field_name config = function
 let csv_header config =
   let names = List.map (csv_field_name config) config.csv.fields in
   csv_line names
+
+let print_csv_line line =
+  Printf.printf "%s\n" line;
+  flush_all ()
+
+let print_csv_header bench = print_csv_line (csv_header bench)
+
+(*
 
 let csv_time_field config measure u =
   if measure.time = None then
@@ -68,12 +74,9 @@ let csv_field_value (config : benchmark) measure = function
 let bench_to_csv config measure =
   let values = List.map (csv_field_value config measure) config.csv.fields in
   csv_line values
+*)
 
-let print_csv_line line =
-  Printf.printf "%s\n" line;
-  flush_all ()
-
-let print_csv_header config = print_csv_line (csv_header config)
+(*
 let print_as_csv config measure = print_csv_line (bench_to_csv config measure)
 
 let print_exception problem_path msg = print_csv_line (Format.sprintf "%s: %s" problem_path msg)

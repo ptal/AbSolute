@@ -26,7 +26,9 @@ type solver_instance = [
 ]
 
 type bench_instance = {
-  problem_path: string;
+  input_dir: string;
+  output_dir: string;
+  problem_set_path: string;
   timeout: int;
   solver_instance: solver_instance;
   csv: csv_desc;

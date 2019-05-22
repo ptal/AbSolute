@@ -49,7 +49,9 @@ let make_solver_instances benchmark =
 let make_instances benchmark problem_set =
   let solver_instances = make_solver_instances benchmark in
   List.map (fun s ->
-    { problem_path=problem_set.path;
+    { input_dir=benchmark.input_dir;
+      output_dir=benchmark.output_dir;
+      problem_set_path=problem_set.path;
       timeout=problem_set.timeout;
       csv=benchmark.csv;
       solver_instance=s; }) solver_instances
