@@ -77,16 +77,16 @@ let print_arg arg =
 	match arg with
 	|"--help" -> Printf.printf "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
 				"--help "
-				"	-option "
-				"	output : default is strategies statistics"
-				"	-c comparisons "
-				"	-d differencies"
-				"		-p [prefix] problem (default is all problem)"
-				"		-i [prefix] instance (default is all instances)"
-				"		-sv [prefix] solver compared to all other solvers (default is all solvers)"
-				"		-svs [prefix1][prefix2] solver1 compared to solver2 (default is all solvers - all solvers)"
-				"		-sg [prefix] strategy compared to all other strategies (default is all strategies)" 
-				"		-sgs [prefix1][prefix2] strategy1 compared to strategy2 (default is all strategies - all strategies)"
+				" -option "
+				" output : default is strategies statistics"
+				" -c comparisons "
+				" -d differencies"
+				"	-p [prefix] problem (default is all problem)"
+				"	-i [prefix] instance (default is all instances)"
+				"	-sv [prefix] solver compared to all other solvers (default is all solvers)"
+				"	-svs [prefix1][prefix2] solver1 compared to solver2 (default is all solvers - all solvers)"
+				"	-sg [prefix] strategy compared to all other strategies (default is all strategies)" 
+				"	-sgs [prefix1][prefix2] strategy1 compared to strategy2 (default is all strategies - all strategies)"
 	|_ -> print_string "invalid arguments"
 
 let arg_n args =
@@ -164,10 +164,8 @@ let isolate_solvers (solvers : solver list) args =
 					   |false,false -> isolate_solvers_rec solvers args arg_solvers others
 	in isolate_solvers_rec solvers args [] []
 
-let print_value value = if value = (Float.of_string_opt "7",Unsat) then print_string "" else print_string ""
 
-let add_key key value li =
-	print_value value;
+let add_key key _ li =
 	key::li
 
 let get_keys tbl = 
@@ -266,8 +264,8 @@ let print_diff diff =
 	("				") "s1 better than s2 : " (List.length diff.s1_better_than_s2)
 	("				") "s2 better than s1 : " (List.length diff.s2_better_than_s1)
 	("				") "sum : " ((List.length diff.same)+(List.length diff.s1_better_than_s2)+(List.length diff.s2_better_than_s1));
-	print_string "\n";
-	List.iter print_instances diff.s1_better_than_s2
+	print_string "\n"
+	(*List.iter print_instances diff.s1_better_than_s2*)
 
 let print_comp_solver_strategy print (comp_solver_strategy : comp_solver_strategy) =
 	match print with
@@ -324,7 +322,7 @@ let exec args database =
 let _ = let argi = {action = 0; problem = ""; instance = ""; solver1 = ""; solver2 = ""; strat1 = ""; strat2 = ""} in
     	let args = get_arg argi in
     	print_args args;
-    	print_string "******";
+    	print_string "******\n";
     	let (database : database) = read_database "benchmark/database/" in
     	let (database : database) = process_database database in
     	let database = filter_problems args database in
