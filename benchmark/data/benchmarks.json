@@ -33,7 +33,7 @@
     }>
   ],
   "csv" : {
-    "fields" : [<ProblemName>, <Time : <Sec>>, <Optimum>]
+    "fields" : [<ProblemName>, <Nodes>, <Solutions>, <Fails>, <Time : <Sec>>, <Optimum>]
   },
   "solvers_config": [
     { "name": "gecode",

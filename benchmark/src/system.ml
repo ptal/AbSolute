@@ -1,17 +1,13 @@
 open Printf
-open Bench_desc_t
+open Bench_instance_t
 
 let json_ext = ".json"
 let absolute_ext = ".abs"
 let psplib_ext = ".sm"
 let patterson_ext = ".rcp"
 let pro_gen_ext = ".sch"
+let supported_extensions = [psplib_ext; patterson_ext; pro_gen_ext]
 let usage = "Usage: absolute_bench <configuration file>\n"
-
-let extension_of_problem_kind = function
-  | `PSPlib -> psplib_ext
-  | `Patterson -> patterson_ext
-  | `ProGenMax -> pro_gen_ext
 
 let print_warning msg =
   eprintf "[Warning] %s\n%!" msg
@@ -64,20 +60,18 @@ let get_config_desc () =
   else
     None
 
-let check_problem_set_ext ext =
-
-
-let check_problem_file_format config ext problem_path =
+let check_problem_file_format config problem_path =
   if Sys.is_directory problem_path then begin
     print_warning ("subdirectory " ^ problem_path ^ " ignored.");
     false end
   else
-    match ext with
-    | Some(ext) when (String.lowercase_ascii (Filename.extension problem_path)) <> ext -> begin
-          print_warning ("file \"" ^ problem_path ^
-          "\" ignored (expected extension `" ^ ext ^ "`).");
-          false end
-    | _ -> true
+    let ext = String.lowercase_ascii (Filename.extension problem_path) in
+    match List.find_opt (String.equal ext) supported_extensions with
+    | Some _ -> true
+    | None ->
+        (print_warning ("file \"" ^ problem_path ^
+        "\" ignored (expected extension `" ^ ext ^ "`).");
+        false)
 
 let is_digit c = c >= '0' && c <= '9'
 
@@ -120,27 +114,22 @@ let natural_comparison x y =
 
 let remove_trailing_slash dir1 =
   let l = (String.length dir1) - 1 in
-  if dir1.[l] = '/' then String.sub dir1 0 l else dir1
+  if dir1.[l] = Filename.dir_sep.[0] then String.sub dir1 0 l else dir1
 
 let concat_dir dir1 dir2 =
   let dir1 = remove_trailing_slash dir1 in
-  dir1 ^ "/" ^ dir2
+  dir1 ^ Filename.dir_sep ^ dir2
 
 let list_of_problems bench =
   let path = concat_dir bench.input_dir bench.problem_set_path in
   if Sys.is_directory path then
-    let ext = Filename.extension (remove_trailing_slash path) in
-    let _ = check_existing_extension ext in
     let files = Sys.readdir path in
     Array.sort natural_comparison files;
     Array.to_list files |>
     List.map (fun x -> path ^ x) |>
     List.filter (check_problem_file_format bench)
   else
-    if check_problem_file_format bench path then
-      [path]
-    else
-      []
+    eprintf_and_exit ("The problem set path `" ^ path ^ "` must be a directory. The structure of the input database must follow some conventions described in benchmark/README.md")
 
 let call_command command =
   flush_all ();
@@ -153,4 +142,4 @@ let time_of coeff time =
 let time_of_ms = time_of 1000000
 let time_of_sec = time_of 1000000000
 
-let timeout_of_config config = time_of_sec config.timeout
+let timeout_of_bench bench = time_of_sec bench.timeout

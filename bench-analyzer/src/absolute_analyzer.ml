@@ -145,9 +145,13 @@ let content_of_dir dir =
   Array.sort compare files;
   Array.to_list files
 
+let remove_trailing_slash dir1 =
+  let l = (String.length dir1) - 1 in
+  if dir1.[l] = Filename.dir_sep.[0] then String.sub dir1 0 l else dir1
+
 let concat_dir dir1 dir2 =
-  if dir1.[(String.length dir1) - 1] = '/' then dir1 ^ dir2
-  else dir1 ^ "/" ^ dir2
+  let dir1 = remove_trailing_slash dir1 in
+  dir1 ^ Filename.dir_sep ^ dir2
 
 let subdirs dir =
   List.filter (fun d -> Sys.is_directory (concat_dir dir d)) (content_of_dir dir)
