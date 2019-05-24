@@ -1,5 +1,6 @@
 open Printf
 open Bench_instance_t
+open Rcpsp
 
 let json_ext = ".json"
 let absolute_ext = ".abs"
@@ -132,6 +133,7 @@ let list_of_problems bench =
     eprintf_and_exit ("The problem set path `" ^ path ^ "` must be a directory. The structure of the input database must follow some conventions described in benchmark/README.md")
 
 let call_command command =
+  (* Printf.printf "%s\n" command; *)
   flush_all ();
   let status = Sys.command command in
   status
@@ -143,3 +145,16 @@ let time_of_ms = time_of 1000000
 let time_of_sec = time_of 1000000000
 
 let timeout_of_bench bench = time_of_sec bench.timeout
+
+(* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
+The files from PSPlib are also supposed to be well-formatted. *)
+let read_rcpsp problem_path =
+  let ext = String.lowercase_ascii (Filename.extension problem_path) in
+  if String.equal ext psplib_ext then
+    Sm_format.read_sm_file problem_path
+  else if String.equal ext patterson_ext then
+    Patterson.read_patterson_file problem_path
+  else if String.equal ext pro_gen_ext then
+    Pro_gen_max.read_pro_gen_file problem_path
+  else
+    eprintf_and_exit ("Unknown file extension `" ^ ext ^ "`.")

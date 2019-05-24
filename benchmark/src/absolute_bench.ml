@@ -125,20 +125,6 @@ struct
         { measure with optimum = Some (Rcpsp_domain.B.to_rat lb) }
     | None -> measure
 
-  (* Precondition: Sanity checks on the file path are supposed to be already done, otherwise it can throw I/O related exceptions.
-  The files from PSPlib are also supposed to be well-formatted. *)
-  let read_rcpsp problem_path =
-    let open System in
-    let ext = String.lowercase_ascii (Filename.extension problem_path) in
-    if String.equal ext psplib_ext then
-      Sm_format.read_sm_file problem_path
-    else if String.equal ext patterson_ext then
-      Patterson.read_patterson_file problem_path
-    else if String.equal ext pro_gen_ext then
-      Pro_gen_max.read_pro_gen_file problem_path
-    else
-      eprintf_and_exit ("Unknown file extension `" ^ ext ^ "`.")
-
   let bench_problem bench problem_path =
     try
       let rcpsp = Rcpsp_model.create_rcpsp (read_rcpsp problem_path) in
@@ -154,14 +140,11 @@ struct
       Measurement.print_exception problem_path (Printexc.to_string e)
     end
 
-  let iter_problem bench =
-    let problems = list_of_problems bench in
-    List.iter (bench_problem bench) problems
-
   let start_benchmarking bench =
   begin
     Measurement.print_csv_header bench;
-    iter_problem bench
+    let problems = list_of_problems bench in
+    List.iter (bench_problem bench) problems
   end
 end
 
@@ -192,7 +175,7 @@ let bench_absolute bench solver =
 let run_bench bench =
   match bench.solver_instance with
   | `AbSoluteKind(solver) -> bench_absolute bench solver
-  | `MznKind(_) -> ()
+  | `MznKind(solver) -> Minizinc.bench_minizinc bench solver
   | `DecomposedKind(_) -> ()
 
 let bench_from_json json_data =
