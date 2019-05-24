@@ -10,6 +10,7 @@ let dzn_file = "tmp.dzn"
 let mzn_file = "tmp.mzn"
 let fzn_file = "tmp.fzn"
 let output_file = "out.txt"
+let error_file = "err.txt"
 
 let minizinc_options config solver =
   "--output-time " ^
@@ -135,11 +136,13 @@ let benchmark_suite_flatmzn config flatmzn =
     Measurement.print_bench_results name info *)
 
 let solver_output_to_entries output =
+  let is_mzn_entry l = if String.length l > 0 then l.[0] = '%' else false in
+  let is_not_mzn_entry l = not (is_mzn_entry l) in
   let data = file_to_string output in
   let lines = String.split_on_char '\n' data in
   let mzn_entries =
     lines |>
-    List.filter (fun l -> if String.length l > 0 then l.[0] = '%' else false) |>
+    List.filter is_mzn_entry |>
     List.map (String.split_on_char ' ') |>
     List.filter (fun l -> (List.length l) = 2) |>
     List.map (fun l ->
@@ -148,17 +151,23 @@ let solver_output_to_entries output =
       (List.nth entry 0, List.nth entry 1)
     ) in
   try
+    let lines = List.filter is_not_mzn_entry lines in
     let obj = Scanf.sscanf (List.nth lines 0) "objective = %d;" string_of_int in
     mzn_entries@[("objective", obj)]
   with _ -> mzn_entries
+
+let get_entry name entries =
+  match List.assoc_opt name entries with
+  | Some x -> int_of_string x
+  | None -> -1
 
 let print_result_as_csv bench problem_path output =
   let entries = solver_output_to_entries output in
   let stats = State.init_global_stats () in
   let stats = State.{ stats with
-    nodes=(int_of_string (List.assoc "nodes" entries));
-    fails=(int_of_string (List.assoc "failures" entries));
-    sols=(int_of_string (List.assoc "solutions" entries));
+    nodes=(get_entry "nodes" entries);
+    fails=(get_entry "failures" entries);
+    sols=(get_entry "solutions" entries);
   } in
   let measure = Measurement.init stats problem_path in
   let time = int_of_float ((float_of_string (List.assoc "solveTime" entries)) *. 1000000.) in
@@ -168,13 +177,18 @@ let print_result_as_csv bench problem_path output =
     optimum=Some (Bound_rat.of_string (List.assoc "objective" entries)) } in
   Measurement.print_as_csv bench measure
 
+let solver_time_option (mzn_instance: mzn_instance) time =
+  if mzn_instance.solver.Bench_desc_j.name = "choco" then
+    " -tl " ^ time
+  else
+    " -t " ^ time
+
 let run_mzn_bench bench (mzn_instance: mzn_instance) problem_path fzn_file =
   let time = string_of_int (bench.timeout * 1000) in
   let command = mzn_instance.solver.Bench_desc_j.exec ^
-    " -time " ^ time ^
-    " -s " ^ (* Print statistics. *)
+    (solver_time_option mzn_instance time) ^ " " ^
     fzn_file ^
-    " > " ^ output_file in
+    " > " ^ output_file ^ " 2> " ^ error_file in
   let _ = call_command command in
   print_result_as_csv bench problem_path output_file
 
@@ -219,7 +233,7 @@ let create_mzn_model mzn_instance =
   model ^ "\n" ^ search
 
 let create_fzn_file solver mzn_file dzn_file =
-  let command = "mzn2fzn --no-optimize -G " ^ solver.Bench_desc_j.globals ^ " -o " ^ fzn_file ^ " -d " ^ dzn_file ^ " " ^ mzn_file in
+  let command = "mzn2fzn --no-optimize -I " ^ solver.Bench_desc_j.globals ^ " -o " ^ fzn_file ^ " -d " ^ dzn_file ^ " " ^ mzn_file in
   ignore (call_command command)
 
 let bench_mzn_instance bench mzn_instance problem_path =

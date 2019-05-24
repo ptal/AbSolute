@@ -11,7 +11,7 @@
   ],
   "solvers_kind": [
     <MiniZinc: {
-      "solvers": ["gecode", "chuffed"],
+      "solvers": ["choco", "chuffed", "gecode"],
       "models": ["benchmark/data/minizinc/rcpsp-cumulative.mzn"],
       "strategies": [
         { "mzn_annot" : "int_search(s, smallest, indomain_min, complete) minimize objective",
@@ -38,15 +38,15 @@
   "solvers_config": [
     { "name": "gecode",
       "version": "6.1.0",
-      "exec": "fzn-gecode",
+      "exec": "fzn-gecode -s",
       "globals": "/usr/share/minizinc-ide/share/minizinc/gecode" },
     { "name": "chuffed",
-      "version": "0.10.3",
-      "exec": "/home/ptalbot/repositories/resources/solvers/chuffed/build/fzn-chuffed",
+      "version": "0.10.3@develop",
+      "exec": "/home/ptalbot/repositories/resources/solvers/chuffed/build/fzn-chuffed -v",
       "globals": "/home/ptalbot/repositories/resources/solvers/chuffed/chuffed/flatzinc/mznlib" },
     { "name": "choco",
       "version": "4.10.1",
-      "exec": "/home/ptalbot/repositories/resources/solvers/choco-parsers/target/choco-parsers-4.0.5-SNAPSHOT-with-dependencies.jar",
+      "exec": "java -cp .:/home/ptalbot/repositories/resources/solvers/choco-parsers/target/choco-parsers-4.0.5-SNAPSHOT-with-dependencies.jar org.chocosolver.parser.flatzinc.ChocoFZN -stat",
       "globals": "/home/ptalbot/repositories/resources/solvers/choco-parsers/src/main/mzn_lib" },
     { "name": "absolute",
       "version": "88ff83f",
