@@ -49,15 +49,42 @@ let make_solver_instances benchmark =
 let make_instances benchmark problem_set =
   let solver_instances = make_solver_instances benchmark in
   List.map (fun s ->
-    { input_dir=benchmark.input_dir;
-      output_dir=benchmark.output_dir;
-      problem_set_path=problem_set.path;
+    { problem_set_path=problem_set.path;
       timeout=problem_set.timeout;
       csv=benchmark.csv;
       solver_instance=s; }) solver_instances
 
 let gen_benches benchmark =
   List.flatten (List.map (make_instances benchmark) benchmark.problem_sets)
+
+let finalize_bench benchmark bench =
+  let path = System.concat_dir benchmark.input_dir bench.problem_set_path in
+  {bench with problem_set_path=path}
+
+let create_solver_dir bench =
+  match bench.solver_instance with
+  | `AbSoluteKind(instance) -> "absolute-" ^ instance.version
+  | `MznKind(instance) -> instance.solver.name ^ "-" ^ instance.solver.version
+  | `DecomposedKind(instance) -> instance.solver.name ^ "-" ^ instance.solver.version
+
+let create_result_filename bench =
+  match bench.solver_instance with
+    | `AbSoluteKind(instance) -> instance.domain ^ "-" ^ instance.strategy
+    | `MznKind(instance) -> (Filename.remove_extension (Filename.basename instance.model)) ^ "-" ^ instance.strategy.short
+    | `DecomposedKind(instance) -> "box-" ^ instance.strategy.short
+
+let register_bench benchmark bench =
+  let solver_dir = create_solver_dir bench in
+  let path = List.fold_left System.concat_dir benchmark.output_dir
+    [bench.problem_set_path; solver_dir] in
+  let _ = System.call_command ("mkdir -p " ^ path) in
+  let result_filename = create_result_filename bench in
+  let bench_instance_file = System.concat_dir path (result_filename ^ ".json") in
+  let bench = finalize_bench benchmark bench in
+  let data = Yojson.Safe.prettify (string_of_bench_instance bench) in
+  System.string_to_file bench_instance_file data;
+  let bench_instance_output = System.concat_dir path (result_filename ^ ".csv") in
+  Printf.printf "%s > %s\n" bench_instance_file bench_instance_output
 
 let config_from_json json_data =
   try
@@ -75,5 +102,5 @@ let () =
   (* Printexc.record_backtrace true; *)
   let benchmark = config_from_json (System.get_bench_desc ()) in
   let benches = gen_benches benchmark in
-  (Printf.printf "%d bench files generated.\n" (List.length benches);
-  Printf.printf "%s" (Yojson.Safe.prettify (string_of_bench_instance (List.nth benches 0))))
+  Printf.printf "%d bench files generated.\n" (List.length benches);
+  List.iter (register_bench benchmark) benches

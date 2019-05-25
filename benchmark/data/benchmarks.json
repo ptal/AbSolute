@@ -1,6 +1,6 @@
 {
   "input_dir" : "benchmark/data/",
-  "output_dir" : "benchmark/database/",
+  "output_dir" : "benchmark/database2/",
   "problem_sets" : [
     { "path": "rcpsp/patterson.rcp/",
       "timeout": 60 },

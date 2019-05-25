@@ -34,6 +34,11 @@ let find_file fname =
       "Cannot find the file %s\n%!" fname)
   end
 
+let string_to_file fpath data =
+  let oc = open_out fpath in
+  Printf.fprintf oc "%s" data;
+  close_out oc
+
 let file_to_string fname =
   let fpath = find_file fname in
   begin
@@ -122,7 +127,7 @@ let concat_dir dir1 dir2 =
   dir1 ^ Filename.dir_sep ^ dir2
 
 let list_of_problems bench =
-  let path = concat_dir bench.input_dir bench.problem_set_path in
+  let path = bench.problem_set_path in
   if Sys.is_directory path then
     let files = Sys.readdir path in
     Array.sort natural_comparison files;
