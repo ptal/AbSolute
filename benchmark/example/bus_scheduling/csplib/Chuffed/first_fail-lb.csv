@@ -11,5 +11,5 @@ bus_scheduling_csplib_r3.dzn,timeout,none
 bus_scheduling_csplib_r4.dzn,timeout,28
 bus_scheduling_csplib_r5.dzn,timeout,none
 bus_scheduling_csplib_r5a.dzn,timeout,none
-bus_scheduling_csplib_t1.dzn,02,7
+bus_scheduling_csplib_t1.dzn,0.2,7
 bus_scheduling_csplib_t2.dzn,timeout,none

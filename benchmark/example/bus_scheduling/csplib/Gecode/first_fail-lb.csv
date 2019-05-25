@@ -1,15 +1,15 @@
 gecode(first_fail,indomain_min,complete)
 
 problem,time(s; median of 0 trials; timeout=60s),optimum
-bus_scheduling_csplib_c1.dzn,,
-bus_scheduling_csplib_c1a.dzn,,
-bus_scheduling_csplib_c2.dzn,,
-bus_scheduling_csplib_r1.dzn,,
-bus_scheduling_csplib_r1a.dzn,,
-bus_scheduling_csplib_r2.dzn,,
-bus_scheduling_csplib_r3.dzn,,
-bus_scheduling_csplib_r4.dzn,,
-bus_scheduling_csplib_r5.dzn,,
-bus_scheduling_csplib_r5a.dzn,,
-bus_scheduling_csplib_t1.dzn,,
-bus_scheduling_csplib_t2.dzn,,
+bus_scheduling_csplib_c1.dzn,timeout,none
+bus_scheduling_csplib_c1a.dzn,tiemout,none
+bus_scheduling_csplib_c2.dzn,timeout,none
+bus_scheduling_csplib_r1.dzn,timeout,12
+bus_scheduling_csplib_r1a.dzn,timeout,12
+bus_scheduling_csplib_r2.dzn,timeout,none
+bus_scheduling_csplib_r3.dzn,timeout,none
+bus_scheduling_csplib_r4.dzn,timeout,none
+bus_scheduling_csplib_r5.dzn,timeout,none
+bus_scheduling_csplib_r5a.dzn,timeout,none
+bus_scheduling_csplib_t1.dzn,0.4,7
+bus_scheduling_csplib_t2.dzn,timeout,none

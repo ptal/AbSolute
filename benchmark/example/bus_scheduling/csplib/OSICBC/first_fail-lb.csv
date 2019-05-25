@@ -1,15 +1,15 @@
 osicbc(first_fail,indomain_min,complete)
 
 problem,time(s; median of 0 trials; timeout=60s),optimum
-bus_scheduling_csplib_c1.dzn,,
-bus_scheduling_csplib_c1a.dzn,,
-bus_scheduling_csplib_c2.dzn,,
-bus_scheduling_csplib_r1.dzn,,
-bus_scheduling_csplib_r1a.dzn,,
-bus_scheduling_csplib_r2.dzn,,
-bus_scheduling_csplib_r3.dzn,,
-bus_scheduling_csplib_r4.dzn,,
-bus_scheduling_csplib_r5.dzn,,
-bus_scheduling_csplib_r5a.dzn,,
-bus_scheduling_csplib_t1.dzn,,
-bus_scheduling_csplib_t2.dzn,,
+bus_scheduling_csplib_c1.dzn,5.0,26
+bus_scheduling_csplib_c1a.dzn,8.9,26
+bus_scheduling_csplib_c2.dzn,21.1,29
+bus_scheduling_csplib_r1.dzn,1.4,11
+bus_scheduling_csplib_r1a.dzn,3.2,11
+bus_scheduling_csplib_r2.dzn,1.2,14
+bus_scheduling_csplib_r3.dzn,18.7,16
+bus_scheduling_csplib_r4.dzn,3.8,25
+bus_scheduling_csplib_r5.dzn,timeout,30
+bus_scheduling_csplib_r5a.dzn,22.2,29
+bus_scheduling_csplib_t1.dzn,0.3,7
+bus_scheduling_csplib_t2.dzn,3.7,19
