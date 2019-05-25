@@ -174,9 +174,9 @@ let bench_absolute bench solver =
 
 let run_bench bench =
   match bench.solver_instance with
-  | `AbSoluteKind(solver) -> bench_absolute bench solver
-  | `MznKind(solver) -> Minizinc.bench_minizinc bench solver
-  | `DecomposedKind(_) -> ()
+  | `AbSoluteKind(instance) -> bench_absolute bench instance
+  | `MznKind(instance) -> Minizinc.bench_minizinc bench instance
+  | `DecomposedKind(instance) -> Minizinc.bench_decomposed_mzn bench instance
 
 let bench_from_json json_data =
   try

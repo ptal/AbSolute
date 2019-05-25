@@ -10,8 +10,15 @@
       "timeout": 60 }
   ],
   "solvers_kind": [
+    <DecomposedMzn: {
+      "solvers": ["gecode", "chuffed"],
+      "strategies": [
+        { "mzn_annot" : "smallest, indomain_min, complete",
+          "short": "min_lb" }
+      ]
+    }>,
     <MiniZinc: {
-      "solvers": ["choco", "chuffed", "gecode"],
+      "solvers": ["chuffed", "gecode"],
       "models": ["benchmark/data/minizinc/rcpsp-cumulative.mzn"],
       "strategies": [
         { "mzn_annot" : "int_search(s, smallest, indomain_min, complete) minimize objective",
@@ -22,13 +29,6 @@
       "domains": [
         { "name": "Octagon", "strategies": ["MSLF_simple"] },
         { "name": "Box", "strategies": ["First_fail_LB"] }
-      ]
-    }>,
-    <DecomposedMzn: {
-      "solvers": ["gecode", "chuffed"],
-      "strategies": [
-        { "mzn_annot" : "int_search(s, smallest, indomain_min, complete) minimize objective",
-          "short": "min_lb" }
       ]
     }>
   ],
