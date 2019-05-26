@@ -1,0 +1,13 @@
+osicbc(input_order,indomain_min,complete)
+
+problem,time(s; median of 0 trials; timeout=60s),optimum
+bacp-1.mzn,0.8s,28
+bacp-10.mzn,2.9s,27
+bacp-11.mzn,0.6s,30
+bacp-12.mzn,0.6s,30
+bacp-2.mzn,2.6s,29
+bacp-20.mzn,6.1s,30
+bacp-25.mzn,2.7s,28
+bacp-26.mzn,2.4s,28
+bacp-27.mzn,1.3s,34
+bacp-28.mzn,3.0s,28
