@@ -155,7 +155,8 @@ let make_octagon_strategy : string -> (module Octagon_split.Octagon_split_sig) =
 | s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Octagon. Please look into `Factory.make_octagon_strategy` for a list of the supported strategies.")
 
 let make_box_strategy : string -> (module Box_split.Box_split_sig) = function
-| "First_fail_LB" -> (module Box_split.First_fail_LB)
+| "First_fail_LB"  -> (module Box_split.First_fail_LB)
+| "MSLF_simple" -> (module Box_split.MSLF_simple)
 | s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Box. Please look into `Factory.make_box_strategy` for a list of the supported strategies.")
 
 let bench_absolute bench solver =

@@ -127,3 +127,4 @@ module First_fail_bisect = Make(First_fail)(Middle)(Bisect)
 module First_fail_LB = Make(First_fail)(Lower_bound)(Assign)
 module Anti_first_fail_LB = Make(Anti_first_fail)(Lower_bound)(Assign)
 module Anti_first_fail_UB = Make(Anti_first_fail)(Upper_bound)(Assign)
+module MSLF_simple = First_fail_LB
