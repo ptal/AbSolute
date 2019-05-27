@@ -5,6 +5,7 @@ open Abstract_domain
 
 module type Box_octagon_disjoint_sig =
 sig
+  module R: Representation_sig
   module B: Bound_sig.BOUND
   type t
   type bound = B.t

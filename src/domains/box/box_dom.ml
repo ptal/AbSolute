@@ -5,17 +5,18 @@ module type Box_sig =
 sig
   type t
   module I: Itv_sig.ITV
+  module R = Logical_representation
   type itv = I.t
   type bound = I.B.t
 
   val init: Csp.var list -> Csp.bconstraint list -> t
-  val get: t -> Csp.var -> itv
-  val project_one: t -> Csp.var -> (bound * bound)
-  val project: t -> Csp.var list -> (Csp.var * (bound * bound)) list
-  val weak_incremental_closure: t -> Csp.bconstraint -> t
+  val get: t -> R.rvar -> itv
+  val project_one: t -> R.rvar -> (bound * bound)
+  val project: t -> R.rvar list -> (R.rvar * (bound * bound)) list
+  val weak_incremental_closure: t -> R.rconstraint -> t
   val closure: t -> t
-  val incremental_closure: t -> Csp.bconstraint -> t
-  val entailment: t -> Csp.bconstraint -> kleene
+  val incremental_closure: t -> R.rconstraint -> t
+  val entailment: t -> R.rconstraint -> kleene
   val volume: t -> float
   val state_decomposition: t -> kleene
   val print: Format.formatter -> t -> unit
@@ -37,11 +38,12 @@ struct
   module Split = SPLIT(Store)
   module I = Store.I
   module B = I.B
+  module R = Logical_representation
   type itv = I.t
   type bound = I.B.t
   type t = {
     store: Store.t;
-    constraints: Csp.bconstraint list;
+    constraints: R.rconstraint list;
   }
 
   (* Reexported functions from the parametrized modules. *)

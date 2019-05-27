@@ -2,24 +2,25 @@ open Csp
 open Abstract_domain
 open Box_dom
 
-type box_reified_constraint = var * bconstraint list
+type box_reified_constraint = Csp.var * Csp.bconstraint list
 
 module type Box_reified_sig =
 sig
   type t
   module I: Itv_sig.ITV
   module B = I.B
+  module R = Logical_representation
   type bound = B.t
   type itv = I.t
 
-  val init: var list -> bconstraint list -> box_reified_constraint list -> t
-  val get: t -> Csp.var -> itv
-  val project_one: t -> var -> (bound * bound)
-  val project: t -> var list -> (var * (bound * bound)) list
-  val weak_incremental_closure: t -> Csp.bconstraint -> t
+  val init: Csp.var list -> Csp.bconstraint list -> box_reified_constraint list -> t
+  val get: t -> R.rvar -> itv
+  val project_one: t -> R.rvar -> (bound * bound)
+  val project: t -> R.rvar list -> (R.rvar * (bound * bound)) list
+  val weak_incremental_closure: t -> R.rconstraint -> t
   val closure: t -> t
-  val incremental_closure: t -> Csp.bconstraint -> t
-  val entailment: t -> Csp.bconstraint -> kleene
+  val incremental_closure: t -> R.rconstraint -> t
+  val entailment: t -> R.rconstraint -> kleene
   val volume: t -> float
   val state_decomposition: t -> kleene
   val print: Format.formatter -> t -> unit
@@ -30,6 +31,7 @@ module Make(Box: Box_sig) =
 struct
   module I = Box.I
   module B = I.B
+  module R = Logical_representation
   type bound = B.t
   type itv = I.t
   type t = {
@@ -53,8 +55,8 @@ struct
     | False,_ -> box
     | True,_ -> raise Bot.Bot_found
     | Unknown, Some(u) ->
-        let (e1,op,e2) = (List.nth conjunction u) in
-        weak_incremental_closure box (e1, Csp.neg op, e2)
+        let c = (List.nth conjunction u) in
+        weak_incremental_closure box (R.negate c)
     | Unknown, None ->
         { box with reified_constraints=(b, conjunction)::box.reified_constraints}
 

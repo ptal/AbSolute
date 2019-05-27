@@ -1,4 +1,3 @@
-open Csp
 open Var_store
 open Abstract_domain
 
@@ -6,24 +5,25 @@ module type Box_sig =
 sig
   type t
   module I: Itv_sig.ITV
+  module R = Logical_representation
   type itv = I.t
   type bound = I.B.t
 
   (** Initialize the box with variables and constraints.
       The box returned is not closed, therefore you should apply `closure` to this box right after initialization. *)
-  val init: var list -> bconstraint list -> t
+  val init: Csp.var list -> Csp.bconstraint list -> t
 
   (* Get the interval of the variable `v`. *)
-  val get: t -> var -> itv
+  val get: t -> R.rvar -> itv
 
   (* Projection of the variables according to their names. *)
-  val project_one: t -> var -> (bound * bound)
-  val project: t -> var list -> (var * (bound * bound)) list
+  val project_one: t -> R.rvar -> (bound * bound)
+  val project: t -> R.rvar list -> (R.rvar * (bound * bound)) list
 
   (** Add the constraint `c` into the box.
       Precondition: The variables in `c` must range over the current store.
       The store of variables is left unchanged, and `closure` should be applied. *)
-  val weak_incremental_closure: t -> bconstraint -> t
+  val weak_incremental_closure: t -> R.rconstraint -> t
 
   (** Closure of the store with regards to all constraints in the box.
       A fixed point is reached when no constraint can be propagated anymore.
@@ -32,10 +32,10 @@ sig
   val closure: t -> t
 
   (** Equivalent to `closure (weak_incremental_closure box c)`. *)
-  val incremental_closure: t -> bconstraint -> t
+  val incremental_closure: t -> R.rconstraint -> t
 
   (** Return the entailment status of the constraint in `box`. *)
-  val entailment: t -> bconstraint -> kleene
+  val entailment: t -> R.rconstraint -> kleene
 
   (** Compute the volume of the box.
       We return `1.` if the box only contain singleton domain. *)

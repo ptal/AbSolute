@@ -7,29 +7,29 @@ module type RCPSP_sig =
 sig
   include Abstract_domain.Abstract_domain
   val init_rcpsp: rcpsp_model -> t
-end
+end with type R.rvar = Csp.var and type R.rconstraint = Csp.bconstraint
 
 module type Bencher_sig =
 sig
   val start_benchmarking: bench_instance -> unit
 end
 
-module RCPSP_Octagon(SPLIT: Octagon_split.Octagon_split_sig) =
-struct
-  include Box_octagon_disjoint.Make
-    (Box_dom.Box_base(Box_split.First_fail_bisect))
-    (Octagon.OctagonZ(SPLIT))
-
-  let init_rcpsp rcpsp = init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_bconstraints
-end
-
-module RCPSP_Box(SPLIT: Box_split.Box_split_sig) =
+module RCPSP_Box(SPLIT: Box_split.Box_split_sig) : RCPSP_sig =
 struct
   include Box_reified.BoxReifiedZ(SPLIT)
 
   let init_rcpsp rcpsp =
     let vars = (rcpsp.box_vars)@(rcpsp.octagonal_vars) in
     init vars rcpsp.constraints rcpsp.reified_bconstraints
+end
+
+module RCPSP_Octagon(SPLIT: Octagon_split.Octagon_split_sig) : RCPSP_sig =
+struct
+  include Box_octagon_disjoint.Make
+    (Box_dom.Box_base(Box_split.First_fail_bisect))
+    (Octagon.OctagonZ(SPLIT))
+
+  let init_rcpsp rcpsp = init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_bconstraints
 end
 
 (* This module benches a repository of files with the parametrized abstract domain. *)

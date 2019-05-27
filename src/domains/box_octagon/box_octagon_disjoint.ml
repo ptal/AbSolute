@@ -6,6 +6,7 @@ open Dbm
 
 module type Box_octagon_disjoint_sig =
 sig
+  module R: Representation_sig
   module B: Bound_sig.BOUND
   type t
   type bound = B.t
@@ -27,29 +28,29 @@ struct
   module B = Octagon.B
   module Box=BOX(B)
   type bound = B.t
-  module Rewriter = Octagonal_rewriting.Rewriter(B)
+  module R = Octagonal_rewriting.Rewriter(B)
 
   type reified_octagonal = var * (bound dbm_constraint) list
 
   type t = {
     box : Box.t;
     octagon: Octagon.t;
-    rewriter: Rewriter.t;
+    rewriter: R.t;
     reified_octagonal: reified_octagonal list;
   }
 
   let init_octagon rewriter vars (octagon, constraints) c =
     if not (is_defined_over vars c) then octagon, c::constraints
     else
-      match Rewriter.rewrite rewriter c with
+      match R.rewrite rewriter c with
       (* If we cannot rewrite the constraint, we add a relaxed version, if any.
          Note that the constraint is added to `constraints` anyway, so it can be fully processed by the box domain. *)
-      | [] -> (List.fold_left Octagon.weak_incremental_closure octagon (Rewriter.relax rewriter c)), c::constraints
+      | [] -> (List.fold_left Octagon.weak_incremental_closure octagon (R.relax rewriter c)), c::constraints
       | cons -> (List.fold_left Octagon.weak_incremental_closure octagon cons), constraints
 
   let init_reified_constraint rewriter (v, conjunction) =
     let try_rewrite all c =
-      let rewritten_c = Rewriter.rewrite rewriter c in
+      let rewritten_c = R.rewrite rewriter c in
       if (List.length rewritten_c)=0 then
         raise (Wrong_modelling ("The abstract domain `Box_octagon_disjoint` expects octagonal reified constraints, but `" ^
                (string_of_bconstraint c) ^ "` could not be rewritten."))
@@ -59,7 +60,7 @@ struct
 
   let init box_vars octagon_vars constraints reified_octagonal =
     let dim = List.length octagon_vars in
-    let rewriter = Rewriter.init (List.combine
+    let rewriter = R.init (List.combine
       octagon_vars
       (Fold_intervals_canonical.fold (fun a itv -> itv::a) [] dim)) in
     let (octagon, constraints) =
@@ -90,7 +91,7 @@ struct
     | True, _ -> raise Bot.Bot_found
     | Unknown, Some(u) ->
         let unknown = List.nth conjunction u in
-        let neg_unknown = Rewriter.negate unknown in
+        let neg_unknown = R.negate unknown in
         { box_oct with octagon=Octagon.weak_incremental_closure box_oct.octagon neg_unknown }
     | Unknown, None ->
         { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
@@ -138,7 +139,7 @@ struct
     propagate (volume box_oct) box_oct
 
   let weak_incremental_closure box_oct c =
-    match Rewriter.rewrite box_oct.rewriter c with
+    match R.rewrite box_oct.rewriter c with
     | [] -> { box_oct with box=Box.weak_incremental_closure box_oct.box c }
     | cons -> {box_oct with octagon=List.fold_left Octagon.weak_incremental_closure box_oct.octagon cons }
 
@@ -163,7 +164,7 @@ struct
     try
       Box.project_one box_oct.box var
     with Not_found ->
-      Octagon.project box_oct.octagon (Rewriter.var_box_to_dbm box_oct.rewriter var)
+      Octagon.project box_oct.octagon (R.to_abstract_var box_oct.rewriter var)
 
   let project box_oct vars = List.map (fun v -> (v, project_one box_oct v)) vars
 end

@@ -28,26 +28,30 @@ module type Rewriter_sig = functor (B: Bound_sig.BOUND) ->
 sig
   module B: Bound_sig.BOUND
   type t
-
-  val init: (var * dbm_interval) list -> t
-  val var_dbm_to_box: t -> dbm_interval -> var
-  val var_box_to_dbm: t -> var -> dbm_interval
-  val rewrite: t -> bconstraint -> (B.t dbm_constraint) list
-  val relax: t -> bconstraint -> (B.t dbm_constraint) list
-  val negate: B.t dbm_constraint -> B.t dbm_constraint
+  type rvar = dbm_interval
+  type rconstraint = B.t dbm_constraint
+  val init: (var * rvar) list -> t
+  val to_logic_var: t -> rvar -> var
+  val to_abstract_var: t -> var -> rvar
+  val rewrite: t -> bconstraint -> rconstraint list
+  val relax: t -> bconstraint -> rconstraint list
+  val negate: rconstraint -> rconstraint
 end with module B=B
 
 module Rewriter(B: Bound_sig.BOUND) =
 struct
+  type rvar = dbm_interval
+  type rconstraint = B.t dbm_constraint
+
   module B = B
   module Env = Tools.VarMap
   module REnv = Mapext.Make(struct
-    type t=dbm_interval
+    type t=rvar
     let compare = compare end)
 
   type t = {
     (* maps each variable name to its DBM interval. *)
-    env: dbm_interval Env.t;
+    env: rvar Env.t;
     (* reversed mapping of `env`. *)
     renv: var REnv.t;
   }
@@ -60,11 +64,11 @@ struct
 
   let init vars = List.fold_left add_var empty vars
 
-  let var_dbm_to_box rewriter itv = REnv.find itv rewriter.renv
-  let var_box_to_dbm rewriter v = Env.find v rewriter.env
+  let to_logic_var rewriter itv = REnv.find itv rewriter.renv
+  let to_abstract_var rewriter v = Env.find v rewriter.env
 
   let dim_of_var rewriter v =
-    let itv = var_box_to_dbm rewriter v in
+    let itv = to_abstract_var rewriter v in
     let k1, k2 = (itv.lb.l / 2), (itv.lb.c / 2) in
     if k1 <> k2 then failwith "Rewriter.dim_of_var: only variable with a canonical plane are defined on a single dimension."
     else k1
