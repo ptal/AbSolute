@@ -1,4 +1,5 @@
 {
+  "bench_exec": "./exec.sh",
   "input_dir" : "benchmark/data/",
   "output_dir" : "benchmark/database2/",
   "problem_sets" : [

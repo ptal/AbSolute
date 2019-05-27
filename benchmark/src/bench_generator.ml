@@ -84,7 +84,7 @@ let register_bench benchmark bench =
   let data = Yojson.Safe.prettify (string_of_bench_instance bench) in
   System.string_to_file bench_instance_file data;
   let bench_instance_output = System.concat_dir path (result_filename ^ ".csv") in
-  Printf.printf "%s > %s\n" bench_instance_file bench_instance_output
+  Printf.printf "%s %s %s\n" benchmark.bench_exec bench_instance_file bench_instance_output
 
 let config_from_json json_data =
   try

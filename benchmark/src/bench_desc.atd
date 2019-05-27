@@ -64,6 +64,7 @@ type solver_config = {
 type solvers_config = solver_config list
 
 type benchmark = {
+  bench_exec: string;
   input_dir: string;
   output_dir: string;
   problem_sets: problem_set list;
