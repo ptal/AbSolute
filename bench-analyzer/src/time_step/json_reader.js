@@ -10,6 +10,26 @@ function empty_div() {
   }
 }
 
+function downloadPDF(id) {
+  var button = document.getElementById(id);
+  var div = document.getElementById(button.parentNode.id);
+  var canvas = div.getElementsByTagName("canvas")[0];
+  //creates image
+  var ctx = canvas.getContext('2d');
+  ctx.webkitImageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(canvas,0,0); //this gives good img quality 
+
+  var canvasImg = canvas.toDataURL("image/png", 1.0); 
+  //creates PDF from img
+  var doc = new jsPDF('landscape');
+  doc.setFontSize(20);
+  doc.addImage(canvasImg, 'PNG', 10, 10, 280, 150 );
+  doc.save('canvas.pdf');
+}
+
 function readJson(json) {
   //var json = JSON.stringify(jsonString);
   empty_div();
@@ -34,9 +54,11 @@ function readJson(json) {
     //h2.textContent = "Number of instances solved over "+max_time+" seconds";
     var chart_name = "myChart"+j;
     var div_name = "div_"+chart_name;
+    var button_name = "button_"+chart_name;
+    var button = '<button type="button" id="'+button_name+'">Download PDF</button>';
     div.push('div_myChart'+j);
     console.log("create "+chart_name);
-    inner = inner + '<div id = "'+div_name+'">'+"Number of instances solved among "+nb_instances+ " over "+max_time+" secondes with prolem "+p_name+" and instance "+i_name+'<canvas id="'+chart_name+'"" width="16px" height="9px"></canvas> </div>';
+    inner = inner + '<div id = "'+div_name+'">'+"Number of instances solved among "+nb_instances+ " over "+max_time+" secondes with prolem "+p_name+" and instance "+i_name+'<canvas id="'+chart_name+'"" width="16px" height="9px"></canvas>'+button+'</div>';
     var database = [nb_step];
     var strategies = inst.strategies;
     for (var i = 0; i < strategies.length; i++){
@@ -48,6 +70,7 @@ function readJson(json) {
    document.querySelector("h2").innerHTML += inner;
    for (var i = 0; i < instances.length; i++){
     var id = "myChart"+i;
+    document.getElementById('button_'+id).addEventListener("click", function(){downloadPDF(this.id)});
     console.log("get "+id);
     var ctx = document.getElementById(id);
     console.log(ctx ===null);
@@ -58,11 +81,29 @@ function readJson(json) {
         datasets: all[i]
       },
       options: {
+        title: {
+          display: true,
+          text: 'Problem : '+instances[i].problem+' - Instance set : '+instances[i].instance+' - Number of instances : '+instances[i].nb_instances+' - Timeout : '+instances[i].time[(instances[i].time.length)-1],
+          position: 'top',
+          fontSize: 20
+        },
+        scales: {
+          yAxes :[{
+            display: true,
+            ticks: {
+              suggestedMax: nb_instances ,
+              beginAtZero: true
+            }
+          }]
+        },
         elements: {
           line: {
             tension: 0
           }
-        }
+        },
+        legend: {
+          labels: { fontSize: 20}
+       }
       }
     });
   }

@@ -29,9 +29,9 @@ a {
 
 div{
   margin-left: auto;
+  background-color: #ffffff;
   margin-right: auto;
-  top: 10px;
-  height: 600px;
-  width: 800px;
-  color: '#444444';
+  padding-bottom: 100px;
+  height: 720px;
+  width: 1280px;
 }
