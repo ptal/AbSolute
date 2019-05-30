@@ -1,7 +1,7 @@
 open Absolute_analyzer
 
 type arg = {
-  action : int; (* 0 values / 1 pour comp / 2 pour diff / 3 pour inclusion / 4 pour help*)
+  action : int; (* 0 values / 1 pour comp / 2 pour diff / 3 pour inclusion / 4 pour cactus plot / 5 pour help*)
   problem : string;
   instance : string;
   solver1 : string;
@@ -112,6 +112,7 @@ let arg_n args =
     |"-comp"-> (n+1,{args with action = 1;})
     |"-diff"-> (n+1,{args with action = 2;})
     |"-incl"-> (n+1,{args with action = 3;})
+    |"-cact"-> (n+1,{args with action = 4;})
     |"-f"->(n+2,{args with file = Sys.argv.(n+1);})
     |"-t"->(n+2,{args with timeout = (float_of_string Sys.argv.(n+1));})
     |"-p"->(n+2,{args with problem = Sys.argv.(n+1);})
@@ -190,6 +191,11 @@ let add_key key _ li =
 let get_keys tbl = 
   Hashtbl.fold (add_key) tbl []
 
+let float_option_to_string t args =
+  match t with
+  |Some(t) -> (string_of_float t)^"0"
+  |None -> (string_of_float args.timeout)^"0"
+
 let compare_instances strat1 strat2 diff key = 
   let (time1,optimum1) = Hashtbl.find strat1.all key in
   let (time2,optimum2) = Hashtbl.find strat2.all key in 
@@ -267,7 +273,7 @@ let compare_strategies args solver other (solver_strategy :strategy) =
     {solver = solver; other = other; solver_strategy = solver_strategy; comp_solver_strategies = []; }
 
 let compare_solver args (solver : solver) (other : solver) = 
-  if (String.equal solver.name other.name) then {solver = solver; other = other; comp_strategies = []}
+  if (solver.name <= other.name) then {solver = solver; other = other; comp_strategies = []}
   else
   {solver = solver; other = other; comp_strategies = List.map (compare_strategies args solver other) solver.strategies;}
 
@@ -395,6 +401,7 @@ let file_to_open args =
   |1 -> ""
   |2 -> ""
   |3 -> "bench-analyzer/src/instances_inclusion/data/"^args.file
+  |4 -> "bench-analyzer/src/cactus_plot/data/"^args.file
   |_ -> failwith "nothing to export"
 
 let write_in_file args json =
@@ -405,13 +412,28 @@ let write_in_file args json =
   close_out oc
 
 let remove_last_char chars =
-  String.sub chars 0 (String.length chars -1)
+  let size = String.length chars in 
+  if size > 0 then
+    String.sub chars 0 ((String.length chars) -1)
+  else chars 
+
+let hash_to_json_cactus strat1 strat2 args =
+  let rec hash_to_json_cactus_rec strat1 strat2 keys times =
+  match keys with   
+  |[] -> "["^(remove_last_char times)^"]"
+  |k::keys -> let (t,_) = (Hashtbl.find strat1.all k) in 
+    let (t',_) = (Hashtbl.find strat2.all k) in
+    let (t,t') = ((float_option_to_string t args),(float_option_to_string t' args)) in
+    let time = "{"^"\"x\":"^t^",\"y\":"^t'^"}," in
+    hash_to_json_cactus_rec strat1 strat2 keys (times^time)
+  in hash_to_json_cactus_rec strat1 strat2 (get_keys strat1.all) ""
 
 let json_name args =
   match args.action with 
   |1 -> "\"Instances differencie\""
   |2 -> "\"Instances comparison\""
   |3 -> "\"Instances inclusion\""
+  |4 -> "\"Cactus plot\""
   |_ -> ""
 
 let to_json_solver_strategy args problem (instance : instances_set) all (comp_solver_strategy : comp_solver_strategy) =
@@ -421,14 +443,15 @@ let to_json_solver_strategy args problem (instance : instances_set) all (comp_so
   let solver2 = "\""^comp_solver_strategy.other.name^"\"" in
   let strat1 = "\""^comp_solver_strategy.solver_strategy.name^"\"" in
   let strat2 = "\""^comp_solver_strategy.other_strategy.name^"\"" in
-
   match args.action with 
   |1 -> ""
   |2 -> ""
   |3 -> let set = comp_solver_strategy.instances_inclusion in
-      let labels = "[\"inter\",\"exter\",\"only_1st_solver \",\"only_2nd_solver\"]" in
+      let labels = "[\"inter\",\"exter\",\"only "^comp_solver_strategy.solver.name^" with "^comp_solver_strategy.solver_strategy.name^ "\",\"only "^comp_solver_strategy.other.name^" with "^comp_solver_strategy.other_strategy.name^" \"]" in
       let data = "["^(string_of_int (List.length set.inter))^","^(string_of_int (List.length set.exter))^","^(string_of_int (List.length set.only_s1))^","^(string_of_int (List.length set.only_s2))^"]"in 
   all^("{\"problem\":"^prob^",\"instance\":"^inst^",\"solver1\":"^solver1^",\"solver2\":"^solver2^",\"strat1\":"^strat1^",\"strat2\":"^strat2^",\"labels\":"^labels^",\"data\":"^data^"},")
+  |4 -> let points = hash_to_json_cactus comp_solver_strategy.solver_strategy comp_solver_strategy.other_strategy args in 
+  all^("{\"problem\":"^prob^",\"instance\":"^inst^",\"solver1\":"^solver1^",\"solver2\":"^solver2^",\"strat1\":"^strat1^",\"strat2\":"^strat2^",\"points\":"^points^"},")
   |_ -> ""
 
 (*let to_json_solver_strategies args problem instance all comp_solver_strategies =
@@ -453,7 +476,7 @@ let to_json_instances comp_database args =
   List.fold_left (to_json_problem args) "" comp_database
 
 let to_json comp_database args = 
-  let json = "{\"name\":"^(json_name args)^",\"timeout\":"^(remove_last_char (string_of_float args.timeout))^",\"instances\":["^(remove_last_char (to_json_instances comp_database args))^"]}" in
+  let json = "{\"name\":"^(json_name args)^",\"timeout\":"^((string_of_float args.timeout)^"0")^",\"instances\":["^(remove_last_char (to_json_instances comp_database args))^"]}" in
   write_in_file args json
 
 let exec args database =
@@ -466,6 +489,8 @@ let exec args database =
   |3 -> let comp_database = List.map (compare_problem args) database in
       print_comp_database comp_database 3;
       to_json comp_database args 
+  |4 -> let comp_database = List.map (compare_problem args) database in
+      to_json comp_database args
   |_ -> ()
 
 
