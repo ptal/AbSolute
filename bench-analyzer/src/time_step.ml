@@ -173,12 +173,12 @@ let check_ext file =
     raise (Json "not a json file")
 
 let _ = let timeout = 60 in
-  let steps = 10 in 
-  let file = "bench-analyzer/src/time_step/data/arg.json" in
+  let steps = 45 in 
+  let file = "bench-analyzer/src/time_step/data/bacp45steps.json" in
   (*let args = read_args ()*)
   try 
     check_ext file;
-    let (database : database) = read_database "benchmark/database/" in
+    let (database : database) = read_database "benchmark/example/" in
     let (database : database) = process_database database in
     let database = append_problems database in
     let one_step = timeout / steps in 
