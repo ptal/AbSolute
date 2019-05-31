@@ -1,26 +1,27 @@
 open Var_store
+open Box_representation
 
 module type Variable_order = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val select: Store.t -> (Csp.var * Store.cell) option
+  val select: Store.t -> (Store.key * Store.cell) option
 end with module Store=S
 
 module type Value_order = functor (I: Itv_sig.ITV) ->
 sig
   module I: Itv_sig.ITV
-  val select: I.t -> Csp.expr
+  val select: I.t -> box_expr
 end with module I=I
 
 module type Distributor =
 sig
-  val distribute: Csp.var -> Csp.expr -> Csp.bconstraint list
+  val distribute: box_var -> box_expr -> box_constraint list
 end
 
 module type Box_split_sig = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val split: Store.t -> Csp.bconstraint list
+  val split: Store.t -> box_constraint list
 end with module Store=S
 
 module Input_order(Store: Var_store_sig) =
@@ -28,7 +29,7 @@ struct
   module Store = Store
   module I = Store.I
 
-  exception Found_var of Csp.var * I.t
+  exception Found_var of box_var * I.t
   let select store =
     try
       Store.iter (fun v d -> if not (I.is_singleton d) then raise (Found_var (v,d))) store;
@@ -44,7 +45,7 @@ struct
   let select store width_cmp =
     let size (l,h) = B.sub_up h l in
     let var =
-      Store.fold (fun v d a ->
+      Store.fold (fun a v d ->
         if I.is_singleton d then a
         else
           let width = size (I.to_range d) in
@@ -52,7 +53,7 @@ struct
           | Some (best,_,_) when width_cmp width best -> Some (width,v,d)
           | Some _ -> a
           | None -> Some (width,v,d))
-      store None in
+      None store in
     match var with
     | Some (_, v,d) -> Some (v,d)
     | None -> None

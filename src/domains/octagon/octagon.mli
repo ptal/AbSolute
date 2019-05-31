@@ -46,7 +46,7 @@ sig
 
   val state_decomposition: t -> kleene
 
-  val print: Format.formatter -> R.t -> t -> unit
+  val print: R.t -> Format.formatter -> t -> unit
 
   (** Low-level access to the DBM. *)
   val unwrap: t -> DBM.t

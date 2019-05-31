@@ -1,41 +1,52 @@
 open Var_store
 open Abstract_domain
+open Box_representation
 
 module type Box_sig =
 sig
   type t
   module I: Itv_sig.ITV
-  module R = Logical_representation
+  module R = Box_rep
   type itv = I.t
   type bound = I.B.t
 
-  (** Initialize the box with variables and constraints.
-      The box returned is not closed, therefore you should apply `closure` to this box right after initialization. *)
-  val init: Csp.var list -> Csp.bconstraint list -> t
+  (** Creates an empty box. *)
+  val empty: t
 
-  (* Get the interval of the variable `v`. *)
-  val get: t -> R.rvar -> itv
+  (** Add a variable into the box. *)
+  val extend: t -> R.var_kind -> (t * R.var_id)
 
-  (* Projection of the variables according to their names. *)
-  val project_one: t -> R.rvar -> (bound * bound)
-  val project: t -> R.rvar list -> (R.rvar * (bound * bound)) list
+  (** Projection of a variable according to its location in the box. *)
+  val project: t -> R.var_id -> (I.B.t * I.B.t)
 
-  (** Add the constraint `c` into the box.
-      Precondition: The variables in `c` must range over the current store.
-      The store of variables is left unchanged, and `closure` should be applied. *)
-  val weak_incremental_closure: t -> R.rconstraint -> t
+  (** `project_itv box v` projects the interval of the variable `v`. *)
+  val project_itv: t -> R.var_id -> itv
 
-  (** Closure of the store with regards to all constraints in the box.
+  (** See `Abstract_domain.lazy_copy`. *)
+  val lazy_copy: t -> int -> t list
+
+  (** See `Abstract_domain.copy`. *)
+  val copy: t -> t
+
+    (** Closure of the store with regards to all constraints in the box.
       A fixed point is reached when no constraint can be propagated anymore.
       The entailed constraints are removed from the box.
       Throw `Bot_found` one of the constraints is unsatisfiable. *)
   val closure: t -> t
+
+  (** Add the constraint `c` into the box.
+      Precondition: The variables in `c` must range over the current store.
+      The store of variables is left unchanged, and `closure` should be applied to reduce the box. *)
+  val weak_incremental_closure: t -> R.rconstraint -> t
 
   (** Equivalent to `closure (weak_incremental_closure box c)`. *)
   val incremental_closure: t -> R.rconstraint -> t
 
   (** Return the entailment status of the constraint in `box`. *)
   val entailment: t -> R.rconstraint -> kleene
+
+  (** See `Abstract_domain.split`. *)
+  val split: t -> t list
 
   (** Compute the volume of the box.
       We return `1.` if the box only contain singleton domain. *)
@@ -47,10 +58,7 @@ sig
   val state_decomposition: t -> kleene
 
   (** Print the variables store and the remaining constraints (those not yet entailed). *)
-  val print: Format.formatter -> t -> unit
-
-  (** See `Abstract_domain`. *)
-  val split: t -> t list
+  val print: R.t -> Format.formatter -> t -> unit
 end
 
 module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B

@@ -21,7 +21,7 @@ sig
   val split: t -> t list
   val volume: t -> float
   val state_decomposition: t -> kleene
-  val print: Format.formatter -> R.t -> t -> unit
+  val print: R.t -> Format.formatter -> t -> unit
   val unwrap: t -> DBM.t
 end
 
@@ -50,7 +50,7 @@ struct
 
   let project octagon itv = Itv_view.dbm_to_itv itv (DBM.project octagon.dbm itv)
 
-  let lazy_copy octagon n = List.map (fun dbm -> {octagon with dbm=dbm}) (DBM.copy_n octagon.dbm n)
+  let lazy_copy octagon n = List.map (fun dbm -> {octagon with dbm=dbm}) (DBM.lazy_copy octagon.dbm n)
   let copy octagon = {octagon with dbm=(DBM.copy octagon.dbm)}
 
   let entailment octagon oc =
@@ -114,7 +114,7 @@ struct
       B.mul_up a (volume_of octagon itv)
     ) B.one (DBM.dimension octagon.dbm))
 
-  let print fmt _ octagon = DBM.print fmt octagon.dbm
+  let print _ fmt octagon = DBM.print fmt octagon.dbm
   let unwrap octagon = octagon.dbm
 end
 

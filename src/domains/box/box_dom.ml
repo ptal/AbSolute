@@ -1,26 +1,29 @@
 open Var_store
 open Abstract_domain
+open Box_representation
 
 module type Box_sig =
 sig
   type t
   module I: Itv_sig.ITV
-  module R = Logical_representation
+  module R = Box_rep
   type itv = I.t
   type bound = I.B.t
 
-  val init: Csp.var list -> Csp.bconstraint list -> t
-  val get: t -> R.rvar -> itv
-  val project_one: t -> R.rvar -> (bound * bound)
-  val project: t -> R.rvar list -> (R.rvar * (bound * bound)) list
-  val weak_incremental_closure: t -> R.rconstraint -> t
+  val empty: t
+  val extend: t -> R.var_kind -> (t * R.var_id)
+  val project: t -> R.var_id -> (I.B.t * I.B.t)
+  val project_itv: t -> R.var_id -> itv
+  val lazy_copy: t -> int -> t list
+  val copy: t -> t
   val closure: t -> t
+  val weak_incremental_closure: t -> R.rconstraint -> t
   val incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> kleene
+  val split: t -> t list
   val volume: t -> float
   val state_decomposition: t -> kleene
-  val print: Format.formatter -> t -> unit
-  val split: t -> t list
+  val print: R.t -> Format.formatter -> t -> unit
 end
 
 module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
@@ -38,7 +41,7 @@ struct
   module Split = SPLIT(Store)
   module I = Store.I
   module B = I.B
-  module R = Logical_representation
+  module R = Box_rep
   type itv = I.t
   type bound = I.B.t
   type t = {
@@ -53,21 +56,28 @@ struct
   let failure_disentailment () =
     failwith "Found a constraint that is disentailed and Bot_found has not been raised."
 
-  let init vars constraints =
-    let store = List.fold_left (fun box name -> Store.add name I.top box) Store.empty vars in
-    { store = store; constraints = constraints }
+  let empty = {
+    store=Store.empty;
+    constraints=[];
+  }
 
-  let get box v = Store.find v box.store
+  let extend box () =
+    let (store, idx) = Store.extend box.store in
+    ({ box with store = store }, idx)
 
-  let project_one box v = I.to_range (get box v)
-  let project box vars = Store.fold (fun v d l -> (v, I.to_range d)::l) box.store []
+  let project_itv box v = Store.get box.store v
+
+  let project box v = I.to_range (project_itv box v)
+
+  let lazy_copy box n = List.map (fun s -> { box with store=s }) (Store.lazy_copy box.store n)
+  let copy box = { box with store=Store.copy box.store }
 
   let volume box =
     let range (l,h) =
       if B.equal l h then B.one
       else B.add_up (B.sub_up h l) B.one in
     let size itv = range (I.to_range itv) in
-    let vol = B.to_float_up (Store.fold (fun _ x v -> B.mul_up (size x) v) box.store B.one) in
+    let vol = B.to_float_up (Store.fold (fun acc _ itv -> B.mul_up (size itv) acc) B.one box.store) in
     if classify_float vol = FP_infinite || classify_float vol = FP_nan then
       infinity
     else
@@ -112,14 +122,18 @@ struct
     else
       Unknown
 
-  let print fmt box =
+  let print repr fmt box =
   begin
-    Store.print fmt box.store;
+    Store.print fmt repr box.store;
     Format.fprintf fmt "\n";
-    List.iter (Format.fprintf fmt "%a\n" Csp.print_bconstraint) box.constraints;
+    let print_var fmt v = Csp.print_var fmt (R.to_logic_var repr v) in
+    List.iter (Format.fprintf fmt "%a\n" (Csp.print_gconstraint print_var)) box.constraints;
   end
 
-  let split box = List.map (weak_incremental_closure box) (Split.split box.store)
+  let split box =
+    let branches = Split.split box.store in
+    let boxes = lazy_copy box (List.length branches) in
+    List.map2 weak_incremental_closure boxes branches
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->

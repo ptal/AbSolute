@@ -1,26 +1,27 @@
 open Var_store
+open Box_representation
 
 module type Variable_order = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val select: Store.t -> (Csp.var * Store.cell) option
+  val select: Store.t -> (Store.key * Store.cell) option
 end with module Store=S
 
 module type Value_order = functor (I: Itv_sig.ITV) ->
 sig
   module I: Itv_sig.ITV
-  val select: I.t -> Csp.expr
+  val select: I.t -> box_expr
 end with module I=I
 
 module type Distributor =
 sig
-  val distribute: Csp.var -> Csp.expr -> Csp.bconstraint list
+  val distribute: box_var -> box_expr -> box_constraint list
 end
 
 module type Box_split_sig = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val split: Store.t -> Csp.bconstraint list
+  val split: Store.t -> box_constraint list
 end with module Store=S
 
 module Input_order : Variable_order

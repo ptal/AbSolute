@@ -1,4 +1,4 @@
-open Abstract_domain
+(* open Abstract_domain
 open Box_dom
 
 (* This module equips `Box_dom` with reified constraints. *)
@@ -33,3 +33,4 @@ module Make(Box: Box_sig) : Box_reified_sig
 module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) : Box_reified_sig
 module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) : Box_reified_sig
 module BoxReifiedF(SPLIT: Box_split.Box_split_sig) : Box_reified_sig
+ *)

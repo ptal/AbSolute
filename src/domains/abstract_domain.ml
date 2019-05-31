@@ -124,5 +124,5 @@ sig
   val state_decomposition: t -> kleene
 
   (** Print the current element in the abstract domain using the initial names of variables. *)
-  val print: Format.formatter -> R.t -> t -> unit
+  val print: R.t -> Format.formatter -> t -> unit
 end

@@ -2,12 +2,13 @@ open Var_store
 open Csp
 open Abstract_domain
 open Bot
+open Box_representation
 
 module type Box_closure_sig = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val incremental_closure: Store.t -> bconstraint -> Store.t
-  val entailment: Store.t -> bconstraint -> kleene
+  val incremental_closure: Store.t -> box_constraint -> Store.t
+  val entailment: Store.t -> box_constraint -> kleene
 end with module Store=S
 
 module Make(Store: Var_store_sig) =
@@ -22,7 +23,7 @@ struct
     | BFuncall of string * node list
     | BUnary   of unop * node
     | BBinary  of binop * node * node
-    | BVar     of var
+    | BVar     of Store.key
     | BCst     of I.t
   and node = node_kind * I.t
 
@@ -43,7 +44,7 @@ struct
      let r = debot (I.eval_fun name iargs) in
      BFuncall(name, bargs),r
   | Var v ->
-      let r = Store.find v store in
+      let r = Store.get store v in
       BVar v, r
   | Cst (c,_) ->
       let r = I.of_rat c in
@@ -110,7 +111,7 @@ struct
      let nodes_kind, itv = List.split args in
      let res = I.filter_fun name itv root in
      List.fold_left2 refine store (debot res) nodes_kind
-  | BVar v -> Store.add v (debot (I.meet root (Store.find v store))) store
+  | BVar v -> Store.set store v (debot (I.meet root (Store.get store v)))
   | BCst i -> ignore (debot (I.meet root i)); store
   | BUnary (o,(e1,i1)) ->
      let j = match o with
