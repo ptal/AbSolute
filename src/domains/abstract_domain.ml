@@ -34,16 +34,24 @@ exception Wrong_modelling of string
 module type Representation_sig =
 sig
   type t
-  (* Variable ID as represented in the abstract domain. *)
-  type rvar
-  (* Constraint representation in the abstract domain. *)
+
+  (** Kind of the variable in the abstract domain. *)
+  type var_kind
+
+  (** Variable ID as represented in the abstract domain. *)
+  type var_id
+
+  (** Constraint representation in the abstract domain. *)
   type rconstraint
 
-  (** Initialize the rewriter with the map between logical variables and abstract domain's variables. *)
-  val init: (Csp.var * rvar) list -> t
+  (** An empty representation. *)
+  val empty: t
 
-  val to_logic_var: t -> rvar -> Csp.var
-  val to_abstract_var: t -> Csp.var -> rvar
+  (** Add a mapping between a logical variable and its representation in the abstract domain. *)
+  val extend: t -> (Csp.var * var_id) -> t
+
+  val to_logic_var: t -> var_id -> Csp.var
+  val to_abstract_var: t -> Csp.var -> var_id
 
   (** Rewrite a logic constraint into an abstract constraint. *)
   val rewrite: t -> Csp.bconstraint -> rconstraint list
@@ -68,11 +76,24 @@ sig
   (** The type of the abstract domain. *)
   type t
 
-  (** Project the lower and upper bounds of a single variable. *)
-  val project_one: t -> R.rvar -> (B.t * B.t)
+  (** An empty abstract domain. *)
+  val empty: t
 
-  (** Project the lower and upper bounds of all the variables in `vars`. *)
-  val project: t -> R.rvar list -> (R.rvar * (B.t * B.t)) list
+  (** Extend the abstract domain with a variable.
+      An abstract domain can handle variables of different kind, the meaning of "kind" is proper to the abstract domain. *)
+  val extend: t -> R.var_kind -> (t * R.var_id)
+
+  (** Project the lower and upper bounds of a single variable. *)
+  val project: t -> R.var_id -> (B.t * B.t)
+
+  (** `lazy_copy a n` creates `n` copies of the element `a` with the assumption that this one will not be used anymore, thus it might be returned in the copied list.
+      Internally, some informations can be shared by the different copies (until they are modified).
+      This function is useful in a backtracking algorithm. *)
+  val lazy_copy: t -> int -> t list
+
+  (** `copy a` copies the element `a`.
+      This function is useful in "probe" algorithm where we perform computations that we do not want to impact the current node. *)
+  val copy: t -> t
 
   (** Closure of the abstract domain: it tries to remove as much inconsistent values as possible from the abstract element according to the constraints encapsulated. *)
   val closure: t -> t
@@ -81,6 +102,12 @@ sig
       This operation is in constant time and must not perform any closure algorithm.
       It can however raise `Bot_found` if the constraint is detected disentailed in constant time. *)
   val weak_incremental_closure: t -> R.rconstraint -> t
+
+  (** `entailment a c` returns `True` if the constraint `c` is entailed by the abstract domain `a`.
+      Being entailed means that the constraint is redundant in comparison to the information already in `a`.
+      It returns `False` if adding `c` to `a` would make the element inconsistant.
+      If `c` can become either `True` or `False` in the future, then `Unknown` is returned. *)
+  val entailment: t -> R.rconstraint -> kleene
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split t` should be equal to `t`. *)
@@ -93,22 +120,9 @@ sig
   val volume: t -> float
 
   (** An element belongs to one category: failed, satisfiable and unknown.
-      Note that this function cannot be recovered from `volume` because `state_decomposition` can return satisfiable even if `volume t > 1` on Z or a given precision on F and Q. *)
+      Note that this function cannot be recovered from `volume` because `state_decomposition` can return satisfiable even if `volume t > 1` on integers or a given precision on floating numbers and rational. *)
   val state_decomposition: t -> kleene
+
+  (** Print the current element in the abstract domain using the initial names of variables. *)
+  val print: Format.formatter -> R.t -> t -> unit
 end
-
-(** This is a default abstract representation in case the abstract domain directly manipulates the logic specification. *)
-module Logical_representation =
-struct
-  type rvar = Csp.var
-  type rconstraint = Csp.bconstraint
-  type t = ()
-
-  let init _ : t = ()
-  let to_logic_var _ v = v
-  let to_abstract_var _ v = v
-  let rewrite _ c = [c]
-  let relax _ c = [c]
-  let negate = Csp.neg_bconstraint
-end
-

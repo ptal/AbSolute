@@ -42,11 +42,13 @@ struct
     ) accu (Tools.range 0 (dimension-1))
 end
 
+let make_canonical_itv k = as_interval {l=k*2; c=k*2+1}
+
 module Fold_intervals_canonical =
 struct
   let fold f accu dimension =
     List.fold_left (fun accu k ->
-      f accu (as_interval {l=k*2; c=k*2+1})
+      f accu (make_canonical_itv k)
     ) accu (Tools.range 0 (dimension-1))
 end
 
@@ -66,6 +68,7 @@ end
 module type Array_store_sig =
 sig
   type 'a t
+  val init : int -> (int -> 'a) -> 'a t
   val make : int -> 'a -> 'a t
   val get : 'a t -> int -> 'a
   val set' : 'a t -> int -> 'a -> 'a t
@@ -96,6 +99,8 @@ sig
   type bound = B.t
   type t
   val init: int -> t
+  val empty: t
+  val extend: t -> (t * dbm_interval)
   val get : t -> dbm_var -> bound
   val set : t -> bound dbm_constraint -> t
   val project: t -> dbm_interval -> (bound * bound)
@@ -117,6 +122,15 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
   let init n =
     let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
     {dim=n; m=A.make (size n) B.inf}
+
+  let empty = {dim=0; m=A.make 0 B.inf}
+
+  let extend dbm =
+    let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
+    let n = size dbm.dim in
+    let n' = size (dbm.dim+1) in
+    let dbm' = {dim=n'; m=A.init n (fun i -> if i < n then A.get dbm.m i else B.inf)} in
+    (dbm', make_canonical_itv dbm.dim)
 
   (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
   let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
