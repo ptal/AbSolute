@@ -12,13 +12,25 @@ let fzn_file = "tmp.fzn"
 let output_file = "out.txt"
 let error_file = "err.txt"
 
+let make_unique_file_name name =
+  let rec aux name i =
+    let base = Filename.remove_extension name in
+    let ext = Filename.extension name in
+    let path = "/tmp/" ^ base ^ (string_of_int i) ^ "." ^ ext in
+    if Sys.file_exists path then
+      aux name (i+1)
+    else
+     path
+  in
+  aux name 0
+
 let create_file data name =
   let oc = open_out name in
   fprintf oc "%s\n" data;
   close_out oc
 
-let create_dzn_file data = create_file data dzn_file
-let create_mzn_file data = create_file data mzn_file
+let create_dzn_file data dzn_file = create_file data dzn_file
+let create_mzn_file data mzn_file = create_file data mzn_file
 
 let mzn_solver_output_to_entries lines =
   let is_mzn_entry l = if String.length l > 0 then l.[0] = '%' else false in
@@ -80,6 +92,8 @@ let solver_time_option (solver: solver_config) time =
 
 let run_mzn_bench bench solver problem_path fzn_file =
   let time = string_of_int (bench.timeout * 1000) in
+  let output_file = make_unique_file_name output_file in
+  let error_file = make_unique_file_name error_file in
   let command = solver.Bench_desc_j.exec ^
     (solver_time_option solver time) ^ " " ^
     fzn_file ^
@@ -127,19 +141,22 @@ let create_mzn_model mzn_instance =
   let search = create_search_annot mzn_instance.strategy in
   model ^ "\n" ^ search
 
-let create_fzn_file solver mzn_file dzn_file =
+let create_fzn_file solver mzn_file dzn_file fzn_file =
   let command = "mzn2fzn --no-optimize -I " ^ solver.Bench_desc_j.globals ^ " -o " ^ fzn_file ^ " " ^ mzn_file ^ " " ^ dzn_file in
   ignore (call_command command)
 
 let bench_mzn_instance bench mzn_instance problem_path =
   let model = create_mzn_model mzn_instance in
-  create_mzn_file model;
+  let mzn_file = make_unique_file_name mzn_file in
+  create_mzn_file model mzn_file;
   let rcpsp = read_rcpsp problem_path in
   if (List.length rcpsp.projects) > 1 then System.eprintf_and_exit "MiniZinc model for multi-project RCPSP is not yet supported.";
   let project = List.hd rcpsp.projects in
   let data = make_dzn_data rcpsp project in
-  create_dzn_file data;
-  create_fzn_file mzn_instance.solver mzn_file dzn_file;
+  let dzn_file = make_unique_file_name dzn_file in
+  let fzn_file = make_unique_file_name fzn_file in
+  create_dzn_file data dzn_file;
+  create_fzn_file mzn_instance.solver mzn_file dzn_file fzn_file;
   run_mzn_bench bench mzn_instance.solver problem_path fzn_file
 
 let bench_minizinc bench mzn_instance =
@@ -170,8 +187,10 @@ let make_mzn_model model mzn_annot =
 let bench_decomposed_instance bench (instance: decomposed_instance) problem_path =
   let rcpsp = create_rcpsp (read_rcpsp problem_path) in
   let model = make_mzn_model rcpsp instance.strategy.Bench_desc_j.mzn_annot in
-  create_mzn_file model;
-  create_fzn_file instance.solver mzn_file "";
+  let mzn_file = make_unique_file_name mzn_file in
+  let fzn_file = make_unique_file_name fzn_file in
+  create_mzn_file model mzn_file;
+  create_fzn_file instance.solver mzn_file "" fzn_file;
   run_mzn_bench bench instance.solver problem_path fzn_file
 
 let bench_decomposed_mzn bench instance =

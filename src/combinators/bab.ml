@@ -14,16 +14,16 @@ end
 module Make(Domain: Abstract_domain) =
 struct
   type t = {
-    rep: Domain.R.t;
+    repr: Domain.R.t;
     domain: Domain.t;
     print_node: string -> int -> Domain.t -> unit;
     print_bound: Domain.t -> unit;
   }
 
-  let init ?print_node:(pn=(fun _ _ _ -> ())) ?print_bound:(pb=(fun _ -> ())) rep domain =
-    {rep=rep; domain=domain; print_node=pn; print_bound=pb; }
+  let init ?print_node:(pn=(fun _ _ _ -> ())) ?print_bound:(pb=(fun _ -> ())) repr domain =
+    {repr=repr; domain=domain; print_node=pn; print_bound=pb; }
 
-  let optimize rep op x best domain =
+  let optimize repr op x best domain =
     let open Csp in
     match best with
     | None -> domain
@@ -31,8 +31,8 @@ struct
         let (_,ub) = Domain.project best x in
         let annot = if Domain.B.is_continuous then Real else Int in
         let ub = Cst (Domain.B.to_rat ub, annot) in
-        let x = Domain.R.to_logic_var rep x in
-        let optimization_constraint = Domain.R.rewrite rep (Var x, op, ub) in
+        let x = Domain.R.to_logic_var repr x in
+        let optimization_constraint = Domain.R.rewrite repr (Var x, op, ub) in
         List.fold_left Domain.weak_incremental_closure domain optimization_constraint
 
   let bab op this timeout x =
@@ -41,9 +41,9 @@ struct
       (* Stop when we exceed the timeout. *)
       let elapsed = Mtime_clock.count stats.start in
       if (Mtime.Span.compare timeout elapsed) <= 0 then (best,stats) else
+      let stats = {stats with nodes=(stats.nodes+1)} in
       try
-        let stats = {stats with nodes=(stats.nodes+1)} in
-        let domain = optimize this.rep op x best domain in
+        let domain = optimize this.repr op x best domain in
         let domain = Domain.closure domain in
         match Domain.state_decomposition domain with
         | False ->

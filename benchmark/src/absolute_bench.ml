@@ -50,8 +50,10 @@ end
 module Bencher(Rcpsp_domain: RCPSP_sig) =
 struct
   module R = Rcpsp_domain.R
+  module BAB = Bab.Make(Rcpsp_domain)
 
-  let makespan repr rcpsp domain = Rcpsp_domain.project domain (R.to_abstract_var repr rcpsp.makespan)
+  let makespan_id repr rcpsp = R.to_abstract_var repr rcpsp.makespan
+  let makespan repr rcpsp domain = Rcpsp_domain.project domain (makespan_id repr rcpsp)
 
   (* I. Printing utilities. *)
 
@@ -88,54 +90,7 @@ struct
         print_variables repr domain rcpsp.octagonal_vars
     end
 
-  (* II. Branch and bound support. *)
-
-  let constraint_makespan repr rcpsp best domain =
-    let open Csp in
-    match best with
-    | None -> domain
-    | Some best ->
-        let (_,ub) = makespan repr rcpsp best in
-        let ub = Cst (Rcpsp_domain.B.to_rat ub, Int) in
-        let r = R.rewrite repr (Var rcpsp.makespan, LT, ub) in
-        List.fold_left Rcpsp_domain.weak_incremental_closure domain r
-
-  let solve bench stats print_node print_makespan rcpsp =
-  begin
-    let time_out = timeout_of_bench bench in
-    let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
-    let rec aux depth (best, stats) domain = begin
-      (* Stop when we exceed the timeout. *)
-      let open State in
-      let elapsed = Mtime_clock.count stats.start in
-      if (Mtime.Span.compare time_out elapsed) <= 0 then (best,stats) else
-      try
-        let stats = {stats with nodes=(stats.nodes+1)} in
-        let domain = constraint_makespan repr rcpsp best domain in
-        let domain = Rcpsp_domain.closure domain in
-        match Rcpsp_domain.state_decomposition domain with
-        | False ->
-            print_node "false'" rcpsp depth domain;
-            (best, {stats with fails=(stats.fails+1)})
-        | True when (Rcpsp_domain.volume domain) = 1. ->
-            print_makespan rcpsp domain;
-            print_node "true" rcpsp depth domain;
-            (Some domain, {stats with sols=(stats.sols+1)})
-        | x ->
-            let status = match x with True -> "almost true" | Unknown -> "unknown" | _ -> failwith "unreachable" in
-            print_node status rcpsp depth domain;
-            let branches = Rcpsp_domain.split domain in
-            List.fold_left (aux (depth+1)) (best,stats) branches
-      with Bot.Bot_found ->
-      begin
-        print_node "false" rcpsp depth domain;
-        (best, {stats with fails=(stats.fails+1)})
-      end
-    end in
-    repr, aux 0 (None,stats) domain
-  end
-
-  (* III. Bench and processing of the results. *)
+  (* II. Bench and processing of the results. *)
 
   let update_with_optimum repr rcpsp best measure =
     match best with
@@ -148,8 +103,10 @@ struct
   let bench_problem bench problem_path =
     try
       let rcpsp = Rcpsp_model.create_rcpsp (read_rcpsp problem_path) in
-      let stats = State.init_global_stats () in
-      let repr, (best, stats) = solve bench stats no_print no_print_makespan rcpsp in
+      let timeout = timeout_of_bench bench in
+      let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
+      let solver = BAB.init repr domain in
+      let (best, stats) = BAB.minimize solver timeout (makespan_id repr rcpsp) in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
       let measure = Measurement.init stats problem_path in
       let measure = Measurement.update_time bench stats measure in
