@@ -1,11 +1,12 @@
 open Abstract_domain
 open Dbm
+open Octagon_representation
 
 module type Octagon_sig =
 sig
   module DBM : DBM_sig
   module B = DBM.B
-  module R : Representation_sig
+  module R : Octagon_rep_sig
   type t
 
   (** Create an empty octagon. *)

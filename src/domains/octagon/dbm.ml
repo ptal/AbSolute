@@ -129,7 +129,7 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
     let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
     let n = size dbm.dim in
     let n' = size (dbm.dim+1) in
-    let dbm' = {dim=n'; m=A.init n' (fun i -> if i < n then A.get dbm.m i else B.inf)} in
+    let dbm' = {dim=(dbm.dim+1); m=A.init n' (fun i -> if i < n then A.get dbm.m i else B.inf)} in
     (dbm', make_canonical_itv dbm.dim)
 
   (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)

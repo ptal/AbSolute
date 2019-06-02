@@ -24,7 +24,7 @@ let rec generic_rewrite c =
   | e1, EQ, e2 -> (generic_rewrite (e1, LEQ, e2))@(generic_rewrite (e1, GEQ, e2))
   | c -> [c]
 
-module type Octagon_rep_sig = functor (B: Bound_sig.BOUND) ->
+module type Octagon_rep_sig =
 sig
   module B: Bound_sig.BOUND
   type t
@@ -38,7 +38,7 @@ sig
   val rewrite: t -> bconstraint -> rconstraint list
   val relax: t -> bconstraint -> rconstraint list
   val negate: rconstraint -> rconstraint
-end with module B=B
+end
 
 module Octagon_rep(B: Bound_sig.BOUND) =
 struct

@@ -6,8 +6,8 @@ open System
 module type RCPSP_sig =
 sig
   include Abstract_domain.Abstract_domain
-  val init_rcpsp: rcpsp_model -> t
-end with type R.rvar = Csp.var and type R.rconstraint = Csp.bconstraint
+  val init_rcpsp: rcpsp_model -> R.t * t
+end
 
 module type Bencher_sig =
 sig
@@ -20,7 +20,13 @@ struct
 
   let init_rcpsp rcpsp =
     let vars = (rcpsp.box_vars)@(rcpsp.octagonal_vars) in
-    init vars rcpsp.constraints rcpsp.reified_bconstraints
+    let extend (dom,repr) v =
+      let (dom,idx) = (extend dom ()) in
+      (dom, R.extend repr (v, idx)) in
+    let domain, repr = List.fold_left extend (empty,R.empty) vars in
+    let constraints = List.flatten (List.map (R.rewrite repr) rcpsp.constraints) in
+    let reified_cons = List.flatten (List.map (fun (b,c) -> R.rewrite_reified repr b c) rcpsp.reified_bconstraints) in
+    repr, List.fold_left weak_incremental_closure domain (constraints@reified_cons)
 end
 
 module RCPSP_Octagon(SPLIT: Octagon_split.Octagon_split_sig) : RCPSP_sig =
@@ -29,18 +35,31 @@ struct
     (Box_dom.Box_base(Box_split.First_fail_bisect))
     (Octagon.OctagonZ(SPLIT))
 
-  let init_rcpsp rcpsp = init rcpsp.box_vars rcpsp.octagonal_vars rcpsp.constraints rcpsp.reified_bconstraints
+  let init_rcpsp rcpsp =
+    let extend kind (dom,repr) v =
+      let (dom,idx) = (extend dom kind) in
+      (dom, R.extend repr (v, idx)) in
+    let domain, repr = List.fold_left (extend (R.BoxKind ())) (empty,R.empty) rcpsp.box_vars in
+    let domain, repr = List.fold_left (extend (R.OctKind ())) (domain, repr) rcpsp.octagonal_vars in
+    let constraints = List.flatten (List.map (R.rewrite repr) rcpsp.constraints) in
+    let reified_cons = List.flatten (List.map (fun (b,c) -> R.rewrite_reified repr b c) rcpsp.reified_bconstraints) in
+    repr, List.fold_left weak_incremental_closure domain (constraints@reified_cons)
 end
 
 (* This module benches a repository of files with the parametrized abstract domain. *)
 module Bencher(Rcpsp_domain: RCPSP_sig) =
 struct
-  let makespan rcpsp domain = Rcpsp_domain.project_one domain rcpsp.makespan
+  module R = Rcpsp_domain.R
+
+  let makespan repr rcpsp domain = Rcpsp_domain.project domain (R.to_abstract_var repr rcpsp.makespan)
 
   (* I. Printing utilities. *)
 
-  let print_variables domain vars =
-    let vars = Rcpsp_domain.project domain vars in
+  let print_variables repr domain vars =
+    let values = List.map
+      (Rcpsp_domain.project domain)
+      (List.map (R.to_abstract_var repr) vars) in
+    let vars = List.combine vars values in
     begin
       List.iter (fun (v, (l, u)) ->
         let (l, u) = (Rcpsp_domain.B.to_string l, Rcpsp_domain.B.to_string u) in
@@ -49,40 +68,42 @@ struct
     end
   let print_depth depth = List.iter (fun _ -> Printf.printf(".")) (Tools.range 0 (depth-1))
   let no_print _ _ _ _ = ()
-  let print_node with_var status rcpsp depth domain =
+  let print_node repr with_var status rcpsp depth domain =
   begin
     print_depth depth;
     Printf.printf "[%s][%f]" status (Rcpsp_domain.volume domain);
     if with_var then (
-      print_variables domain rcpsp.octagonal_vars;
-      print_variables domain rcpsp.box_vars);
+      print_variables repr domain rcpsp.octagonal_vars;
+      print_variables repr domain rcpsp.box_vars);
     Printf.printf "\n";
     flush_all ()
   end
 
   let no_print_makespan _ _ = ()
-  let print_makespan with_var rcpsp domain =
-    let (lb,ub) = makespan rcpsp domain in
+  let print_makespan repr with_var rcpsp domain =
+    let (lb,ub) = makespan repr rcpsp domain in
     begin
       Printf.printf "makespan: (%s,%s)\n" (Rcpsp_domain.B.to_string lb) (Rcpsp_domain.B.to_string ub);
       if with_var then
-        print_variables domain rcpsp.octagonal_vars
+        print_variables repr domain rcpsp.octagonal_vars
     end
 
   (* II. Branch and bound support. *)
 
-  let constraint_makespan rcpsp best domain =
+  let constraint_makespan repr rcpsp best domain =
     let open Csp in
     match best with
     | None -> domain
     | Some best ->
-        let (_,ub) = makespan rcpsp best in
+        let (_,ub) = makespan repr rcpsp best in
         let ub = Cst (Rcpsp_domain.B.to_rat ub, Int) in
-        Rcpsp_domain.weak_incremental_closure domain (Var rcpsp.makespan, LT, ub)
+        let r = R.rewrite repr (Var rcpsp.makespan, LT, ub) in
+        List.fold_left Rcpsp_domain.weak_incremental_closure domain r
 
   let solve bench stats print_node print_makespan rcpsp =
   begin
     let time_out = timeout_of_bench bench in
+    let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
     let rec aux depth (best, stats) domain = begin
       (* Stop when we exceed the timeout. *)
       let open State in
@@ -90,7 +111,7 @@ struct
       if (Mtime.Span.compare time_out elapsed) <= 0 then (best,stats) else
       try
         let stats = {stats with nodes=(stats.nodes+1)} in
-        let domain = constraint_makespan rcpsp best domain in
+        let domain = constraint_makespan repr rcpsp best domain in
         let domain = Rcpsp_domain.closure domain in
         match Rcpsp_domain.state_decomposition domain with
         | False ->
@@ -111,16 +132,15 @@ struct
         (best, {stats with fails=(stats.fails+1)})
       end
     end in
-    let domain = Rcpsp_domain.init_rcpsp rcpsp in
-    aux 0 (None,stats) domain
+    repr, aux 0 (None,stats) domain
   end
 
   (* III. Bench and processing of the results. *)
 
-  let update_with_optimum rcpsp best measure =
+  let update_with_optimum repr rcpsp best measure =
     match best with
     | Some best ->
-        let (lb, _) = makespan rcpsp best in
+        let (lb, _) = makespan repr rcpsp best in
         let open Measurement in
         { measure with optimum = Some (Rcpsp_domain.B.to_rat lb) }
     | None -> measure
@@ -129,11 +149,11 @@ struct
     try
       let rcpsp = Rcpsp_model.create_rcpsp (read_rcpsp problem_path) in
       let stats = State.init_global_stats () in
-      let (best, stats) = solve bench stats no_print no_print_makespan rcpsp in
+      let repr, (best, stats) = solve bench stats no_print no_print_makespan rcpsp in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
       let measure = Measurement.init stats problem_path in
       let measure = Measurement.update_time bench stats measure in
-      let measure = update_with_optimum rcpsp best measure in
+      let measure = update_with_optimum repr rcpsp best measure in
       Measurement.print_as_csv bench measure
     with e -> begin
       (* Printexc.print_backtrace stdout; *)

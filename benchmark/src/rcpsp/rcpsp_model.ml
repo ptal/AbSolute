@@ -1,7 +1,6 @@
 (* Constraint model of the RCPSP. *)
 open Rcpsp_data
 open Csp
-open Box_reified
 
 (* I. Utility functions to create the model of the RCPSP. *)
 
@@ -117,7 +116,7 @@ type rcpsp_model = {
   box_vars: var list;
   octagonal_vars: var list;
   constraints: bconstraint list;
-  reified_bconstraints: box_reified_constraint list;
+  reified_bconstraints: (var * bconstraint list) list;
 }
 
 let create_rcpsp rcpsp =

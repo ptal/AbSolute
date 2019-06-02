@@ -1,9 +1,9 @@
+(** This module equips `Box_dom` with reified constraints. *)
+
 open Abstract_domain
 open Box_dom
 open Box_representation
 open Csp
-
-(* This module equips `Box_dom` with reified constraints. *)
 
 type rbox_constraint =
   | BoxConstraint of box_constraint

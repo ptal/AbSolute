@@ -2,7 +2,7 @@
 open Csp
 open Dbm
 
-module type Octagon_rep_sig = functor (B: Bound_sig.BOUND) ->
+module type Octagon_rep_sig =
 sig
   module B: Bound_sig.BOUND
   type t
@@ -32,6 +32,6 @@ sig
   (** Negate the constraint.
       It might be a relaxation approximation of the negation for continuous domain. *)
   val negate: rconstraint -> rconstraint
-end with module B=B
+end
 
-module Octagon_rep: Octagon_rep_sig
+module Octagon_rep(B: Bound_sig.BOUND): Octagon_rep_sig with module B=B
