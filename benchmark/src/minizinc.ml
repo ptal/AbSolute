@@ -16,7 +16,7 @@ let make_unique_file_name name =
   let rec aux name i =
     let base = Filename.remove_extension name in
     let ext = Filename.extension name in
-    let path = "/tmp/" ^ base ^ (string_of_int i) ^ "." ^ ext in
+    let path = "/tmp/" ^ base ^ (string_of_int i) ^ ext in
     if Sys.file_exists path then
       aux name (i+1)
     else
@@ -80,8 +80,12 @@ let print_result_as_csv bench solver problem_path output =
   let time = int_of_float ((float_of_string (List.assoc "solveTime" entries)) *. 1000000.) in
   let stats = State.{stats with elapsed=(time_of 1000 time)} in
   let measure = Measurement.update_time bench stats measure in
-  let measure = Measurement.{ measure with
-    optimum=Some (Bound_rat.of_string (List.assoc "objective" entries)) } in
+  let measure =
+    match List.assoc_opt "objective" entries with
+    | Some obj ->
+        let b = Bound_rat.of_string obj in
+        Measurement.{ measure with optimum=Some b}
+    | None -> measure in
   Measurement.print_as_csv bench measure
 
 let solver_time_option (solver: solver_config) time =

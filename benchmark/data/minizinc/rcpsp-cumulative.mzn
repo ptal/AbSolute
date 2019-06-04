@@ -135,7 +135,7 @@ constraint
 % Output.
 %-----------------------------------------------------------------------------%
 
-output [show(objective), "\n"];
+output ["objective=", show(objective), "\n"];
 
 % output [
 %    "% rcpsp_max\n",
