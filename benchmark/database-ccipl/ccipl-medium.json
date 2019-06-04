@@ -42,7 +42,7 @@
     { "name": "gecode",
       "version": "6.1.0",
       "exec": "fzn-gecode -s",
-      "globals": "/usr/share/gecode/mznlib" },
+      "globals": "/usr/share/minizinc/gecode" },
     { "name": "chuffed",
       "version": "0.10.3@develop",
       "exec": "/home/LS2N/talbot-p-1/chuffed/build/fzn-chuffed -v",
