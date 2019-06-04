@@ -32,6 +32,26 @@ let create_file data name =
 let create_dzn_file data dzn_file = create_file data dzn_file
 let create_mzn_file data mzn_file = create_file data mzn_file
 
+(** Clean some default values added by solvers (e.g. Chuffed put `objective=-1`) in case of unsatisfiability. *)
+let clean_up_entries mzn_entries lines =
+  let unsat_msg = "=====UNSATISFIABLE=====" in
+  let unsat_msg_len = String.length unsat_msg in
+  let is_unsat_msg l =
+    if String.length l >= unsat_msg_len then
+      let unsat_part = String.sub (String.trim l) 0 unsat_msg_len in
+      unsat_part = unsat_msg
+    else false in
+  if List.exists is_unsat_msg lines then begin
+    let mzn_entries = List.flatten (List.map (fun (name, value) ->
+      if name = "solutions" then [(name, "0")] else
+      if name = "objective" then [] else
+      [(name, value)]) mzn_entries) in
+    if List.exists (fun (name, _) -> name = "solutions") mzn_entries then
+      mzn_entries
+    else mzn_entries@[("solutions","0")]
+  end
+  else mzn_entries
+
 let mzn_solver_output_to_entries lines =
   let is_mzn_entry l = if String.length l > 0 then l.[0] = '%' else false in
   let is_not_mzn_entry l = not (is_mzn_entry l) in
@@ -45,11 +65,13 @@ let mzn_solver_output_to_entries lines =
       let entry = String.split_on_char '=' entry in
       (List.nth entry 0, List.nth entry 1)
     ) in
-  try
-    let lines = List.filter is_not_mzn_entry lines in
-    let obj = Scanf.sscanf (List.nth lines 0) "%s = %d;" (fun _ i -> string_of_int i) in
-    mzn_entries@[("objective", obj)]
-  with _ -> mzn_entries
+  let mzn_entries =
+    try
+      let lines = List.filter is_not_mzn_entry lines in
+      let obj = Scanf.sscanf (List.nth lines 0) "%s = %d;" (fun _ i -> string_of_int i) in
+      mzn_entries@[("objective", obj)]
+    with _ -> mzn_entries in
+  clean_up_entries mzn_entries lines
 
 let choco_solver_output_to_entries lines =
   eprintf_and_exit "Choco solver is not yet supported."
