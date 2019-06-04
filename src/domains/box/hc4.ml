@@ -111,7 +111,7 @@ struct
      let nodes_kind, itv = List.split args in
      let res = I.filter_fun name itv root in
      List.fold_left2 refine store (debot res) nodes_kind
-  | BVar v -> Store.set store v (debot (I.meet root (Store.get store v)))
+  | BVar v -> Store.set store v root
   | BCst i -> ignore (debot (I.meet root i)); store
   | BUnary (o,(e1,i1)) ->
      let j = match o with

@@ -33,7 +33,11 @@ struct
     let n = Store.length store in
     let store = Store.init (n+1) (fun i -> if i < n then Store.get store i else I.top) in
     (store, n)
-  let set = Store.set
+  let set store k merge =
+    let old = Store.get store k in
+    let newval = Bot.debot (I.meet merge old) in
+    if I.equal old newval then store
+    else Store.set store k newval
   let get = Store.get
   let lazy_copy store n = List.init n (fun _ -> store)
   let copy store = store

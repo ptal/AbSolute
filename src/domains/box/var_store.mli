@@ -9,6 +9,9 @@ sig
 
   val empty: t
   val extend: t -> (t * key)
+
+  (** `set store k v` is a monotonic `set`.
+      It merges `v` with `store[k]` using `I.meet`. *)
   val set: t -> key -> cell -> t
   val get: t -> key -> cell
   val lazy_copy : t -> int -> t list
