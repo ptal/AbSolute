@@ -19,6 +19,11 @@ sig
   val iter: (key -> cell -> unit) -> t -> unit
   val fold: ('a -> key -> cell -> 'a) -> 'a -> t -> 'a
   val print: Format.formatter -> Box_rep.t -> t -> unit
+
+  (** This function consumes the registered delta in the store.
+      The deltas are resetted in an imperative way during this function call.
+      Therefore you should register the delta if you need to remember them. *)
+  val delta: t -> ('a -> key -> 'a) -> 'a -> 'a
 end
 
 module type Var_store_functor = functor (I: Itv_sig.ITV) -> Var_store_sig with module I=I

@@ -615,6 +615,8 @@ let rec get_vars_bexpr = function
 
 let get_vars_set_bexpr bexpr = Variables.of_list (get_vars_bexpr bexpr)
 
+let vars_of_bconstraint (e1,op,e2) = get_vars_bexpr (Cmp (op,e1,e2))
+
 (* True if the constraint is fully defined over the set of variables `vars`. *)
 let is_defined_over vars (e1,op,e2) =
   List.for_all (fun v -> List.mem v vars) (get_vars_bexpr (Cmp (op,e1,e2)))

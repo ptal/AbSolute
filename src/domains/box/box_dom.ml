@@ -44,9 +44,26 @@ struct
   module R = Box_rep
   type itv = I.t
   type bound = I.B.t
+  type cons_id = int
+
+  (* We use `Parray` for most arrays because the structures must be backtrackable.
+     Note that for `constraints` and `reactor` these structures should be static during the resolution.
+     (We rarely add a new constraint inside the problem during resolution, but with Parray, it is possible to do so). *)
   type t = {
     store: Store.t;
-    constraints: R.rconstraint list;
+
+    constraints: R.rconstraint Parray.t;
+
+    (* Records the active constraints (those not yet entailed).
+       This field is backtracked automatically. *)
+    actives: bool Parray.t;
+    num_actives: int;
+
+    (* `reactor.(v)` contains the set of constraints that contains the variable `v`. *)
+    reactor: (cons_id list) Parray.t;
+
+    (* Contains all the constraint that must be propagated in order to reach a fix point. *)
+    scheduler: cons_id list;
   }
 
   (* Reexported functions from the parametrized modules. *)
@@ -56,14 +73,25 @@ struct
   let failure_disentailment () =
     failwith "Found a constraint that is disentailed and Bot_found has not been raised."
 
+  let empty_parray () = Parray.init 0 (fun _ -> failwith "unreachable")
+
   let empty = {
     store=Store.empty;
-    constraints=[];
+    constraints = empty_parray ();
+    actives = empty_parray ();
+    num_actives = 0;
+    reactor = empty_parray ();
+    scheduler=[];
   }
+
+  let extend_parray pa a =
+    let n = Parray.length pa in
+    A.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
 
   let extend box () =
     let (store, idx) = Store.extend box.store in
-    ({ box with store = store }, idx)
+    let reactor = extend_parray box.reactor [];
+    ({ box with store; reactor }, idx)
 
   let project_itv box v = Store.get box.store v
 
@@ -94,6 +122,13 @@ struct
     else
       (vol, box)
 
+  let fold_active_constraints box f acc =
+    let i = ref (-1) in
+    Parray.fold_left (fun acc b ->
+      i := (!i) + 1;
+      if b then f acc i (Parray.get box.constraints i)
+      else acc) acc box.actives
+
   (* We remove the constraints entailed in the store.
      It is useful to avoid propagating entailed constraints. *)
   let remove_entailed_constraints box =
@@ -102,7 +137,11 @@ struct
       | Unknown -> true
       | True -> false
       | False -> failure_disentailment () in
-    { box with constraints=List.filter is_unknown box.constraints }
+    let actives = fold_active_constraints box (fun acc i c ->
+      if not (is_unknown c) then Parray.set acc i false) box.actives in
+    { box with actives }
+
+... to continue here ! with the closure.
 
   let closure box =
     let vol = volume box in
@@ -112,12 +151,29 @@ struct
     else
       box
 
-  let weak_incremental_closure box c = { box with constraints=c::box.constraints }
+  let subscribe reactor c n =
+    let subscribe_var reactor x = Parray.set reactor x (extend_parray (Parray.get reactor x) n) in
+    let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
+    List.fold_left subscribe_var box.reactor vars
+
+  (* If the constraint is unary, we propagate it immediately.
+     Otherwise we register it into the event system (in the actives, reactor and constraints structures). *)
+  let weak_incremental_closure box = function
+  | (Var idx, op, Cst (val, a)) as c ->
+      { box with store=(Closure.incremental_closure box.store c) }
+  | c ->
+      let n = Parray.length box.constraints in
+      let constraints = extend_parray box.constraints c in
+      let actives = extend_parray box.actives true in
+      let num_actives = box.num_actives + 1 in
+      let reactor = subscribe box.reactor c n in
+      { box with constraints; actives; num_actives; vars; reactor }
+
   let incremental_closure box c = closure (weak_incremental_closure box c)
 
   (* `closure` and `incremental_closure` automatically remove entailed constraints. *)
   let state_decomposition box =
-    if (List.length box.constraints) = 0 then
+    if box.num_actives = 0 then
       True
     else
       Unknown
@@ -133,7 +189,10 @@ struct
   let split box =
     let branches = Split.split box.store in
     let boxes = lazy_copy box (List.length branches) in
-    List.map2 weak_incremental_closure boxes branches
+    (* We remove the branch that are unsatisfiable. *)
+    List.flatten (List.map2 (fun box branch ->
+      try [weak_incremental_closure box branch]
+      with Bot_found -> []) boxes branches)
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->
