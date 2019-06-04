@@ -1,0 +1,7 @@
+{
+  "model": "Server CCIPL",
+  "processor": "Intel(R) Xeon Brodwell(TM) EP E5-2630v4, 2,20GHz",
+  "os":"Debian GNU/Linux buster/sid",
+  "additional info": "Chaque nœud de calcul possède deux processeurs Intel Xeon Brodwell EP E5-2630v4 composés de 10 cœurs cadencés à 2,20GHz, 128Go de mémoire DDR4 ECC à 2400 MHz (limitation CPU à 2133MHz). La hiérarchie des caches est la suivante : cache L1 par cœur (32ko D et 32ko I), cache L2 par cœur (256 ko), cache LLC (25Mo).",
+  "multi-threading": "Only one processor and core used (sequential benchmark).",
+}

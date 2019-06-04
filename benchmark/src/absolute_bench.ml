@@ -39,8 +39,8 @@ struct
     let extend kind (dom,repr) v =
       let (dom,idx) = (extend dom kind) in
       (dom, R.extend repr (v, idx)) in
-    let domain, repr = List.fold_left (extend (R.BoxKind ())) (empty,R.empty) rcpsp.box_vars in
-    let domain, repr = List.fold_left (extend (R.OctKind ())) (domain, repr) rcpsp.octagonal_vars in
+    let domain, repr = List.fold_left (extend (R.OctKind ())) (empty,R.empty) rcpsp.octagonal_vars in
+    let domain, repr = List.fold_left (extend (R.BoxKind ())) (domain, repr) rcpsp.box_vars in
     let constraints = List.flatten (List.map (R.rewrite repr) rcpsp.constraints) in
     let reified_cons = List.flatten (List.map (fun (b,c) -> R.rewrite_reified repr b c) rcpsp.reified_bconstraints) in
     repr, List.fold_left weak_incremental_closure domain (constraints@reified_cons)
@@ -129,12 +129,12 @@ let make_octagon_strategy : string -> (module Octagon_split.Octagon_split_sig) =
 | "MSLF" -> (module Octagon_split.MSLF)
 | "MSLF_all" -> (module Octagon_split.MSLF_all)
 | "MSLF_simple" -> (module Octagon_split.MSLF_simple)
-| s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Octagon. Please look into `Factory.make_octagon_strategy` for a list of the supported strategies.")
+| s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Octagon. Please look into `make_octagon_strategy` for a list of the supported strategies.")
 
 let make_box_strategy : string -> (module Box_split.Box_split_sig) = function
 | "First_fail_LB"  -> (module Box_split.First_fail_LB)
 | "MSLF_simple" -> (module Box_split.MSLF_simple)
-| s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Box. Please look into `Factory.make_box_strategy` for a list of the supported strategies.")
+| s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Box. Please look into `make_box_strategy` for a list of the supported strategies.")
 
 let bench_absolute bench solver =
   match solver.domain with

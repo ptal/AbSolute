@@ -1,0 +1,604 @@
+solutionlist data/j120hrs.sm
+==================================================================================================
+Par	Inst	Makespan	Date			   Author
+==================================================================================================
+1	1	105		Tue Jan 30 16:52:23 2001  V. Valls, M. Quintanilla, F. Ballestin
+1	2	109		Thu Jun  9 11:12:36 2005  P. Laborie
+1	3	125		Fri Jun  5 04:00:17 1998  K. Nonobe and T. Ibaraki
+1	4	97		Mon Jun 22 12:04:23 1998  K. Nonobe and T. Ibaraki
+1	5	112		Mon Jun 22 12:04:31 1998  K. Nonobe and T. Ibaraki
+1	6	84		Fri Jun  5 04:00:39 1998  K. Nonobe and T. Ibaraki
+1	7	117		Mon Jun 22 12:04:38 1998  K. Nonobe and T. Ibaraki
+1	8	109		Fri Jun  5 04:00:53 1998  K. Nonobe and T. Ibaraki
+1	9	112		Fri Jun  5 04:01:01 1998  K. Nonobe and T. Ibaraki
+1	10	108		Fri Oct 30 04:00:13 1998  J. Alcaraz and C. Maroto
+2	1	87		Sun Apr 11 12:00:09 1999  K. Nonobe and T. Ibaraki
+2	2	75		Fri Sep 18 04:03:38 1998  K. Nonobe and T. Ibaraki
+2	3	92		Thu Apr  8 12:00:08 1999  K. Nonobe and T. Ibaraki
+2	4	95		Fri Jun  5 04:01:30 1998  K. Nonobe and T. Ibaraki
+2	5	103		Mon Jun 22 12:06:21 1998  K. Nonobe and T. Ibaraki
+2	6	92		Fri Jun  5 04:01:44 1998  K. Nonobe and T. Ibaraki
+2	7	90		Fri Jun  5 04:01:51 1998  K. Nonobe and T. Ibaraki
+2	8	83		Fri Jun  5 04:01:58 1998  K. Nonobe and T. Ibaraki
+2	9	94		Wed Sep 17 13:35:05 2008  A. Horbach
+2	10	96		Thu Mar 10 21:53:16 2005  D. Debels and M. Vanhoucke             
+3	1	80		Fri Jun  5 04:02:12 1998  K. Nonobe and T. Ibaraki
+3	2	88		Mon Dec  8 13:22:30 1997  K.Bouleimen
+3	3	100		Mon Dec  8 13:22:38 1997  K.Bouleimen
+3	4	71		Mon Dec  8 13:22:45 1997  K.Bouleimen
+3	5	84		Wed Dec 17 04:06:51 1997  T.Baar, P.Brucker, S.Knust
+3	6	102		Mon Dec  8 13:22:59 1997  K.Bouleimen
+3	7	93		Mon Dec  8 13:23:06 1997  K.Bouleimen
+3	8	77		Mon Dec  8 13:23:13 1997  K.Bouleimen
+3	9	86		Mon Dec  8 13:23:21 1997  K.Bouleimen
+3	10	103		Mon Dec  8 13:23:28 1997  K.Bouleimen
+4	1	74		Mon Dec  8 13:23:36 1997  K.Bouleimen
+4	2	107		Mon Dec  8 13:23:43 1997  K.Bouleimen
+4	3	95		Mon Dec  8 13:23:50 1997  K.Bouleimen
+4	4	75		Mon Dec  8 13:23:57 1997  K.Bouleimen
+4	5	74		Mon Dec  8 13:24:04 1997  K.Bouleimen
+4	6	90		Mon Dec  8 13:24:11 1997  K.Bouleimen
+4	7	81		Mon Dec  8 13:24:18 1997  K.Bouleimen
+4	8	90		Mon Dec  8 13:24:25 1997  K.Bouleimen
+4	9	79		Mon Dec  8 13:24:32 1997  K.Bouleimen
+4	10	77		Mon Dec  8 13:24:39 1997  K.Bouleimen
+5	1	92		Mon Dec  8 13:24:47 1997  K.Bouleimen
+5	2	80		Mon Dec  8 13:24:53 1997  K.Bouleimen
+5	3	72		Mon Dec  8 13:25:00 1997  K.Bouleimen
+5	4	97		Mon Dec  8 13:25:07 1997  K.Bouleimen
+5	5	77		Mon Dec  8 13:25:15 1997  K.Bouleimen
+5	6	88		Mon Dec  8 13:25:21 1997  K.Bouleimen
+5	7	84		Mon Dec  8 13:25:28 1997  K.Bouleimen
+5	8	78		Mon Dec  8 13:25:35 1997  K.Bouleimen
+5	9	106		Mon Dec  8 13:25:42 1997  K.Bouleimen
+5	10	92		Mon Dec  8 13:25:49 1997  K.Bouleimen
+6	1	144		Sun Sep 25 07:05:04 2005  F. Xiao, A. Lim and B. Rodrigues
+6	2	134		Mon May  1 13:33:15 2017 Jieguang He
+6	3	135		Tue Apr  9 15:41:05 2002  V. Valls, M. Quintanilla, F. Ballestin
+6	4	153		Mon Feb 25 17:51:00 2019 Philippe Laborie
+6	5	125		Wed Jun 27 22:35:04 2007  D. Sun, S. Zhou
+6	6	154		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+6	7	168		Wed Aug 31 06:50:11 2005  F. Xiao, A. Lim and B. Rodrigues
+6	8	147		Wed Jan 24 20:50:05 2007  M. R.Ranjbar , F. Kianfar
+6	9	160		Fri Jul  6 11:27:08 2018 E.Goncharov
+6	10	171		Wed May 11 14:52:47 2016 Martin Hruby
+7	1	102		Wed May  9 19:12:40 2001  V. Valls, M. Quintanilla, F. Ballestin
+7	2	113		Mon Feb 25 17:51:21 2019 Philippe Laborie
+7	3	99		Wed Feb 27 08:08:02 2019 Philippe Laborie
+7	4	112		Wed Aug 31 07:20:04 2005  F. Xiao, A. Lim and B. Rodrigues
+7	5	131		Thu Mar 10 21:53:16 2005  D. Debels and M. Vanhoucke             
+7	6	124		Fri Jun 29 02:35:04 2007  D. Sun, S. Zhou
+7	7	117		Wed Feb 27 08:08:10 2019 Philippe Laborie
+7	8	97		Fri Jun 29 02:35:04 2007  D. Sun, S. Zhou
+7	9	89		Fri Jun 29 02:35:05 2007  D. Sun, S. Zhou
+7	10	117		Mon May  1 13:34:39 2017 Jieguang He
+8	1	95		Wed Jan 13 04:00:56 1999  V. Valls, M. Quintanilla and F. Ballest
+8	2	103		Mon Mar  6 16:20:05 2006 José Fernando Gonçalves & Jorge Magalhãe
+8	3	95		Tue Jun  1 15:50:07 2010 A. Schutt, T. Feydy, P.J. Stuckey, M.G. 
+8	4	94		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+8	5	104		Sun Sep 25 06:50:09 2005  F. Xiao, A. Lim and B. Rodrigues
+8	6	85		Mon Sep 10 14:09:44 2001  V. Valls, M. Quintanilla, F. Ballestin
+8	7	87		Thu Mar 10 21:53:16 2005  D. Debels and M. Vanhoucke             
+8	8	87		Thu Mar 10 21:53:16 2005  D. Debels and M. Vanhoucke             
+8	9	94		Mon Mar  6 16:20:05 2006 José Fernando Gonçalves & Jorge Magalhãe
+8	10	93		Sun Sep 25 06:50:09 2005  F. Xiao, A. Lim and B. Rodrigues
+9	1	88		Fri Jun  5 04:03:38 1998  K. Nonobe and T. Ibaraki
+9	2	94		Mon Dec  8 13:29:46 1997  K.Bouleimen
+9	3	87		Mon Dec  8 13:29:53 1997  K.Bouleimen
+9	4	86		Thu Jul 16 00:02:19 2015 E. Goncharov, V. Leonov
+9	5	114		Mon Dec  8 13:30:07 1997  K.Bouleimen
+9	6	98		Mon Nov 16 12:01:08 1998  K. Nonobe and T. Ibaraki
+9	7	80		Mon Dec  8 13:30:23 1997  K.Bouleimen
+9	8	80		Sat Jan 24 04:10:39 1998  T.Baar, P.Brucker, S.Knust
+9	9	87		Fri Jun  5 04:03:59 1998  K. Nonobe and T. Ibaraki
+9	10	84		Mon Dec  8 13:30:49 1997  K.Bouleimen
+10	1	111		Wed Dec 17 05:05:00 1997  T.Baar, P.Brucker, S.Knust
+10	2	91		Mon Dec  8 13:31:05 1997  K.Bouleimen
+10	3	99		Mon Dec  8 13:31:12 1997  K.Bouleimen
+10	4	95		Wed Dec 17 05:05:22 1997  T.Baar, P.Brucker, S.Knust
+10	5	97		Mon Dec  8 13:31:26 1997  K.Bouleimen
+10	6	92		Mon Dec  8 13:31:33 1997  K.Bouleimen
+10	7	79		Fri Jun  5 04:04:35 1998  K. Nonobe and T. Ibaraki
+10	8	114		Mon Dec  8 13:31:47 1997  K.Bouleimen
+10	9	77		Mon Dec  8 13:31:54 1997  K.Bouleimen
+10	10	66		Wed Dec 17 05:06:04 1997  T.Baar, P.Brucker, S.Knust
+11	1	172		Mon May  1 13:40:24 2017 Jieguang He
+11	2	158		Mon Apr 14 14:11:59 2008  José Fernando Gonçalves & Jorge Magalhã
+11	3	202		Sun Dec 31 05:35:47 2017 E.Goncharov
+11	4	195		Wed Jul 12 13:03:21 2017 M. Vanhoucke and J. Coelho
+11	5	210		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+11	6	210		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+11	7	162		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+11	8	162		Wed Jun 13 00:50:07 2007  D. Sun, S. Zhou
+11	9	172		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+11	10	180		Thu Jul 16 00:05:15 2015 E. Goncharov, V. Leonov
+12	1	137		Mon May  1 13:41:09 2017 Jieguang He
+12	2	117		Thu Jun 21 21:50:05 2007  D. Sun, S. Zhou
+12	3	136		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+12	4	125		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+12	5	162		Wed Jun 13 00:50:07 2007  D. Sun, S. Zhou
+12	6	121		Wed Jun 13 00:50:07 2007  D. Sun, S. Zhou
+12	7	120		Tue Apr 10 02:20:05 2007  D. Sun
+12	8	119		Wed Jun 13 00:50:07 2007  D. Sun, S. Zhou
+12	9	105		Wed Jun 13 00:50:07 2007  D. Sun, S. Zhou
+12	10	143		Wed Jun 13 00:50:07 2007  D. Sun, S. Zhou
+13	1	126		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+13	2	88		Tue Sep 15 17:35:30 2015 E. Goncharov, V. Leonov
+13	3	118		Thu Mar 10 21:53:17 2005  D. Debels and M. Vanhoucke             
+13	4	112		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+13	5	91		Thu Jun 21 21:50:05 2007  D. Sun, S. Zhou
+13	6	99		Thu Jun 21 21:50:05 2007  D. Sun, S. Zhou
+13	7	109		Tue Apr  9 15:43:24 2002  V. Valls, M. Quintanilla, F. Ballestin
+13	8	94		Thu Mar 10 21:53:17 2005  D. Debels and M. Vanhoucke             
+13	9	85		Thu Jun 21 21:50:05 2007  D. Sun, S. Zhou
+13	10	92		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+14	1	85		Thu Jun 21 21:50:05 2007  D. Sun, S. Zhou
+14	2	93		Thu Mar 10 21:53:17 2005  D. Debels and M. Vanhoucke             
+14	3	88		Mon Nov 16 12:00:08 1998  K. Nonobe and T. Ibaraki
+14	4	88		Thu Mar 10 21:53:17 2005  D. Debels and M. Vanhoucke             
+14	5	97		Thu Mar 10 21:53:17 2005  D. Debels and M. Vanhoucke             
+14	6	91		Fri Jun  5 04:05:32 1998  K. Nonobe and T. Ibaraki
+14	7	90		Fri Jul 31 17:12:24 2015 E. Goncharov, V. Leonov
+14	8	112		Thu Mar 10 21:53:18 2005  D. Debels and M. Vanhoucke             
+14	9	101		Mon Dec  8 13:36:14 1997  K.Bouleimen
+14	10	81		Tue May 15 06:50:05 2007  D. Sun
+15	1	81		Wed Dec 17 12:58:18 1997  T.Baar, P.Brucker, S.Knust
+15	2	75		Wed Dec 17 12:58:31 1997  T.Baar, P.Brucker, S.Knust
+15	3	87		Sat Jan 24 04:17:18 1998  T.Baar, P.Brucker, S.Knust
+15	4	82		Mon Dec  8 13:36:46 1997  K.Bouleimen
+15	5	87		Mon Dec  8 13:36:54 1997  K.Bouleimen
+15	6	97		Mon Dec  8 13:37:07 1997  K.Bouleimen
+15	7	75		Mon Dec  8 13:37:17 1997  K.Bouleimen
+15	8	126		Mon Dec  8 13:37:24 1997  K.Bouleimen
+15	9	109		Mon Dec  8 13:37:31 1997  K.Bouleimen
+15	10	91		Wed Dec 17 13:00:11 1997  T.Baar, P.Brucker, S.Knust
+16	1	196		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+16	2	232		Wed Aug 31 06:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+16	3	234		Sun Jun 10 02:50:05 2007  D. Sun, S. Zhou
+16	4	200		Sun Jun 10 02:50:05 2007  D. Sun, S. Zhou
+16	5	200		Sun Jun 10 02:50:05 2007  D. Sun, S. Zhou
+16	6	205		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+16	7	185		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+16	8	194		Tue Feb 13 16:53:22 2018 E.Goncharov
+16	9	205		Sun Jun 10 02:50:05 2007  D. Sun, S. Zhou
+16	10	213		Wed Aug 31 06:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+17	1	140		Mon May 28 21:20:05 2007  D. Sun, S. Zhou
+17	2	123		Sun Jun 10 02:50:05 2007  D. Sun, S. Zhou
+17	3	108		Sun Jun 10 02:50:06 2007  D. Sun, S. Zhou
+17	4	120		Mon May 28 21:20:05 2007  D. Sun, S. Zhou
+17	5	129		Sun Jun 10 02:50:06 2007  D. Sun, S. Zhou
+17	6	136		Mon May 28 21:20:06 2007  D. Sun, S. Zhou
+17	7	146		Mon May 28 21:20:06 2007  D. Sun, S. Zhou
+17	8	127		Sun Jun 10 02:50:06 2007  D. Sun, S. Zhou
+17	9	134		Sun Jun 10 02:50:06 2007  D. Sun, S. Zhou
+17	10	134		Sun Jun 10 02:50:06 2007  D. Sun, S. Zhou
+18	1	138		Mon May 28 21:20:06 2007  D. Sun, S. Zhou
+18	2	116		Thu Mar 10 21:53:18 2005  D. Debels and M. Vanhoucke             
+18	3	101		Mon Sep 10 14:09:10 2001  V. Valls, M. Quintanilla, F. Ballestin
+18	4	100		Wed May 11 14:54:53 2016 M. Hruby
+18	5	118		Thu Mar 10 21:53:18 2005  D. Debels and M. Vanhoucke             
+18	6	134		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+18	7	118		Wed Jan 24 20:50:05 2007  M. R.Ranjbar , F. Kianfar
+18	8	106		Sun Sep 25 06:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+18	9	91		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+18	10	98		Wed Jan 24 20:50:05 2007  M. R.Ranjbar , F. Kianfar
+19	1	88		Fri Jun  5 04:06:15 1998  K. Nonobe and T. Ibaraki
+19	2	82		Wed May 11 14:54:53 2016 M. Hruby
+19	3	85		Thu Mar 10 21:53:18 2005  D. Debels and M. Vanhoucke             
+19	4	106		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+19	5	103		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+19	6	90		Tue Apr  9 15:43:11 2002  V. Valls, M. Quintanilla, F. Ballestin
+19	7	93		Mon Dec  8 13:41:31 1997  K.Bouleimen
+19	8	93		Mon Jun  7 12:02:18 1999  V. Valls, M. Quintanilla, F. Ballestin
+19	9	88		Wed Jul 15 23:51:31 2015 E. Goncharov, V. Leonov
+19	10	88		Thu Dec 18 04:03:39 1997  T.Baar, P.Brucker, S.Knust
+20	1	89		Wed Jan 13 04:02:11 1999  V. Valls, M. Quintanilla and F. Ballest
+20	2	99		Mon Dec  8 13:41:59 1997  K.Bouleimen
+20	3	77		Tue Apr  9 15:41:13 2002  V. Valls, M. Quintanilla, F. Ballestin
+20	4	89		Mon Dec  8 13:42:13 1997  K.Bouleimen
+20	5	69		Thu Dec 18 04:04:15 1997  T.Baar, P.Brucker, S.Knust
+20	6	80		Mon Dec  8 13:42:30 1997  K.Bouleimen
+20	7	81		Mon Dec  8 13:42:37 1997  K.Bouleimen
+20	8	107		Sat Jan 16 04:15:35 1999  V. Valls, M. Quintanilla and F. Ballest
+20	9	80		Mon Dec  8 13:42:52 1997  K.Bouleimen
+20	10	81		Thu Dec 18 04:04:51 1997  T.Baar, P.Brucker, S.Knust
+21	1	114		Tue Jan 30 16:52:26 2001  V. Valls, M. Quintanilla, F. Ballestin
+21	2	117		Fri Jun  4 12:02:57 1999  V. Valls, M. Quintanilla, F. Ballestin
+21	3	143		Fri Sep 18 04:01:57 1998  K. Nonobe and T. Ibaraki
+21	4	135		Fri Jun  5 04:07:05 1998  K. Nonobe and T. Ibaraki
+21	5	110		Mon Dec 14 12:00:16 1998  K. Nonobe and T. Ibaraki
+21	6	109		Mon Dec 14 12:00:23 1998  K. Nonobe and T. Ibaraki
+21	7	111		Thu Aug 12 20:00:08 2004 L. Y. Tseng and S. C. Chen
+21	8	127		Mon Jun 22 12:05:15 1998  K. Nonobe and T. Ibaraki
+21	9	102		Mon Nov 30 04:00:16 1998  K. Nonobe and T. Ibaraki
+21	10	102		Mon Sep 10 14:10:47 2001  V. Valls, M. Quintanilla, F. Ballestin
+22	1	101		Tue Jan 19 12:00:55 1999  V. Valls, M. Quintanilla and F. Ballest
+22	2	107		Fri Jun  5 04:07:55 1998  K. Nonobe and T. Ibaraki
+22	3	96		Tue May 23 15:39:48 2000  D. Merkle, M. Middendorf, H. Schmeck
+22	4	90		Thu Dec 18 04:06:32 1997  T.Baar, P.Brucker, S.Knust
+22	5	93		Tue Nov 17 12:00:08 1998  K. Nonobe and T. Ibaraki
+22	6	103		Fri Jun  5 04:08:16 1998  K. Nonobe and T. Ibaraki
+22	7	133		Mon Dec  8 13:44:52 1997  K.Bouleimen
+22	8	103		Fri Jun  5 04:08:25 1998  K. Nonobe and T. Ibaraki
+22	9	109		Fri Jun  5 04:08:32 1998  K. Nonobe and T. Ibaraki
+22	10	79		Fri Jun  5 04:21:35 1998  K. Nonobe and T. Ibaraki
+23	1	107		Thu Dec 18 04:07:23 1997  T.Baar, P.Brucker, S.Knust
+23	2	116		Mon Dec  8 13:45:22 1997  K.Bouleimen
+23	3	99		Mon Dec  8 13:45:29 1997  K.Bouleimen
+23	4	106		Mon Dec  8 13:45:36 1997  K.Bouleimen
+23	5	99		Mon Dec  8 13:45:44 1997  K.Bouleimen
+23	6	106		Fri Jun  5 04:08:40 1998  K. Nonobe and T. Ibaraki
+23	7	104		Thu Dec 18 04:08:06 1997  T.Baar, P.Brucker, S.Knust
+23	8	101		Mon Dec  8 13:46:06 1997  K.Bouleimen
+23	9	107		Mon Dec  8 13:46:14 1997  K.Bouleimen
+23	10	100		Thu Dec 18 04:08:27 1997  T.Baar, P.Brucker, S.Knust
+24	1	93		Thu Dec 18 04:08:35 1997  T.Baar, P.Brucker, S.Knust
+24	2	91		Fri Jun  5 04:08:47 1998  K. Nonobe and T. Ibaraki
+24	3	89		Mon Dec  8 13:46:34 1997  K.Bouleimen
+24	4	101		Mon Dec  8 13:46:42 1997  K.Bouleimen
+24	5	86		Mon Dec  8 13:46:49 1997  K.Bouleimen
+24	6	95		Mon Dec  8 13:46:56 1997  K.Bouleimen
+24	7	112		Mon Dec  8 13:47:03 1997  K.Bouleimen
+24	8	104		Mon Dec  8 13:47:10 1997  K.Bouleimen
+24	9	82		Mon Dec  8 13:47:18 1997  K.Bouleimen
+24	10	91		Thu Dec 18 04:09:39 1997  T.Baar, P.Brucker, S.Knust
+25	1	82		Fri Jun  5 04:08:54 1998  K. Nonobe and T. Ibaraki
+25	2	108		Mon Dec  8 13:47:32 1997  K.Bouleimen
+25	3	100		Thu Dec 18 12:00:36 1997  T.Baar, P.Brucker, S.Knust
+25	4	117		Mon Dec  8 13:47:45 1997  K.Bouleimen
+25	5	100		Thu Dec 18 12:00:51 1997  T.Baar, P.Brucker, S.Knust
+25	6	92		Mon Dec  8 13:47:58 1997  K.Bouleimen
+25	7	92		Fri Jun  5 04:09:01 1998  K. Nonobe and T. Ibaraki
+25	8	80		Fri Jun  5 04:09:08 1998  K. Nonobe and T. Ibaraki
+25	9	94		Thu Dec 18 12:01:20 1997  T.Baar, P.Brucker, S.Knust
+25	10	92		Thu Dec 18 12:01:28 1997  T.Baar, P.Brucker, S.Knust
+26	1	169		Wed Aug 31 06:50:07 2005  F. Xiao, A. Lim and B. Rodrigues
+26	2	169		Wed Aug 31 06:50:12 2005  F. Xiao, A. Lim and B. Rodrigues
+26	3	167		Thu Mar 10 21:53:19 2005  D. Debels and M. Vanhoucke             
+26	4	172		Wed Jan 24 20:50:05 2007  M. R.Ranjbar , F. Kianfar
+26	5	153		Mon Mar  6 16:50:06 2006 José Fernando Gonçalves & Jorge Magalhãe
+26	6	187		Tue Apr  9 15:43:13 2002  V. Valls, M. Quintanilla, F. Ballestin
+26	7	157		Mon Apr 14 14:11:59 2008  José Fernando Gonçalves & Jorge Magalhã
+26	8	176		Wed Aug 31 06:50:12 2005  F. Xiao, A. Lim and B. Rodrigues
+26	9	172		Mon May 28 21:20:06 2007  D. Sun, S. Zhou
+26	10	183		Mon May 28 21:20:06 2007  D. Sun, S. Zhou
+27	1	108		Tue Apr  9 15:40:45 2002  V. Valls, M. Quintanilla, F. Ballestin
+27	2	115		Tue Apr  9 15:40:58 2002  V. Valls, M. Quintanilla, F. Ballestin
+27	3	144		Thu Aug 18 19:05:05 2005  J. Horstmann and J. Homberger
+27	4	107		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+27	5	111		Wed Jan 24 20:50:05 2007  M. R.Ranjbar , F. Kianfar
+27	6	145		Mon Mar  6 16:50:06 2006 José Fernando Gonçalves & Jorge Magalhãe
+27	7	125		Wed Aug 31 06:50:13 2005  F. Xiao, A. Lim and B. Rodrigues
+27	8	140		Mon May 28 21:20:06 2007  D. Sun, S. Zhou
+27	9	127		Mon May  1 13:41:31 2017 Jieguang He
+27	10	115		Sun Sep 25 06:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+28	1	108		Fri Jul  6 18:46:28 2001  V. Valls, M. Quintanilla, F. Ballestin
+28	2	110		Wed May  9 19:10:30 2001  V. Valls, M. Quintanilla, F. Ballestin
+28	3	101		Mon Dec  8 13:50:50 1997  K.Bouleimen
+28	4	112		Wed Oct  1 10:20:05 2008  A. Horbach
+28	5	102		Mon Dec  8 13:51:04 1997  K.Bouleimen
+28	6	103		Mon Dec  8 13:51:11 1997  K.Bouleimen
+28	7	109		Sun Sep 25 06:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+28	8	99		Thu Mar 10 21:53:19 2005  D. Debels and M. Vanhoucke             
+28	9	98		Thu Mar 10 21:53:19 2005  D. Debels and M. Vanhoucke             
+28	10	116		Mon Mar  6 16:50:06 2006 José Fernando Gonçalves & Jorge Magalhãe
+29	1	104		Thu Dec 18 12:05:30 1997  T.Baar, P.Brucker, S.Knust
+29	2	91		Thu Dec 18 12:05:39 1997  T.Baar, P.Brucker, S.Knust
+29	3	98		Fri Jun  4 12:05:38 1999  V. Valls, M. Quintanilla, F. Ballestin
+29	4	80		Tue Jan 25 18:00:26 2000  K. Fleszar, K. S. Hindi
+29	5	102		Fri Jun  5 04:10:43 1998  K. Nonobe and T. Ibaraki
+29	6	90		Tue Feb 26 11:03:16 2019 Philippe Laborie
+29	7	97		Mon Dec  8 13:52:27 1997  K.Bouleimen
+29	8	80		Tue Nov  3 12:01:55 1998  J. Alcaraz and C. Maroto
+29	9	97		Mon Dec  8 13:52:42 1997  K.Bouleimen
+29	10	96		Thu Dec 18 12:06:44 1997  T.Baar, P.Brucker, S.Knust
+30	1	102		Thu Dec 18 12:06:51 1997  T.Baar, P.Brucker, S.Knust
+30	2	112		Mon Dec  8 13:52:55 1997  K.Bouleimen
+30	3	108		Mon Dec  8 13:53:02 1997  K.Bouleimen
+30	4	83		Mon Dec  8 13:53:09 1997  K.Bouleimen
+30	5	83		Wed Oct  1 10:20:05 2008  A. Horbach
+30	6	79		Mon Dec  8 13:53:24 1997  K.Bouleimen
+30	7	93		Wed Jan 13 04:03:29 1999  V. Valls, M. Quintanilla and F. Ballest
+30	8	79		Mon Dec  8 13:53:38 1997  K.Bouleimen
+30	9	93		Mon Dec  8 13:53:45 1997  K.Bouleimen
+30	10	86		Thu Dec 18 12:07:56 1997  T.Baar, P.Brucker, S.Knust
+31	1	197		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+31	2	192		Sun Oct 14 09:43:52 2018 E.Goncharov
+31	3	173		Mon May  1 13:42:10 2017 Jieguang He
+31	4	218		Mon Feb 12 04:07:38 2018 E.Goncharov
+31	5	200		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+31	6	191		Wed Jul 12 13:03:22 2017 M. Vanhoucke and J. Coelho
+31	7	205		Mon May  1 13:42:42 2017 Jieguang He
+31	8	192		Mon May 28 21:35:05 2007  D. Sun, S. Zhou
+31	9	189		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+31	10	225		Tue Nov 20 14:03:26 2018 E.Goncharov
+32	1	147		Wed Aug 31 06:50:07 2005  F. Xiao, A. Lim and B. Rodrigues
+32	2	131		Mon May 28 21:35:05 2007  D. Sun, S. Zhou
+32	3	145		Mon May 28 21:35:05 2007  D. Sun, S. Zhou
+32	4	135		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+32	5	138		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+32	6	128		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+32	7	122		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+32	8	135		Wed Jun 27 22:35:05 2007  D. Sun, S. Zhou
+32	9	127		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+32	10	131		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+33	1	107		Wed May  9 19:12:54 2001  V. Valls, M. Quintanilla, F. Ballestin
+33	2	112		Tue Feb 26 15:46:12 2019 Philippe Laborie
+33	3	107		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+33	4	112		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+33	5	142		Wed Jun 27 22:35:06 2007  D. Sun, S. Zhou
+33	6	115		Sun Sep 25 06:50:07 2005  F. Xiao, A. Lim and B. Rodrigues
+33	7	123		Wed Aug 31 06:50:08 2005  F. Xiao, A. Lim and B. Rodrigues
+33	8	111		Wed May 30 19:20:04 2007  D. Sun, S. Zhou
+33	9	114		Thu Mar 10 21:53:20 2005  D. Debels and M. Vanhoucke             
+33	10	106		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+34	1	78		Tue Jan 30 16:52:28 2001  V. Valls, M. Quintanilla, F. Ballestin
+34	2	105		Mon Sep 10 14:09:04 2001  V. Valls, M. Quintanilla, F. Ballestin
+34	3	101		Thu Jul 16 09:20:32 2015 E. Goncharov, V. Leonov
+34	4	95		Tue Jan 19 12:09:49 1999  V. Valls, M. Quintanilla and F. Ballest
+34	5	103		Sun Sep 25 06:50:07 2005  F. Xiao, A. Lim and B. Rodrigues
+34	6	100		Mon Nov  9 04:00:16 1998  K. Nonobe and T. Ibaraki
+34	7	105		Wed Jan 13 04:05:06 1999  V. Valls, M. Quintanilla and F. Ballest
+34	8	89		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+34	9	94		Thu Oct 15 12:39:13 2015 E. Goncharov, V. Leonov
+34	10	101		Thu Dec 18 12:13:00 1997  T.Baar, P.Brucker, S.Knust
+35	1	87		Thu Dec 18 12:13:08 1997  T.Baar, P.Brucker, S.Knust
+35	2	111		Fri Jul  6 18:46:53 2001  V. Valls, M. Quintanilla, F. Ballestin
+35	3	77		Tue Jan 19 12:07:00 1999  V. Valls, M. Quintanilla and F. Ballest
+35	4	101		Fri Jun  5 04:12:32 1998  K. Nonobe and T. Ibaraki
+35	5	92		Mon Jul  3 01:31:23 2017 EBESEK Safak, YAMAN Hakan
+35	6	86		Tue Dec  9 04:02:53 1997  K.Bouleimen
+35	7	99		Tue Dec  9 04:03:00 1997  K.Bouleimen
+35	8	101		Thu Dec 18 12:14:00 1997  T.Baar, P.Brucker, S.Knust
+35	9	91		Mon Nov 30 04:00:37 1998  K. Nonobe and T. Ibaraki
+35	10	86		Fri Jun  5 04:22:18 1998  K. Nonobe and T. Ibaraki
+36	1	210		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+36	2	223		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+36	3	228		Tue Nov 21 19:40:55 2017 E.Goncharov
+36	4	235		Tue Dec  4 12:13:07 2018 E.Goncharov
+36	5	228		Wed Mar 14 10:56:57 2018 E.Goncharov
+36	6	225		Mon May 28 21:35:06 2007  D. Sun, S. Zhou
+36	7	208		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+36	8	172		Wed Aug 31 06:50:09 2005  F. Xiao, A. Lim and B. Rodrigues
+36	9	220		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+36	10	216		Wed Jun 27 22:35:06 2007  D. Sun, S. Zhou
+37	1	145		Mon May 28 21:35:07 2007  D. Sun, S. Zhou
+37	2	145		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+37	3	139		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+37	4	162		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+37	5	204		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+37	6	163		Wed Jun 27 22:35:06 2007  D. Sun, S. Zhou
+37	7	160		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+37	8	178		Wed Jun 27 22:35:06 2007  D. Sun, S. Zhou
+37	9	142		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+37	10	132		Thu May 17 06:05:06 2007  D. Sun, S. Zhou
+38	1	108		Wed May 30 17:34:46 2001  V. Valls, M. Quintanilla, F. Ballestin
+38	2	124		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+38	3	155		Wed Jun 27 22:35:06 2007  D. Sun, S. Zhou
+38	4	140		Wed Jun 27 22:35:07 2007  D. Sun, S. Zhou
+38	5	114		Tue Apr  9 15:42:35 2002  V. Valls, M. Quintanilla, F. Ballestin
+38	6	122		Wed Jun 27 22:35:07 2007  D. Sun, S. Zhou
+38	7	105		Tue Apr  9 15:43:39 2002  V. Valls, M. Quintanilla, F. Ballestin
+38	8	125		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+38	9	134		Sun Sep 25 06:50:07 2005  F. Xiao, A. Lim and B. Rodrigues
+38	10	140		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+39	1	95		Mon Jan 31 15:18:07 2000  V. Valls, M. Quintanilla, F. Ballestin
+39	2	108		Wed Jun 27 22:35:07 2007  D. Sun, S. Zhou
+39	3	111		Wed Jun 27 22:35:07 2007  D. Sun, S. Zhou
+39	4	98		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+39	5	106		Tue Dec  9 04:06:57 1997  K.Bouleimen
+39	6	95		Tue Dec  9 04:07:04 1997  K.Bouleimen
+39	7	104		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+39	8	96		Thu Mar 10 21:53:21 2005  D. Debels and M. Vanhoucke             
+39	9	92		Thu Mar 10 21:53:21 2005  D. Debels and M. Vanhoucke             
+39	10	110		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+40	1	81		Fri Jul  6 18:46:32 2001  V. Valls, M. Quintanilla, F. Ballestin
+40	2	90		Wed Jan 13 04:07:13 1999  V. Valls, M. Quintanilla and F. Ballest
+40	3	87		Tue Jan 19 12:07:15 1999  V. Valls, M. Quintanilla and F. Ballest
+40	4	112		Tue Dec  9 04:10:00 1997  K.Bouleimen
+40	5	101		Tue Dec  9 04:10:07 1997  K.Bouleimen
+40	6	90		Tue Dec  9 04:10:14 1997  K.Bouleimen
+40	7	91		Tue Dec  9 04:10:21 1997  K.Bouleimen
+40	8	97		Tue Dec  9 04:10:28 1997  K.Bouleimen
+40	9	117		Tue Dec  9 04:10:35 1997  K.Bouleimen
+40	10	96		Fri Dec 19 12:03:48 1997  T.Baar, P.Brucker, S.Knust
+41	1	127		Mon Jun 22 12:07:54 1998  K. Nonobe and T. Ibaraki
+41	2	141		Sat Dec 20 04:00:18 1997  T.Baar, P.Brucker, S.Knust
+41	3	141		Fri Jul  6 18:47:14 2001  V. Valls, M. Quintanilla, F. Ballestin
+41	4	116		Tue Sep 22 04:00:09 1998  K. Nonobe and T. Ibaraki
+41	5	138		Tue Dec  9 04:11:10 1997  K.Bouleimen
+41	6	113		Fri Jun  5 04:13:50 1998  K. Nonobe and T. Ibaraki
+41	7	109		Thu Sep 18 10:50:05 2008  A. Horbach
+41	8	138		Fri Jun  5 04:14:05 1998  K. Nonobe and T. Ibaraki
+41	9	121		Mon Dec 21 12:00:16 1998  K. Nonobe and T. Ibaraki
+41	10	136		Tue Feb  8 13:49:16 2000  V. Valls, M. Quintanilla, F. Ballestin
+42	1	108		Thu Sep 14 15:56:16 2000  V. Valls, M. Quintanilla, F. Ballestin
+42	2	126		Tue Dec  9 04:07:40 1997  K.Bouleimen
+42	3	106		Fri Jun  5 04:14:26 1998  K. Nonobe and T. Ibaraki
+42	4	104		Fri Jun  5 04:14:33 1998  K. Nonobe and T. Ibaraki
+42	5	120		Tue Sep 22 04:00:16 1998  K. Nonobe and T. Ibaraki
+42	6	119		Fri Jun  5 04:14:47 1998  K. Nonobe and T. Ibaraki
+42	7	123		Fri Jun  5 04:14:55 1998  K. Nonobe and T. Ibaraki
+42	8	113		Sat Jun 18 15:50:04 2005  J. Horstmann and J. Homberger
+42	9	104		Fri Jun  5 04:15:09 1998  K. Nonobe and T. Ibaraki
+42	10	118		Fri Jun  5 04:22:47 1998  K. Nonobe and T. Ibaraki
+43	1	105		Fri Jun  5 04:15:16 1998  K. Nonobe and T. Ibaraki
+43	2	120		Tue Dec  9 04:08:42 1997  K.Bouleimen
+43	3	95		Fri Jun  5 04:15:23 1998  K. Nonobe and T. Ibaraki
+43	4	105		Fri Jun  5 04:15:30 1998  K. Nonobe and T. Ibaraki
+43	5	105		Fri Jun  5 04:15:38 1998  K. Nonobe and T. Ibaraki
+43	6	98		Mon Jun 22 12:08:38 1998  K. Nonobe and T. Ibaraki
+43	7	122		Sat Dec 20 04:03:21 1997  T.Baar, P.Brucker, S.Knust
+43	8	115		Tue Dec  9 04:09:25 1997  K.Bouleimen
+43	9	105		Sat Dec 20 04:03:35 1997  T.Baar, P.Brucker, S.Knust
+43	10	113		Sat Dec 20 04:03:42 1997  T.Baar, P.Brucker, S.Knust
+44	1	100		Sat Dec 20 04:03:50 1997  T.Baar, P.Brucker, S.Knust
+44	2	112		Tue Dec  9 04:12:56 1997  K.Bouleimen
+44	3	107		Tue Dec  9 04:13:03 1997  K.Bouleimen
+44	4	95		Fri Jun  5 04:15:52 1998  K. Nonobe and T. Ibaraki
+44	5	98		Fri Jun  5 04:15:59 1998  K. Nonobe and T. Ibaraki
+44	6	106		Tue Dec  9 04:13:24 1997  K.Bouleimen
+44	7	98		Tue Dec  9 04:13:31 1997  K.Bouleimen
+44	8	108		Fri Jun  5 04:16:06 1998  K. Nonobe and T. Ibaraki
+44	9	91		Tue Dec  9 04:13:45 1997  K.Bouleimen
+44	10	98		Sat Dec 20 04:04:54 1997  T.Baar, P.Brucker, S.Knust
+45	1	108		Sat Dec 20 04:05:02 1997  T.Baar, P.Brucker, S.Knust
+45	2	91		Tue Dec  9 04:13:59 1997  K.Bouleimen
+45	3	98		Tue Dec  9 04:14:06 1997  K.Bouleimen
+45	4	103		Tue Dec  9 04:14:13 1997  K.Bouleimen
+45	5	116		Tue Dec  9 04:14:20 1997  K.Bouleimen
+45	6	125		Tue Dec  9 04:14:27 1997  K.Bouleimen
+45	7	103		Tue Dec  9 04:14:34 1997  K.Bouleimen
+45	8	103		Tue Dec  9 04:14:41 1997  K.Bouleimen
+45	9	114		Tue Dec  9 04:14:48 1997  K.Bouleimen
+45	10	99		Sat Dec 20 04:06:07 1997  T.Baar, P.Brucker, S.Knust
+46	1	188		Tue Aug 30 14:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+46	2	198		Mon Jun 18 20:50:04 2007  D. Sun, S. Zhou
+46	3	175		Wed Aug 31 07:20:04 2005  F. Xiao, A. Lim and B. Rodrigues
+46	4	170		Tue Apr  9 15:41:52 2002  V. Valls, M. Quintanilla, F. Ballestin
+46	5	149		Mon Jun  4 04:20:05 2007  D. Sun, S. Zhou
+46	6	178		Wed Aug 31 06:50:14 2005  F. Xiao, A. Lim and B. Rodrigues
+46	7	170		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+46	8	176		Mon May  1 13:43:08 2017 Jieguang He
+46	9	166		Sun Sep 25 06:50:07 2005  F. Xiao, A. Lim and B. Rodrigues
+46	10	188		Tue Aug 30 14:50:06 2005  F. Xiao, A. Lim and B. Rodrigues
+47	1	137		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+47	2	132		Thu Mar 10 21:53:21 2005  D. Debels and M. Vanhoucke             
+47	3	125		Wed Jan 24 20:50:06 2007  M. R.Ranjbar , F. Kianfar
+47	4	132		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+47	5	127		Mon Jun 18 20:50:04 2007  D. Sun, S. Zhou
+47	6	137		Mon Jun  4 17:20:05 2007  D. Sun, S. Zhou
+47	7	118		Mon Jun 18 20:50:05 2007  D. Sun, S. Zhou
+47	8	133		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+47	9	144		Wed Aug 31 06:50:14 2005  F. Xiao, A. Lim and B. Rodrigues
+47	10	132		Thu Mar 10 21:53:21 2005  D. Debels and M. Vanhoucke             
+48	1	100		Thu Sep 14 15:56:21 2000  V. Valls, M. Quintanilla, F. Ballestin
+48	2	113		Fri Jul  6 18:47:00 2001  V. Valls, M. Quintanilla, F. Ballestin
+48	3	112		Fri Jun  4 12:06:26 1999  V. Valls, M. Quintanilla, F. Ballestin
+48	4	127		Thu Mar 10 21:53:21 2005  D. Debels and M. Vanhoucke             
+48	5	110		Wed Jun  2 07:20:04 2010  A.Schutt, T.Feydy, P.J.Stuckey, M.G.Wal
+48	6	105		Fri Apr 19 13:43:38 2002  V. Valls, M. Quintanilla, F. Ballestin
+48	7	106		Mon Feb 25 17:51:48 2019 Philippe Laborie
+48	8	116		Mon Jan 31 15:19:49 2000  V. Valls, M. Quintanilla, F. Ballestin
+48	9	113		Fri Jul  6 18:51:35 2001  M. Palpant, C. Artigues, P. Michelon
+48	10	111		Mon Sep 10 14:10:51 2001  V. Valls, M. Quintanilla, F. Ballestin
+49	1	96		Fri Jun  5 04:17:18 1998  K. Nonobe and T. Ibaraki
+49	2	109		Mon Dec 11 15:30:12 2000  V. Valls, M. Quintanilla, F. Ballestin
+49	3	96		Fri Jun  4 12:06:33 1999  V. Valls, M. Quintanilla, F. Ballestin
+49	4	96		Mon Mar  6 16:50:06 2006 José Fernando Gonçalves & Jorge Magalhãe
+49	5	89		Sat Feb 13 04:02:48 1999  V. Valls, M. Quintanilla, F. Ballestin
+49	6	128		Tue Dec  9 04:17:37 1997  K.Bouleimen
+49	7	99		Mon Jun  7 12:01:21 1999  V. Valls, M. Quintanilla, F. Ballestin
+49	8	113		Fri Jul  6 18:51:39 2001  M. Palpant, C. Artigues, P. Michelon
+49	9	97		Wed Aug 31 06:50:14 2005  F. Xiao, A. Lim and B. Rodrigues
+49	10	97		Tue Apr  9 15:46:20 2002  V. Valls, M. Quintanilla, F. Ballestin
+50	1	116		Sat Dec 20 04:11:04 1997  T.Baar, P.Brucker, S.Knust
+50	2	112		Wed Jan 13 04:08:03 1999  V. Valls, M. Quintanilla and F. Ballest
+50	3	111		Tue Dec  9 04:18:19 1997  K.Bouleimen
+50	4	100		Mon Jan 31 15:18:45 2000  V. Valls, M. Quintanilla, F. Ballestin
+50	5	100		Fri Jun  5 04:18:01 1998  K. Nonobe and T. Ibaraki
+50	6	102		Tue Dec  9 04:18:40 1997  K.Bouleimen
+50	7	137		Tue Dec  9 04:18:47 1997  K.Bouleimen
+50	8	112		Tue Dec  9 04:18:54 1997  K.Bouleimen
+50	9	101		Tue Dec  9 04:19:01 1997  K.Bouleimen
+50	10	103		Fri Jun  5 04:23:15 1998  K. Nonobe and T. Ibaraki
+51	1	206		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+51	2	221		Wed May 16 22:20:05 2007  D. Sun, S. Zhou
+51	3	219		Thu Dec 14 14:21:01 2017 E.Goncharov
+51	4	211		Fri Nov 17 06:17:58 2017 E.Goncharov
+51	5	229		Fri Jul 27 21:48:26 2018 E.Goncharov
+51	6	215		Wed Aug 31 06:50:15 2005  F. Xiao, A. Lim and B. Rodrigues
+51	7	212		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+51	8	206		Wed Aug 31 06:50:09 2005  F. Xiao, A. Lim and B. Rodrigues
+51	9	210		Fri Jul  6 15:06:01 2018 E.Goncharov
+51	10	225		Fri Jul  6 15:05:15 2018 E.Goncharov
+52	1	176		Wed Aug 31 06:50:10 2005  F. Xiao, A. Lim and B. Rodrigues
+52	2	183		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+52	3	134		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+52	4	170		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+52	5	168		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+52	6	196		Wed Jun 27 22:35:07 2007  D. Sun, S. Zhou
+52	7	149		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+52	8	158		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+52	9	150		Wed Aug 31 06:50:10 2005  F. Xiao, A. Lim and B. Rodrigues
+52	10	143		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+53	1	144		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+53	2	115		Wed May  9 19:10:34 2001  V. Valls, M. Quintanilla, F. Ballestin
+53	3	112		Mon Mar  6 16:50:06 2006 José Fernando Gonçalves & Jorge Magalhãe
+53	4	145		Sun Sep 25 06:50:08 2005  F. Xiao, A. Lim and B. Rodrigues
+53	5	113		Tue Apr  9 15:42:41 2002  V. Valls, M. Quintanilla, F. Ballestin
+53	6	106		Thu Mar 10 21:53:22 2005  D. Debels and M. Vanhoucke             
+53	7	119		Tue Apr  9 15:43:54 2002  V. Valls, M. Quintanilla, F. Ballestin
+53	8	139		Mon Sep 10 14:10:26 2001  V. Valls, M. Quintanilla, F. Ballestin
+53	9	165		Wed Aug 31 06:50:10 2005  F. Xiao, A. Lim and B. Rodrigues
+53	10	132		Thu Jul 12 02:20:04 2007  D. Sun, S. Zhou
+54	1	104		Sun Sep 13 10:56:46 2015 E. Goncharov, V. Leonov
+54	2	134		Tue Dec  9 04:25:38 1997  K.Bouleimen
+54	3	111		Tue Jan 19 12:08:07 1999  V. Valls, M. Quintanilla and F. Ballest
+54	4	120		Mon Aug 13 15:21:59 2001  M. Palpant, C. Artigues, P. Michelon
+54	5	109		Tue Apr  9 15:42:43 2002  V. Valls, M. Quintanilla, F. Ballestin
+54	6	109		Mon Sep 10 14:09:59 2001  V. Valls, M. Quintanilla, F. Ballestin
+54	7	111		Tue Apr  9 15:43:57 2002  V. Valls, M. Quintanilla, F. Ballestin
+54	8	102		Thu Mar 10 21:53:22 2005  D. Debels and M. Vanhoucke             
+54	9	107		Sun Sep 25 06:50:08 2005  F. Xiao, A. Lim and B. Rodrigues
+54	10	108		Tue Apr  9 15:46:34 2002  V. Valls, M. Quintanilla, F. Ballestin
+55	1	100		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+55	2	83		Tue Dec  9 04:19:15 1997  K.Bouleimen
+55	3	126		Tue Dec  9 04:19:22 1997  K.Bouleimen
+55	4	90		Wed Jan 13 04:06:43 1999  V. Valls, M. Quintanilla and F. Ballest
+55	5	106		Tue Dec  9 04:19:37 1997  K.Bouleimen
+55	6	100		Wed Jan 24 20:50:07 2007  M. R.Ranjbar , F. Kianfar
+55	7	105		Tue Dec  9 04:19:53 1997  K.Bouleimen
+55	8	101		Sat Jan 16 04:16:55 1999  V. Valls, M. Quintanilla and F. Ballest
+55	9	94		Fri Jun  5 04:19:12 1998  K. Nonobe and T. Ibaraki
+55	10	100		Sat Dec 20 04:18:16 1997  T.Baar, P.Brucker, S.Knust
+56	1	236		Sat Dec 22 11:13:02 2018 E.Goncharov
+56	2	204		Wed Aug 31 06:50:10 2005  F. Xiao, A. Lim and B. Rodrigues
+56	3	240		Fri Nov  2 16:39:22 2018 E.Goncharov
+56	4	222		Thu May 17 06:05:05 2007  D. Sun, S. Zhou
+56	5	280		Fri Jun 29 02:35:05 2007  D. Sun, S. Zhou
+56	6	214		Sun Sep 25 06:50:08 2005  F. Xiao, A. Lim and B. Rodrigues
+56	7	282		Thu Dec 21 15:25:03 2017 E.Goncharov
+56	8	288		Fri Dec 22 06:30:17 2017 E.Goncharov
+56	9	287		Tue Jul 10 06:00:19 2018 E.Goncharov
+56	10	258		Sat Sep 15 06:06:41 2018 E.Goncharov
+57	1	185		Wed May 30 19:20:04 2007  D. Sun, S. Zhou
+57	2	161		Wed May 30 19:20:04 2007  D. Sun, S. Zhou
+57	3	184		Wed May 30 19:20:04 2007  D. Sun, S. Zhou
+57	4	199		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+57	5	179		Wed May 30 19:20:05 2007  D. Sun, S. Zhou
+57	6	188		Wed Jul 12 13:03:23 2017 M. Vanhoucke and J. Coelho
+57	7	166		Wed May 30 20:20:04 2007  D. Sun, S. Zhou
+57	8	162		Wed May 30 19:20:05 2007  D. Sun, S. Zhou
+57	9	167		Wed May 30 19:20:05 2007  D. Sun, S. Zhou
+57	10	167		Wed May 30 20:20:04 2007  D. Sun, S. Zhou
+58	1	141		Mon Jun 18 20:50:05 2007  D. Sun, S. Zhou
+58	2	126		Thu May 17 06:05:05 2007  D. Sun, S. Zhou
+58	3	120		Fri Jun 29 02:35:05 2007  D. Sun, S. Zhou
+58	4	145		Mon May 28 21:50:05 2007  D. Sun, S. Zhou
+58	5	120		Wed Jan 24 20:50:08 2007  M. R.Ranjbar , F. Kianfar
+58	6	140		Thu May 17 06:05:05 2007  D. Sun, S. Zhou
+58	7	147		Thu May 17 06:05:05 2007  D. Sun, S. Zhou
+58	8	132		Mon Jun  4 04:20:05 2007  D. Sun, S. Zhou
+58	9	130		Thu Jun 21 21:50:06 2007  D. Sun, S. Zhou
+58	10	131		Mon Jun  4 04:20:05 2007  D. Sun, S. Zhou
+59	1	114		Wed May  9 19:10:24 2001  V. Valls, M. Quintanilla, F. Ballestin
+59	2	106		Fri Jul  6 18:47:06 2001  V. Valls, M. Quintanilla, F. Ballestin
+59	3	108		Wed Aug 31 06:50:16 2005  F. Xiao, A. Lim and B. Rodrigues
+59	4	108		Thu Mar 10 21:53:23 2005  D. Debels and M. Vanhoucke             
+59	5	106		Tue Apr  9 15:42:51 2002  V. Valls, M. Quintanilla, F. Ballestin
+59	6	115		Fri Apr 19 13:43:48 2002  V. Valls, M. Quintanilla, F. Ballestin
+59	7	112		Thu Mar 10 21:53:23 2005  D. Debels and M. Vanhoucke             
+59	8	110		Mon Mar  6 16:50:06 2006 José Fernando Gonçalves & Jorge Magalhãe
+59	9	119		Tue Apr  9 15:45:42 2002  V. Valls, M. Quintanilla, F. Ballestin
+59	10	132		Thu Mar 10 21:53:23 2005  D. Debels and M. Vanhoucke             
+60	1	101		Sat Dec 20 12:01:20 1997  T.Baar, P.Brucker, S.Knust
+60	2	83		Mon Sep 10 14:09:06 2001  V. Valls, M. Quintanilla, F. Ballestin
+60	3	89		Thu Mar 10 21:53:23 2005  D. Debels and M. Vanhoucke             
+60	4	103		Thu Mar 10 21:53:23 2005  D. Debels and M. Vanhoucke             
+60	5	105		Mon Sep 10 14:09:41 2001  V. Valls, M. Quintanilla, F. Ballestin
+60	6	110		Tue Dec  9 04:27:10 1997  K.Bouleimen
+60	7	94		Fri Jul 17 21:54:21 2015 E. Goncharov, V. Leonov
+60	8	101		Wed May  9 19:12:06 2001  V. Valls, M. Quintanilla, F. Ballestin
+60	9	101		Tue Dec  9 04:27:31 1997  K.Bouleimen
+60	10	89		Wed May  9 19:12:34 2001  V. Valls, M. Quintanilla, F. Ballestin
