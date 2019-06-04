@@ -86,11 +86,11 @@ struct
 
   let extend_parray pa a =
     let n = Parray.length pa in
-    A.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
+    Parray.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
 
   let extend box () =
     let (store, idx) = Store.extend box.store in
-    let reactor = extend_parray box.reactor [];
+    let reactor = extend_parray box.reactor [] in
     ({ box with store; reactor }, idx)
 
   let project_itv box v = Store.get box.store v
@@ -111,22 +111,11 @@ struct
     else
       vol
 
-  (* We propagate all the constraints in box.
-     The volume is used to detect when the store changed. *)
-  let rec propagate vol box =
-    let store = List.fold_left Closure.incremental_closure box.store box.constraints in
-    let box = { box with store=store } in
-    let vol' = volume box in
-    if vol <> vol' then
-      propagate vol' box
-    else
-      (vol, box)
-
   let fold_active_constraints box f acc =
     let i = ref (-1) in
     Parray.fold_left (fun acc b ->
-      i := (!i) + 1;
-      if b then f acc i (Parray.get box.constraints i)
+      i := !i + 1;
+      if b then f acc !i (Parray.get box.constraints !i)
       else acc) acc box.actives
 
   (* We remove the constraints entailed in the store.
@@ -136,30 +125,37 @@ struct
       match entailment box c with
       | Unknown -> true
       | True -> false
-      | False -> failure_disentailment () in
-    let actives = fold_active_constraints box (fun acc i c ->
-      if not (is_unknown c) then Parray.set acc i false) box.actives in
-    { box with actives }
+      (* TODO: normally this case should not happen, but it happens in Patterson.pat2 with Box_reified. *)
+      | False -> raise Bot.Bot_found in (* failure_disentailment () in *)
+    let actives, num_actives = fold_active_constraints box (fun (acc,n) i c ->
+      if not (is_unknown c) then (Parray.set acc i false, n)
+      else (acc, (n+1))) (box.actives, 0) in
+    { box with actives; num_actives }
 
-... to continue here ! with the closure.
+  let closure_one box c_idx =
+    let store = Closure.incremental_closure box.store (Parray.get box.constraints c_idx) in
+    { box with store }
 
-  let closure box =
-    let vol = volume box in
-    let (vol', box) = propagate vol box in
-    if vol <> vol' then
+  let schedule reactor scheduler var = (Parray.get reactor var)@scheduler
+
+  let rec closure box =
+    let scheduler = Store.delta box.store (schedule box.reactor) box.scheduler in
+    if List.length scheduler = 0 then
       remove_entailed_constraints box
     else
-      box
+      let box = { box with scheduler=[] } in
+      let box = List.fold_left closure_one box scheduler in
+      closure box
 
   let subscribe reactor c n =
-    let subscribe_var reactor x = Parray.set reactor x (extend_parray (Parray.get reactor x) n) in
+    let subscribe_var reactor x = Parray.set reactor x (n::(Parray.get reactor x)) in
     let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
-    List.fold_left subscribe_var box.reactor vars
+    List.fold_left subscribe_var reactor vars
 
   (* If the constraint is unary, we propagate it immediately.
      Otherwise we register it into the event system (in the actives, reactor and constraints structures). *)
   let weak_incremental_closure box = function
-  | (Var idx, op, Cst (val, a)) as c ->
+  | Csp.(Var _, _, Cst (_, _)) as c ->
       { box with store=(Closure.incremental_closure box.store c) }
   | c ->
       let n = Parray.length box.constraints in
@@ -167,7 +163,8 @@ struct
       let actives = extend_parray box.actives true in
       let num_actives = box.num_actives + 1 in
       let reactor = subscribe box.reactor c n in
-      { box with constraints; actives; num_actives; vars; reactor }
+      let scheduler = n::box.scheduler in
+      { box with constraints; actives; num_actives; reactor; scheduler }
 
   let incremental_closure box c = closure (weak_incremental_closure box c)
 
@@ -183,7 +180,7 @@ struct
     Store.print fmt repr box.store;
     Format.fprintf fmt "\n";
     let print_var fmt v = Csp.print_var fmt (R.to_logic_var repr v) in
-    List.iter (Format.fprintf fmt "%a\n" (Csp.print_gconstraint print_var)) box.constraints;
+    Parray.iter (Format.fprintf fmt "%a\n" (Csp.print_gconstraint print_var)) box.constraints;
   end
 
   let split box =
@@ -192,7 +189,7 @@ struct
     (* We remove the branch that are unsatisfiable. *)
     List.flatten (List.map2 (fun box branch ->
       try [weak_incremental_closure box branch]
-      with Bot_found -> []) boxes branches)
+      with Bot.Bot_found -> []) boxes branches)
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->

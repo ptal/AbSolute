@@ -75,7 +75,10 @@ struct
     let acc = ref acc in
     for i=0 to (Array.length data.delta)-1 do
       if Array.get data.delta i then
+      begin
+        Array.set data.delta i false;
         acc := f (!acc) i
+      end
     done;
     !acc
 end
