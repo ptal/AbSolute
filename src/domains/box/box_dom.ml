@@ -18,7 +18,6 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> kleene
   val split: t -> t list
   val volume: t -> float
@@ -62,8 +61,11 @@ struct
     (* `reactor.(v)` contains the set of constraints that contains the variable `v`. *)
     reactor: (cons_id list) Parray.t;
 
-    (* Contains all the constraint that must be propagated in order to reach a fix point. *)
-    scheduler: cons_id list;
+    (* Contains all the constraint that must be propagated in order to reach a fix point.
+       We also have the companion `inside_queue.(i)` that is true if the constraint `i` is inside the queue.
+       This field is local to a node, so it is not backtracked nor copied. *)
+    scheduler: cons_id CCDeque.t;
+    inside_queue: CCBV.t;
   }
 
   (* Reexported functions from the parametrized modules. *)
@@ -81,7 +83,8 @@ struct
     actives = empty_parray ();
     num_actives = 0;
     reactor = empty_parray ();
-    scheduler=[];
+    scheduler=CCDeque.create ();
+    inside_queue=CCBV.empty ();
   }
 
   let extend_parray pa a =
@@ -125,48 +128,70 @@ struct
       match entailment box c with
       | Unknown -> true
       | True -> false
-      (* TODO: normally this case should not happen, but it happens in Patterson.pat2 with Box_reified. *)
-      | False -> raise Bot.Bot_found in (* failure_disentailment () in *)
-    let actives, num_actives = fold_active_constraints box (fun (acc,n) i c ->
-      if not (is_unknown c) then (Parray.set acc i false, n)
-      else (acc, (n+1))) (box.actives, 0) in
+      | False -> failure_disentailment () in
+    let actives, num_actives = fold_active_constraints box (fun (actives,n) i c ->
+      if not (is_unknown c) then (Parray.set actives i false, n)
+      else (actives, (n+1))) (box.actives, 0) in
     { box with actives; num_actives }
 
   let closure_one box c_idx =
     let store = Closure.incremental_closure box.store (Parray.get box.constraints c_idx) in
     { box with store }
 
-  let schedule reactor scheduler var = (Parray.get reactor var)@scheduler
+  let schedule box c_idx =
+    if Parray.get box.actives c_idx &&
+       not (CCBV.get box.inside_queue c_idx) then
+    begin
+      CCDeque.push_back box.scheduler c_idx;
+      CCBV.set box.inside_queue c_idx
+    end
 
-  let rec closure box =
-    let scheduler = Store.delta box.store (schedule box.reactor) box.scheduler in
-    if List.length scheduler = 0 then
-      remove_entailed_constraints box
-    else
-      let box = { box with scheduler=[] } in
-      let box = List.fold_left closure_one box scheduler in
-      closure box
+  let next_constraint box =
+    let c_idx = CCDeque.take_front box.scheduler in
+    CCBV.reset box.inside_queue c_idx;
+    c_idx
 
-  let subscribe reactor c n =
-    let subscribe_var reactor x = Parray.set reactor x (n::(Parray.get reactor x)) in
+  let react box =
+    let react_var box var = List.iter (schedule box) (Parray.get box.reactor var) in
+    let store, deltas = Store.delta box.store in
+    let box = { box with store } in
+    List.iter (react_var box) deltas;
+    box
+
+  let closure box =
+    (* This is a bug, normally the scheduler should be empty because it is emptied at the end of this function, and not modified anywhere else. *)
+    (* if not (CCDeque.is_empty box.scheduler) then failwith "bug2"; *)
+    CCDeque.clear box.scheduler;
+    CCBV.clear box.inside_queue;
+    let rec aux box =
+      let box = react box in
+      if CCDeque.is_empty box.scheduler then
+        remove_entailed_constraints box
+      else
+        let c_idx = next_constraint box in
+        let box = closure_one box c_idx in
+        aux box in
+    aux box
+
+  let subscribe reactor c c_idx =
+    let subscribe_var reactor x = Parray.set reactor x (c_idx::(Parray.get reactor x)) in
     let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
     List.fold_left subscribe_var reactor vars
 
-  (* If the constraint is unary, we propagate it immediately.
-     Otherwise we register it into the event system (in the actives, reactor and constraints structures). *)
-  let weak_incremental_closure box = function
-  | Csp.(Var _, _, Cst (_, _)) as c ->
-      { box with store=(Closure.incremental_closure box.store c) }
-  | c ->
-      let n = Parray.length box.constraints in
-      let constraints = extend_parray box.constraints c in
-      let actives = extend_parray box.actives true in
-      let num_actives = box.num_actives + 1 in
-      let reactor = subscribe box.reactor c n in
-      let scheduler = n::box.scheduler in
-      { box with constraints; actives; num_actives; reactor; scheduler }
-
-  let incremental_closure box c = closure (weak_incremental_closure box c)
+  (* We propagate the constraint immediately.
+     If the constraint is not unary, we register it into the event system (in the actives, reactor and constraints structures). *)
+  let weak_incremental_closure box c =
+    let box = match c with
+      | Csp.(Var _, _, Cst (_, _)) -> box
+      | c ->
+        let c_idx = Parray.length box.constraints in
+        let constraints = extend_parray box.constraints c in
+        let actives = extend_parray box.actives true in
+        let num_actives = box.num_actives + 1 in
+        let reactor = subscribe box.reactor c c_idx in
+        { box with constraints; actives; num_actives; reactor; }
+    in
+    { box with store=(Closure.incremental_closure box.store c) }
 
   (* `closure` and `incremental_closure` automatically remove entailed constraints. *)
   let state_decomposition box =

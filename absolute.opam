@@ -23,6 +23,7 @@ depends: [
   "ocaml" {>= "4.07.1"}
   "apron"
   "extlib"
+  "containers"
   "alcotest" {test}
 ]
 depopts: [
