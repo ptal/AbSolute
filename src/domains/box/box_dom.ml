@@ -159,10 +159,6 @@ struct
     box
 
   let closure box =
-    (* This is a bug, normally the scheduler should be empty because it is emptied at the end of this function, and not modified anywhere else. *)
-    (* if not (CCDeque.is_empty box.scheduler) then failwith "bug2"; *)
-    CCDeque.clear box.scheduler;
-    CCBV.clear box.inside_queue;
     let rec aux box =
       let box = react box in
       if CCDeque.is_empty box.scheduler then
@@ -171,7 +167,12 @@ struct
         let c_idx = next_constraint box in
         let box = closure_one box c_idx in
         aux box in
-    aux box
+    try aux box
+    with e -> begin
+      CCDeque.clear box.scheduler;
+      CCBV.clear box.inside_queue;
+      raise e
+    end
 
   let subscribe reactor c c_idx =
     let subscribe_var reactor x = Parray.set reactor x (c_idx::(Parray.get reactor x)) in
