@@ -1,6 +1,7 @@
 open Var_store
 open Abstract_domain
 open Box_representation
+open Pengine
 
 module type Box_sig =
 sig
@@ -43,29 +44,16 @@ struct
   module R = Box_rep
   type itv = I.t
   type bound = I.B.t
-  type cons_id = int
 
   (* We use `Parray` for most arrays because the structures must be backtrackable.
      Note that for `constraints` and `reactor` these structures should be static during the resolution.
      (We rarely add a new constraint inside the problem during resolution, but with Parray, it is possible to do so). *)
   type t = {
     store: Store.t;
-
     constraints: R.rconstraint Parray.t;
 
-    (* Records the active constraints (those not yet entailed).
-       This field is backtracked automatically. *)
-    actives: bool Parray.t;
-    num_actives: int;
-
-    (* `reactor.(v)` contains the set of constraints that contains the variable `v`. *)
-    reactor: (cons_id list) Parray.t;
-
-    (* Contains all the constraint that must be propagated in order to reach a fix point.
-       We also have the companion `inside_queue.(i)` that is true if the constraint `i` is inside the queue.
-       This field is local to a node, so it is not backtracked nor copied. *)
-    scheduler: cons_id CCDeque.t;
-    inside_queue: CCBV.t;
+    (* Propagation engine of the constraints in `constraints`. *)
+    engine: Pengine.t;
   }
 
   (* Reexported functions from the parametrized modules. *)
@@ -80,11 +68,7 @@ struct
   let empty = {
     store=Store.empty;
     constraints = empty_parray ();
-    actives = empty_parray ();
-    num_actives = 0;
-    reactor = empty_parray ();
-    scheduler=CCDeque.create ();
-    inside_queue=CCBV.empty ();
+    engine = Pengine.empty ();
   }
 
   let extend_parray pa a =
@@ -93,8 +77,8 @@ struct
 
   let extend box () =
     let (store, idx) = Store.extend box.store in
-    let reactor = extend_parray box.reactor [] in
-    ({ box with store; reactor }, idx)
+    let engine = Pengine.extend_event box.engine in
+    ({ box with store; engine }, idx)
 
   let project_itv box v = Store.get box.store v
 
@@ -114,70 +98,29 @@ struct
     else
       vol
 
-  let fold_active_constraints box f acc =
-    let i = ref (-1) in
-    Parray.fold_left (fun acc b ->
-      i := !i + 1;
-      if b then f acc !i (Parray.get box.constraints !i)
-      else acc) acc box.actives
-
   (* We remove the constraints entailed in the store.
      It is useful to avoid propagating entailed constraints. *)
   let remove_entailed_constraints box =
-    let is_unknown c =
+    let is_inactive c_idx =
+      let c = Parray.get box.constraints c_idx in
       match entailment box c with
-      | Unknown -> true
-      | True -> false
+      | Unknown -> false
+      | True -> true
       | False -> failure_disentailment () in
-    let actives, num_actives = fold_active_constraints box (fun (actives,n) i c ->
-      if not (is_unknown c) then (Parray.set actives i false, n)
-      else (actives, (n+1))) (box.actives, 0) in
-    { box with actives; num_actives }
+    let engine = Pengine.deactivate_tasks box.engine is_inactive in
+    { box with engine }
 
   let closure_one box c_idx =
     let store = Closure.incremental_closure box.store (Parray.get box.constraints c_idx) in
-    { box with store }
-
-  let schedule box c_idx =
-    if Parray.get box.actives c_idx &&
-       not (CCBV.get box.inside_queue c_idx) then
-    begin
-      CCDeque.push_back box.scheduler c_idx;
-      CCBV.set box.inside_queue c_idx
-    end
-
-  let next_constraint box =
-    let c_idx = CCDeque.take_front box.scheduler in
-    CCBV.reset box.inside_queue c_idx;
-    c_idx
-
-  let react box =
-    let react_var box var = List.iter (schedule box) (Parray.get box.reactor var) in
-    let store, deltas = Store.delta box.store in
-    let box = { box with store } in
-    List.iter (react_var box) deltas;
-    box
+    let store, deltas = Store.delta store in
+    { box with store }, deltas
 
   let closure box =
-    let rec aux box =
-      let box = react box in
-      if CCDeque.is_empty box.scheduler then
-        remove_entailed_constraints box
-      else
-        let c_idx = next_constraint box in
-        let box = closure_one box c_idx in
-        aux box in
-    try aux box
-    with e -> begin
-      CCDeque.clear box.scheduler;
-      CCBV.clear box.inside_queue;
-      raise e
-    end
-
-  let subscribe reactor c c_idx =
-    let subscribe_var reactor x = Parray.set reactor x (c_idx::(Parray.get reactor x)) in
-    let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
-    List.fold_left subscribe_var reactor vars
+    let store, deltas = Store.delta box.store in
+    let box = { box with store } in
+    Pengine.react box.engine deltas;
+    let box = Pengine.fixpoint box.engine closure_one box in
+    remove_entailed_constraints box
 
   (* We propagate the constraint immediately.
      If the constraint is not unary, we register it into the event system (in the actives, reactor and constraints structures). *)
@@ -187,16 +130,16 @@ struct
       | c ->
         let c_idx = Parray.length box.constraints in
         let constraints = extend_parray box.constraints c in
-        let actives = extend_parray box.actives true in
-        let num_actives = box.num_actives + 1 in
-        let reactor = subscribe box.reactor c c_idx in
-        { box with constraints; actives; num_actives; reactor; }
+        let engine = Pengine.extend_task box.engine in
+        let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
+        let engine = Pengine.subscribe engine c_idx vars in
+        { box with constraints; engine; }
     in
     { box with store=(Closure.incremental_closure box.store c) }
 
   (* `closure` and `incremental_closure` automatically remove entailed constraints. *)
   let state_decomposition box =
-    if box.num_actives = 0 then
+    if Pengine.num_active_tasks box.engine = 0 then
       True
     else
       Unknown
