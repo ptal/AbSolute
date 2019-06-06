@@ -93,7 +93,7 @@ struct
 
   let extend box () =
     let (inner, idx) = Box.extend box.inner () in
-    ({ box with inner=inner; }, idx)
+    ({ box with inner }, idx)
 
   (* The following functions just forward the call to `Box`. *)
   let entailment box = function
