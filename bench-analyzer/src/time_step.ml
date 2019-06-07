@@ -1,22 +1,9 @@
-open Absolute_analyzer
+open Analyzer_all
 
-type strategy_2 = {
-  solver_name : string;
-  strategy_name : string;
-  all: (string, (float option * optimum)) Hashtbl.t;
-  steps : (float*int) list; (*time * value*)
-}
-
-let timeout = 60.
 let nb_steps = 30
 let one_step = timeout /. (float_of_int nb_steps)
 
-type instances_set_2 = {
-  problem_name : string;
-  instance_name : string;
-  nb_instances: int;
-  strategies : strategy_2 list;
-}
+
 
 let count_time_strategy (time : float) strategy =
   let steps = (time, Hashtbl.fold (fun _ y z -> match y with
@@ -37,33 +24,6 @@ let exec_step one_step timeout (instance : instances_set_2) =
   else 
     exec_step_rec one_step timeout (count_time instance time) (time +. one_step) 
   in exec_step_rec one_step timeout instance one_step 
-
-
-let convert_solver (solver : solver) (strategy : strategy) =
-  {solver_name = solver.name; strategy_name = strategy.name; all = strategy.all; steps = [];}
-
-(* -> strategy_2 list *)
-let append_solvers solvers =
-  let rec append_solvers_rec (solvers : solver list) strategies =
-  match solvers with 
-  [] -> strategies 
-  |s::solvers -> let li = List.map (convert_solver s) s.strategies in
-  append_solvers_rec solvers (List.append strategies li)
-  in append_solvers_rec solvers []
-
-
-let convert_instance problem (instances_set : instances_set) =
-  let nb_instances = (Hashtbl.length (List.hd (List.hd instances_set.solvers).strategies).all) in
-  {problem_name = problem.name; instance_name = instances_set.name; nb_instances = nb_instances;strategies = append_solvers instances_set.solvers}
-
-(*  -> instances_set_temp list *)
-let append_problems (database : problem list) = 
-  let rec append_problems_rec database instances =
-  match database with 
-  [] -> instances 
-  |p::database -> let li = List.map (convert_instance p) p.instances_set in
-  append_problems_rec database (List.append instances li)
-in append_problems_rec database []
 
 let print_step step =
   let (time,nb) = step in
@@ -114,45 +74,3 @@ let database_to_json_string database timeout steps =
   let instances = (String.sub instances 0 (String.length instances -1))  in
   let json = "\"instances\":["^instances^"]}" in
   name^json 
-
-  (*
-let check_file file =
-  if not (Sys.file_exists file) then 
-  begin
-    let cmd = "touch "^file in
-    let code = Sys.command cmd in
-    if not (code = 0) then 
-      raise (Sys_error ("shell error :"^(string_of_int code)^"\n"))
-  end
-  else 
-  begin
-    print_string (file^" content will be overwrite, continue ? [Y/n]");
-    let arg = read_line () in
-    if not (String.equal arg "Y") then
-      failwith ("execution stopped")
-  end
-
-let check_ext file =
-  let len = String.length file in
-  let ext_json = String.sub file (len-5) 5 in
-  if String.equal ext_json ".json" then
-    check_file file
-  else
-    raise (Json "not a json file")*)
-(*
-let _ = let timeout = 60. in
-  let steps = 30 in 
-  try 
-    let (database : database) = read_database "benchmark/example/" in
-    let (database : database) = process_database database in
-    let database = append_problems database in
-    let one_step = timeout /. (float_of_int steps) in 
-    let computed = List.map (exec_step one_step timeout) database in
-    let json = database_to_json_string computed timeout steps in
-    print_string json
-  with e ->
-      begin
-        Printexc.print_backtrace stdout;
-        Printf.printf "Exception: %s\n" (Printexc.to_string e);
-      end 
-*)

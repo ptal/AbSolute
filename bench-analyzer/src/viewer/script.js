@@ -191,7 +191,7 @@ function readCactus(analyse){
             display: true,
             scaleLabel:{
               display: true,
-              labelString: inst.solver1 +' with '+inst.strat1,
+              labelString: inst.solver1 /*+' with '+inst.strat1*/,
               fontSize: 15
             },
             ticks: {
@@ -208,7 +208,7 @@ function readCactus(analyse){
             display: true,  
             scaleLabel:{
               display: true,
-              labelString: inst.solver2 +' with '+inst.strat2,
+              labelString: inst.solver2 /*+' with '+inst.strat2*/,
               fontSize: 15
             },
             ticks: {
