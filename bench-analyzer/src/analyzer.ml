@@ -2,6 +2,7 @@ open Absolute_analyzer
 open Instance_inclusion
 open Cactus_plot
 open Time_step
+open Analyzer_all
 
 type comp = {
   delta_feas : float;
@@ -15,7 +16,6 @@ type comp_solver_strategy = {
   other : solver;
   solver_strategy : strategy;
   other_strategy : strategy;
-  differencies : diff;
   instances_inclusion : instances_inclusion;
 }
 
@@ -53,21 +53,8 @@ type split_solvers = {
   others : solver list;
 }
 
-let timeout = 60.
-
-let add_key key _ li =
-  key::li
-
-let get_keys tbl = 
-  Hashtbl.fold (add_key) tbl []
-
-let float_option_to_string t =
-  match t with
-  |Some(t) -> (string_of_float t)^"0"
-  |None -> (string_of_float timeout)^"0"
-
 let compare_solver_strategy solver (other : solver) solver_strategy (other_strategy : strategy) = 
-  {solver = solver; other = other; solver_strategy = solver_strategy; other_strategy = other_strategy; differencies = (compute_diff solver_strategy other_strategy); instances_inclusion = (compute_set solver_strategy other_strategy)}
+  {solver = solver; other = other; solver_strategy = solver_strategy; other_strategy = other_strategy; instances_inclusion = (compute_set solver_strategy other_strategy)}
 
 let compare_strategies solver other (solver_strategy :strategy) =
     {solver = solver; other = other; solver_strategy = solver_strategy; comp_solver_strategies = List.map (compare_solver_strategy solver other solver_strategy) other.strategies; }
@@ -94,46 +81,11 @@ let remove_last_char chars =
     String.sub chars 0 ((String.length chars) -1)
   else chars 
 
-let hash_to_json_cactus (strat1 : strategy) (strat2 : strategy) =
-  let rec hash_to_json_cactus_rec (strat1 : strategy) (strat2 : strategy) keys times =
-  match keys with   
-  |[] -> "["^(remove_last_char times)^"]"
-  |k::keys -> let (t,_) = (Hashtbl.find strat1.all k) in 
-    let (t',_) = (Hashtbl.find strat2.all k) in
-    let (t,t') = ((float_option_to_string t),(float_option_to_string t')) in
-    let time = "{"^"\"x\":"^t^",\"y\":"^t'^"}," in
-    hash_to_json_cactus_rec strat1 strat2 keys (times^time)
-  in hash_to_json_cactus_rec strat1 strat2 (get_keys strat1.all) ""
-
 let json_name nb =
   match nb with 
   |1 -> "\"Instances inclusion\""
   |2 -> "\"Cactus plot\""
   |_ -> ""
-
-(*
-let to_json instances nb = 
-  let json = "{\"name\":"^(json_name nb)^",\"timeout\":"^((string_of_float timeout)^"0")^",\"instances\":["^(remove_last_char (instances))^"]}" in
-  json
-*)
-(*
-let to_json_solver_strategy problem (instance : instances_set) all (comp_solver_strategy : comp_solver_strategy) =
-  let prob = "\""^problem.name^"\"" in
-  let inst = "\""^instance.name^"\"" in
-  let solver1 = "\""^comp_solver_strategy.solver.name^"\"" in
-  let solver2 = "\""^comp_solver_strategy.other.name^"\"" in
-  let strat1 = "\""^comp_solver_strategy.solver_strategy.name^"\"" in
-  let strat2 = "\""^comp_solver_strategy.other_strategy.name^"\"" in
-  let set = comp_solver_strategy.instances_inclusion in
-  let labels = "[\"inter\",\"exter\",\"only "^comp_solver_strategy.solver.name^" with "^comp_solver_strategy.solver_strategy.name^ "\",\"only "^comp_solver_strategy.other.name^" with "^comp_solver_strategy.other_strategy.name^" \"]" in
-  let data = "["^(string_of_int (List.length set.inter))^","^(string_of_int (List.length set.exter))^","^(string_of_int (List.length set.only_s1))^","^(string_of_int (List.length set.only_s2))^"]"in 
-  let inclusion_instances = all^("{\"problem\":"^prob^",\"instance\":"^inst^",\"solver1\":"^solver1^",\"solver2\":"^solver2^",\"strat1\":"^strat1^",\"strat2\":"^strat2^",\"labels\":"^labels^",\"data\":"^data^"},") in
-  let points = hash_to_json_cactus comp_solver_strategy.solver_strategy comp_solver_strategy.other_strategy in 
-  let cactus_instances = all^("{\"problem\":"^prob^",\"instance\":"^inst^",\"solver1\":"^solver1^",\"solver2\":"^solver2^",\"strat1\":"^strat1^",\"strat2\":"^strat2^",\"points\":"^points^"},") in
-  let inclusion = to_json inclusion_instances 1 in
-  let cactus = to_json cactus_instances 2 in
-  let json = "{"^"\"inclusion\":"^inclusion^","^"\"cactus\":"^cactus^"}" in 
-  json*)
 
   let to_json_solver_strategy nb problem (instance : instances_set) all (comp_solver_strategy : comp_solver_strategy) =
   let prob = "\""^problem.name^"\"" in
@@ -151,10 +103,6 @@ let to_json_solver_strategy problem (instance : instances_set) all (comp_solver_
   all^("{\"problem\":"^prob^",\"instance\":"^inst^",\"solver1\":"^solver1^",\"solver2\":"^solver2^",\"strat1\":"^strat1^",\"strat2\":"^strat2^",\"points\":"^points^"},")
   |_ -> ""
   
-
-
-(*let to_json_solver_strategies args problem instance all comp_solver_strategies =
-  List.fold_left (to_json_solver_strategy args problem instance) all comp_solver_strategies.comp_solver_strategies*)
 let to_json_strategies nb problem instance all comp_strategies =
   List.fold_left (to_json_solver_strategy nb problem instance) all comp_strategies.comp_solver_strategies
 
