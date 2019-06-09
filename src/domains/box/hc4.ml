@@ -47,28 +47,28 @@ struct
       let r = Store.get store v in
       BVar v, r
   | Cst (c,_) ->
-      let r = I.of_rat c in
+      let r = I.create (I.OF_RAT c) in
       BCst r, r
   | Unary (o,e1) ->
       let _,i1 as b1 = eval store e1 in
       let r = match o with
-        | NEG -> I.neg i1
+        | NEG -> I.unop I.NEG i1
       in
       BUnary (o,b1), r
   | Binary (o,e1,e2) ->
      let _,i1 as b1 = eval store e1
      and _,i2 as b2 = eval store e2 in
      let r = match o with
-       | ADD -> I.add i1 i2
-       | SUB -> I.sub i1 i2
+       | ADD -> I.binop I.ADD i1 i2
+       | SUB -> I.binop I.SUB i1 i2
        | DIV -> debot (I.div i1 i2)
        | MUL ->
-          let r = I.mul i1 i2 in
+          let r = I.binop I.MUL i1 i2 in
           if e1=e2 then
             (* special case: squares are positive *)
-            I.abs r
+            I.unop I.ABS r
           else r
-       | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
+       | POW -> I.binop I.POW i1 i2 in BBinary (o,b1,b2), r
 
   (* II. Refine part
 
@@ -83,28 +83,28 @@ struct
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
     match e1, e2, b with
-    | BCst c1, BCst c2, _ -> Nb (i1, i2)
-    | BCst c, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
-    | BCst c, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
-    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
+    | BCst _, BCst _, _ -> Nb (i1, i2)
+    | BCst _, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
+    | BCst _, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
+    | _, BCst _, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
     | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
     | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
 
   (* u + v = r => u = r - v /\ v = r - u *)
   let refine_add u v r =
-    refine_bop I.filter_add_f I.filter_add_f u v r true
+    refine_bop (I.filter_binop_f I.ADD) (I.filter_binop_f I.ADD) u v r true
 
   (* u - v = r => u = r + v /\ v = u - r *)
   let refine_sub u v r =
-    refine_bop I.filter_sub_f I.filter_add_f u v r false
+    refine_bop (I.filter_binop_f I.SUB) (I.filter_binop_f I.ADD) u v r false
 
   (* u * v = r => (u = r/v \/ v=r=0) /\ (v = r/u \/ u=r=0) *)
   let refine_mul u v r =
-    refine_bop I.filter_mul_f I.filter_mul_f u v r true
+    refine_bop (I.filter_binop_f I.MUL) (I.filter_binop_f I.MUL) u v r true
 
   (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
   let refine_div u v r =
-    refine_bop I.filter_div_f I.filter_mul_f u v r false
+    refine_bop I.filter_div_f (I.filter_binop_f I.MUL) u v r false
 
   let rec refine store root = function
   | BFuncall(name,args) ->
@@ -115,7 +115,7 @@ struct
   | BCst i -> ignore (debot (I.meet root i)); store
   | BUnary (o,(e1,i1)) ->
      let j = match o with
-       | NEG -> I.filter_neg i1 root
+       | NEG -> I.filter_unop I.NEG i1 root
       in refine store (debot j) e1
   | BBinary (o,(e1,i1),(e2,i2)) ->
      let j = match o with
@@ -123,7 +123,7 @@ struct
        | SUB -> refine_sub (e1,i1) (e2,i2) root
        | MUL -> refine_mul (e1,i1) (e2,i2) root
        | DIV -> refine_div (e1,i1) (e2,i2) root
-       | POW -> I.filter_pow i1 i2 root
+       | POW -> I.filter_binop I.POW i1 i2 root
      in
      let j1,j2 = debot j in
      refine (refine store j1 e1) j2 e2

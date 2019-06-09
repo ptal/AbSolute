@@ -19,6 +19,12 @@ module Itv(B:BOUND) = struct
   (* interval bound (possibly -oo or +oo *)
   module B = B
   type bound = B.t
+  type var_kind = ZERO | ONE | TOP_INT | TOP_REAL | TOP
+                  | OF_BOUNDS of bound*bound | OF_INTS of int*int | OF_RATS of Bound_rat.t*Bound_rat.t | OF_FLOATS of float*float
+                  | OF_INT of int | OF_RAT of Bound_rat.t | OF_FLOAT of float
+                  | COMPLETE of int (* complete BDD *)
+  type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
+  type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
 
   (* an interval is a pair of bounds (lower,upper);
      intervals are always non-empty: lower <= upper;
@@ -79,6 +85,22 @@ module Itv(B:BOUND) = struct
   let of_float (x:float) = of_floats x x
 
   let hull (x:B.t) (y:B.t) = B.min x y, B.max x y
+
+  (* The only function of the signature, maybe we don't have to define the previous functions, and directly put it in this function *)
+  let create var = match var with
+    | ZERO -> zero
+    | ONE -> one
+    | TOP_INT -> top_int
+    | TOP_REAL -> top_real
+    | TOP -> top
+    | OF_BOUNDS(b1,b2) -> of_bounds b1 b2
+    | OF_INTS(i1,i2) -> of_ints i1 i2
+    | OF_RATS(r1,r2) -> of_rats r1 r2
+    | OF_FLOATS(f1,f2) -> of_floats f1 f2
+    | OF_INT(i) -> of_int i
+    | OF_RAT(r) -> of_rat r
+    | OF_FLOAT(f) -> of_float f
+    | _ -> failwith "This creation of variable is not suited (or not implemented) for intervals of bounds"
 
   (************************************************************************)
   (* PRINTING *)
@@ -263,7 +285,39 @@ module Itv(B:BOUND) = struct
     and neg = (lift_bot (div_sign i1)) (negative_part i2) in
     (* joins the result*)
     join_bot2 join pos neg
+    
+  (* powers *)
+  let pow ((il,ih):t) ((l,h):t) =
+    if l=h && B.floor l = l then
+      let p = B.to_float_down l |> int_of_float in
+      match p with
+      | 0 -> one
+      | 1 -> (il, ih)
+      | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
+      | x when x > 1 && B.even l ->
+        if B.leq il B.zero && B.geq ih B.zero then
+	  (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
+        else if B.geq il B.zero then
+	  (B.pow_down il p, B.pow_up ih p)
+        else (B.pow_down ih p, B.pow_up il p)
+      | _ -> failwith "cant handle negatives powers"
+    else failwith  "cant handle non_singleton powers"
 
+
+    
+  (* Function of the signature *)
+  let unop op i = match op with
+    | NEG -> neg i
+    | ABS -> abs i
+    | _ -> failwith "This unary operation is not implemented for intervals"
+
+  let binop op i1 i2 = match op with
+    | ADD -> add i1 i2
+    | SUB -> sub i1 i2
+    | MUL -> mul i1 i2
+    | POW -> pow i1 i2
+    | _ -> failwith "This binary operation is not implemented for intervals"
+         
   (* interval square root *)
   let sqrt ((l,h):t) : t bot =
     if B.sign h < 0 then Bot else
@@ -293,23 +347,6 @@ module Itv(B:BOUND) = struct
     match itv' with
     | Bot -> Bot
     | Nb (l', h') -> div (l',h') (of_bound ln10)
-
-  (* powers *)
-  let pow ((il,ih):t) ((l,h):t) =
-    if l=h && B.floor l = l then
-      let p = B.to_float_down l |> int_of_float in
-      match p with
-      | 0 -> one
-      | 1 -> (il, ih)
-      | x when x > 1 && p mod 2 = 1 -> (B.pow_down il p, B.pow_up ih p)
-      | x when x > 1 && B.even l ->
-        if B.leq il B.zero && B.geq ih B.zero then
-	  (B.zero, B.max (B.pow_up il p) (B.pow_up ih p))
-        else if B.geq il B.zero then
-	  (B.pow_down il p, B.pow_up ih p)
-        else (B.pow_down ih p, B.pow_up il p)
-      | _ -> failwith "cant handle negatives powers"
-    else failwith  "cant handle non_singleton powers"
 
   (* nth-root *)
   let n_root ((il,ih):t) ((l,h):t) =
@@ -407,7 +444,7 @@ module Itv(B:BOUND) = struct
     if B.equal edge h then (l, B.prec h) else
     (l,h)
 
-  let filter_neq ((l1,h1) as i1:t) ((l2,h2) as i2:t) : (t*t) bot =
+  let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && B.equal l1 l2 then Bot
     else if is_singleton i1 then Nb (i1, edge_complement l1 i2)
     else if is_singleton i2 then Nb (edge_complement l2 i1, i2)
@@ -420,7 +457,7 @@ module Itv(B:BOUND) = struct
   let filter_neg (i:t) (r:t) : t bot =
     meet i (neg r)
 
-  let filter_abs ((il,ih) as i:t) ((rl,rh) as r:t) : t bot =
+  let filter_abs ((il,ih) as i:t) ((_,rh) as r:t) : t bot =
     if B.sign il >= 0 then meet i r
     else if B.sign ih <= 0 then meet i (neg r)
     else meet i (B.neg rh, rh)
@@ -488,7 +525,7 @@ module Itv(B:BOUND) = struct
       else strict_bot (meet i2) (div i1 r))
 
   (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt ((il,ih) as i:t) ((rl,rh):t) : t bot =
+  let filter_sqrt ((il,_) as i:t) ((rl,rh):t) : t bot =
     let rr = B.mul_down rl rl, B.mul_up rh rh in
     if B.sign il >= 0 then meet i rr
     else meet i (B.minus_inf, snd rr)
@@ -502,7 +539,7 @@ module Itv(B:BOUND) = struct
     meet i (exp r)
 
   (* r = log i => i = *)
-  let filter_log i r = failwith "todo filter_log"
+  let filter_log _ _ = failwith "todo filter_log"
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
@@ -523,6 +560,28 @@ module Itv(B:BOUND) = struct
   let filter_max (l1, u1) (l2, u2) (lr, ur) =
     merge_bot2 (check_bot ((B.min l1 lr), (B.min u1 ur))) (check_bot ((B.min l2 lr), (B.min u2 ur)))
 
+    
+  (* Function of the signature *)
+  let filter_unop op i = match op with
+    | NEG -> filter_neg i
+    | ABS -> filter_abs i
+    | _ -> failwith "This unary operation is not implemented for intervals"
+
+  let filter_binop op i1 i2 = match op with
+    | ADD -> filter_add i1 i2
+    | SUB -> filter_sub i1 i2
+    | MUL -> filter_mul i1 i2
+    | POW -> filter_pow i1 i2
+    | _ -> failwith "This binary operation is not implemented for intervals"
+
+  let filter_binop_f op i1 i2 = match op with
+    | ADD -> filter_add_f i1 i2
+    | SUB -> filter_sub_f i1 i2
+    | MUL -> filter_mul_f i1 i2
+    | POW -> filter_pow_f i1 i2
+    | _ -> failwith "This binary operation is not implemented for intervals"
+
+         
   (* r = f(x0,x1,...,xn) *)
   let filter_fun name args r : (t list) bot =
     let arity_1 (f: t -> t -> t bot) : (t list) bot =

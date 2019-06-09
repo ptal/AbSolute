@@ -7,9 +7,9 @@ sig
   val select: Store.t -> (Store.key * Store.cell) option
 end with module Store=S
 
-module type Value_order = functor (I: Itv_sig.ITV) ->
+module type Value_order = functor (I: Vardom_sig.Vardom_sig) ->
 sig
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   val select: I.t -> box_expr
 end with module I=I
 

@@ -5,7 +5,7 @@ open Box_representation
 module type Box_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module R = Box_rep
   type itv = I.t
   type bound = I.B.t
@@ -65,7 +65,7 @@ module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.
 
 module Make
   (B: Bound_sig.BOUND)
-  (INTERVAL: Itv_sig.Itv_functor)
+  (VARDOM: Vardom_sig.Vardom_functor)
   (STORE: Var_store_functor)
   (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) : Box_sig
