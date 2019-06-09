@@ -39,9 +39,6 @@ sig
       The store of variables is left unchanged, and `closure` should be applied to reduce the box. *)
   val weak_incremental_closure: t -> R.rconstraint -> t
 
-  (** Equivalent to `closure (weak_incremental_closure box c)`. *)
-  val incremental_closure: t -> R.rconstraint -> t
-
   (** Return the entailment status of the constraint in `box`. *)
   val entailment: t -> R.rconstraint -> kleene
 

@@ -133,8 +133,7 @@ struct
      Apply the evaluation followed by the refine step of the HC4-revise algorithm.
      It prunes the domain of the variables in `store` according to the constraint `e1 o e2`.
   *)
-  let hc4_revise store (e1,op,e2) =
-    let (b1,i1), (b2,i2) = eval store e1, eval store e2 in
+  let hc4_revise store ((b1,i1),op,(b2,i2)) =
     let j1,j2 = match op with
       | LT  -> debot (I.filter_lt i1 i2)
       | LEQ -> debot (I.filter_leq i1 i2)
@@ -147,12 +146,17 @@ struct
     let refined_store = if I.equal j1 i1 then store else refine store j1 b1 in
     if j2 = i2 then refined_store else refine refined_store j2 b2
 
+  let hc4_eval_revise store (e1,op,e2) =
+    let e1, e2 = eval store e1, eval store e2 in
+    hc4_revise store (e1,op,e2)
+
   let incremental_closure store c =
     (* let _ = (Printf.printf "HC4 with %s\n" (string_of_bconstraint c); flush_all ()) in *)
-    hc4_revise store c
+    hc4_eval_revise store c
 
   let entailment store (e1,op,e2) =
     try
+      let e1, e2 = eval store e1, eval store e2 in
       ignore(hc4_revise store (e1,op,e2));
       try
         ignore(hc4_revise store (e1,neg op,e2));

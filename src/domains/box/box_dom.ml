@@ -1,6 +1,7 @@
 open Var_store
 open Abstract_domain
 open Box_representation
+open Pengine
 
 module type Box_sig =
 sig
@@ -18,7 +19,6 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> kleene
   val split: t -> t list
   val volume: t -> float
@@ -44,9 +44,16 @@ struct
   module R = Box_rep
   type itv = I.t
   type bound = I.B.t
+
+  (* We use `Parray` for most arrays because the structures must be backtrackable.
+     Note that for `constraints` and `reactor` these structures should be static during the resolution.
+     (We rarely add a new constraint inside the problem during resolution, but with Parray, it is possible to do so). *)
   type t = {
     store: Store.t;
-    constraints: R.rconstraint list;
+    constraints: R.rconstraint Parray.t;
+
+    (* Propagation engine of the constraints in `constraints`. *)
+    engine: Pengine.t;
   }
 
   (* Reexported functions from the parametrized modules. *)
@@ -56,14 +63,22 @@ struct
   let failure_disentailment () =
     failwith "Found a constraint that is disentailed and Bot_found has not been raised."
 
+  let empty_parray () = Parray.init 0 (fun _ -> failwith "unreachable")
+
   let empty = {
     store=Store.empty;
-    constraints=[];
+    constraints = empty_parray ();
+    engine = Pengine.empty ();
   }
+
+  let extend_parray pa a =
+    let n = Parray.length pa in
+    Parray.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
 
   let extend box () =
     let (store, idx) = Store.extend box.store in
-    ({ box with store = store }, idx)
+    let engine = Pengine.extend_event box.engine in
+    ({ box with store; engine }, idx)
 
   let project_itv box v = Store.get box.store v
 
@@ -83,41 +98,48 @@ struct
     else
       vol
 
-  (* We propagate all the constraints in box.
-     The volume is used to detect when the store changed. *)
-  let rec propagate vol box =
-    let store = List.fold_left Closure.incremental_closure box.store box.constraints in
-    let box = { box with store=store } in
-    let vol' = volume box in
-    if vol <> vol' then
-      propagate vol' box
-    else
-      (vol, box)
-
   (* We remove the constraints entailed in the store.
      It is useful to avoid propagating entailed constraints. *)
   let remove_entailed_constraints box =
-    let is_unknown c =
+    let is_inactive c_idx =
+      let c = Parray.get box.constraints c_idx in
       match entailment box c with
-      | Unknown -> true
-      | True -> false
+      | Unknown -> false
+      | True -> true
       | False -> failure_disentailment () in
-    { box with constraints=List.filter is_unknown box.constraints }
+    let engine = Pengine.deactivate_tasks box.engine is_inactive in
+    { box with engine }
+
+  let closure_one box c_idx =
+    let store = Closure.incremental_closure box.store (Parray.get box.constraints c_idx) in
+    let store, deltas = Store.delta store in
+    { box with store }, deltas
 
   let closure box =
-    let vol = volume box in
-    let (vol', box) = propagate vol box in
-    if vol <> vol' then
-      remove_entailed_constraints box
-    else
-      box
+    let store, deltas = Store.delta box.store in
+    let box = { box with store } in
+    Pengine.react box.engine deltas;
+    let box = Pengine.fixpoint box.engine closure_one box in
+    remove_entailed_constraints box
 
-  let weak_incremental_closure box c = { box with constraints=c::box.constraints }
-  let incremental_closure box c = closure (weak_incremental_closure box c)
+  (* We propagate the constraint immediately.
+     If the constraint is not unary, we register it into the event system (in the actives, reactor and constraints structures). *)
+  let weak_incremental_closure box c =
+    let box = match c with
+      | Csp.(Var _, _, Cst (_, _)) -> box
+      | c ->
+        let c_idx = Parray.length box.constraints in
+        let constraints = extend_parray box.constraints c in
+        let engine = Pengine.extend_task box.engine in
+        let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
+        let engine = Pengine.subscribe engine c_idx vars in
+        { box with constraints; engine; }
+    in
+    { box with store=(Closure.incremental_closure box.store c) }
 
   (* `closure` and `incremental_closure` automatically remove entailed constraints. *)
   let state_decomposition box =
-    if (List.length box.constraints) = 0 then
+    if Pengine.num_active_tasks box.engine = 0 then
       True
     else
       Unknown
@@ -127,13 +149,16 @@ struct
     Store.print fmt repr box.store;
     Format.fprintf fmt "\n";
     let print_var fmt v = Csp.print_var fmt (R.to_logic_var repr v) in
-    List.iter (Format.fprintf fmt "%a\n" (Csp.print_gconstraint print_var)) box.constraints;
+    Parray.iter (Format.fprintf fmt "%a\n" (Csp.print_gconstraint print_var)) box.constraints;
   end
 
   let split box =
     let branches = Split.split box.store in
     let boxes = lazy_copy box (List.length branches) in
-    List.map2 weak_incremental_closure boxes branches
+    (* We remove the branch that are unsatisfiable. *)
+    List.flatten (List.map2 (fun box branch ->
+      try [weak_incremental_closure box branch]
+      with Bot.Bot_found -> []) boxes branches)
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->

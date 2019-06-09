@@ -113,7 +113,7 @@ struct
       let measure = update_with_optimum repr rcpsp best measure in
       Measurement.print_as_csv bench measure
     with e -> begin
-      (* Printexc.print_backtrace stdout; *)
+      Printexc.print_backtrace stdout;
       Measurement.print_exception problem_path (Printexc.to_string e)
     end
 
@@ -171,7 +171,7 @@ let bench_from_json json_data =
         [help] You can find a full example of the JSON format in benchmark/data/benchmarks.json." msg)
 
 let () =
-  (* Printexc.record_backtrace true; *)
+  Printexc.record_backtrace true;
   let bench = bench_from_json (get_bench_desc ()) in
   run_bench bench
   (* Printf.printf "%s" (Yojson.Safe.prettify (string_of_bench_instance bench)) *)
