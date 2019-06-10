@@ -25,15 +25,17 @@ sig
       If a variable is modified, the task is waken up. *)
   val subscribe: t -> task_id -> event list -> t
 
-  (** For each currently activated task `t`, deactivate it if `f t` is `true`. *)
-  val deactivate_tasks: t -> (task_id -> bool) -> t
-
   (** The number of currently activated tasks. *)
   val num_active_tasks: t -> int
 
   (** `fixpoint engine f acc` iterates over the scheduled tasks until no task are scheduled anymore.
-      `f acc t` performs the task `t` over `acc` and returns the new `acc` as well as a list of events to further react on. *)
-  val fixpoint: t -> ('a -> task_id -> ('a * event list)) -> 'a -> 'a
+      `f acc t` performs the task `t` over `acc` and returns the new `(acc, t_fixpoint, events)` where
+        `acc` is the new accumulator, `t_fixpoint` is true if the task is at fixpoint, and `events` is a list of events to further react on. *)
+  val fixpoint: t -> ('a -> task_id -> ('a * bool * event list)) -> 'a -> (t * 'a)
+
+  (** This function consumes the registered delta in the engine.
+      See `Var_store.delta`. *)
+  val delta: t -> event list
 end
 
 module Pengine : Pengine_sig

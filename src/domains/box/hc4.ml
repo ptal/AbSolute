@@ -7,7 +7,7 @@ open Box_representation
 module type Box_closure_sig = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val incremental_closure: Store.t -> box_constraint -> Store.t
+  val incremental_closure: Store.t -> box_constraint -> (Store.t * bool)
   val entailment: Store.t -> box_constraint -> kleene
 end with module Store=S
 
@@ -148,7 +148,11 @@ struct
 
   let hc4_eval_revise store (e1,op,e2) =
     let e1, e2 = eval store e1, eval store e2 in
-    hc4_revise store (e1,op,e2)
+    let store = hc4_revise store (e1,op,e2) in
+    try
+      ignore(hc4_revise store (e1,neg op,e2));
+      store, false
+    with Bot_found -> store, true
 
   let incremental_closure store c =
     (* let _ = (Printf.printf "HC4 with %s\n" (string_of_bconstraint c); flush_all ()) in *)
