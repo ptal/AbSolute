@@ -24,6 +24,7 @@ sig
   val volume: t -> float
   val state_decomposition: t -> kleene
   val print: R.t -> Format.formatter -> t -> unit
+  val delta: t -> R.var_id list
 end
 
 module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
@@ -63,17 +64,11 @@ struct
   let failure_disentailment () =
     failwith "Found a constraint that is disentailed and Bot_found has not been raised."
 
-  let empty_parray () = Parray.init 0 (fun _ -> failwith "unreachable")
-
   let empty = {
     store=Store.empty;
-    constraints = empty_parray ();
+    constraints = Tools.empty_parray ();
     engine = Pengine.empty ();
   }
-
-  let extend_parray pa a =
-    let n = Parray.length pa in
-    Parray.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
 
   let extend box () =
     let (store, idx) = Store.extend box.store in
@@ -98,46 +93,37 @@ struct
     else
       vol
 
-  (* We remove the constraints entailed in the store.
-     It is useful to avoid propagating entailed constraints. *)
-  let remove_entailed_constraints box =
-    let is_inactive c_idx =
-      let c = Parray.get box.constraints c_idx in
-      match entailment box c with
-      | Unknown -> false
-      | True -> true
-      | False -> failure_disentailment () in
-    let engine = Pengine.deactivate_tasks box.engine is_inactive in
-    { box with engine }
-
   let closure_one box c_idx =
-    let store = Closure.incremental_closure box.store (Parray.get box.constraints c_idx) in
+    let store, entailed = Closure.incremental_closure box.store (Parray.get box.constraints c_idx) in
     let store, deltas = Store.delta store in
-    { box with store }, deltas
+    { box with store }, entailed, deltas
 
   let closure box =
     let store, deltas = Store.delta box.store in
     let box = { box with store } in
-    Pengine.react box.engine deltas;
-    let box = Pengine.fixpoint box.engine closure_one box in
-    remove_entailed_constraints box
+    if List.length deltas = 0 then box
+    else
+    begin
+      Pengine.react box.engine deltas;
+      let engine, box = Pengine.fixpoint box.engine closure_one box in
+      { box with engine }
+    end
 
   (* We propagate the constraint immediately.
-     If the constraint is not unary, we register it into the event system (in the actives, reactor and constraints structures). *)
+     If the constraint is not entailed, we register it into the event system (in the actives, reactor and constraints structures). *)
   let weak_incremental_closure box c =
-    let box = match c with
-      | Csp.(Var _, _, Cst (_, _)) -> box
-      | c ->
-        let c_idx = Parray.length box.constraints in
-        let constraints = extend_parray box.constraints c in
-        let engine = Pengine.extend_task box.engine in
-        let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
-        let engine = Pengine.subscribe engine c_idx vars in
-        { box with constraints; engine; }
-    in
-    { box with store=(Closure.incremental_closure box.store c) }
+    let store, entailed = Closure.incremental_closure box.store c in
+    let box = { box with store } in
+    if entailed then box
+    else
+      let c_idx = Parray.length box.constraints in
+      let constraints = Tools.extend_parray box.constraints c in
+      let engine = Pengine.extend_task box.engine in
+      let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
+      let engine = Pengine.subscribe engine c_idx vars in
+      { box with constraints; engine; }
 
-  (* `closure` and `incremental_closure` automatically remove entailed constraints. *)
+  (* Entailed constraints are automatically deactivated by Pengine.fixpoint. *)
   let state_decomposition box =
     if Pengine.num_active_tasks box.engine = 0 then
       True
@@ -159,6 +145,8 @@ struct
     List.flatten (List.map2 (fun box branch ->
       try [weak_incremental_closure box branch]
       with Bot.Bot_found -> []) boxes branches)
+
+  let delta box = Pengine.delta box.engine
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->

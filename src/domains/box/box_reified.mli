@@ -47,7 +47,6 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> kleene
   val split: t -> t list
   val volume: t -> float
