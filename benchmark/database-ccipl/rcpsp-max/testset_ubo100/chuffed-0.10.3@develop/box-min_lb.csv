@@ -1,13 +1,13 @@
 problem, nodes, solutions, fails, time, optimum
-psp1.sch, 484124, -1, 173400, timeout, -1
+psp1.sch, 484124, -1, 173400, timeout, none
 psp2.sch, 61596, 0, 35364, 147.06s, unsat
 psp3.sch, 11936, 0, 7794, 55.87s, unsat
 psp4.sch, 714927, -1, 599315, timeout, 408
-psp5.sch, 406595, -1, 296414, timeout, -1
+psp5.sch, 406595, -1, 296414, timeout, none
 psp6.sch, 13948, 0, 2539, 5.67s, unsat
 psp7.sch, 777173, -1, 662961, timeout, 425
 psp8.sch, 471010, -1, 324839, timeout, 406
-psp9.sch, 257972, -1, 166297, timeout, -1
+psp9.sch, 257972, -1, 166297, timeout, none
 psp10.sch, 605673, -1, 451635, timeout, 465
 psp11.sch, 780423, -1, 579170, timeout, 255
 psp12.sch, 46555, -1, 21656, 18.41s, 216
