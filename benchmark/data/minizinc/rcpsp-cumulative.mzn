@@ -17,9 +17,9 @@
 % requirements.
 %
 % The objective is to find an optimal schedule minimizing the project duration
-% that respects the resource constraints (no resource overload exists at any 
+% that respects the resource constraints (no resource overload exists at any
 % point in time) and start-to-start constraints.
-% 
+%
 % Complexity note:
 % Already the decision variant of RCPSP/max is NP-hard due to the fact that the
 % start-to-start constraints which are difference (seperation) constraints.
@@ -50,7 +50,7 @@ array [DCIdx, 1..3] of int: dcons;  % The difference constraints of form
 int: t_max = sum(i in Tasks) (
                 max(
                     [dur[i]] ++
-                    [ dcons[idx, 2] 
+                    [ dcons[idx, 2]
                         | idx in DCIdx where dcons[idx, 1] == i]
                 )
             );
@@ -82,18 +82,18 @@ constraint
     forall (i, j in Tasks where i < j) (
         if exists(res in Res where rr[res, i] + rr[res, j] > rcap[res])(true) then
                 % Activities i, and j cannot run in parallel
-            if  exists( 
-                    idx in DCIdx 
-                where 
+            if  exists(
+                    idx in DCIdx
+                where
                     (   dcons[idx, 1] == i /\ dcons[idx, 3] == j
                     /\  dcons[idx, 2]  < dur[i] /\ dcons[idx, 2] > -dur[j] )
                 ) (true)
             then
                     % Activity j must be run after i
                 s[i] + dur[i] <= s[j]
-            else if  exists( 
-                    idx in DCIdx 
-                where 
+            else if  exists(
+                    idx in DCIdx
+                where
                     (   dcons[idx, 1] == j /\ dcons[idx, 3] == i
                     /\  dcons[idx, 2]  < dur[j] /\ dcons[idx, 2] > -dur[i] )
                 ) (true)
@@ -117,11 +117,11 @@ constraint
     % Cumulative resource constraints
 constraint
    forall (res in Res) (
-      cumulative( 
-         s, 
-         dur, 
-         [ rr[res, i] | i in Tasks ], 
-         rcap[res] 
+      cumulative(
+         s,
+         dur,
+         [ rr[res, i] | i in Tasks ],
+         rcap[res]
       )
    );
 
@@ -132,18 +132,10 @@ constraint
    );
 
 %-----------------------------------------------------------------------------%
-% Search.
-%-----------------------------------------------------------------------------%
-
-solve
-   :: int_search( s, first_fail, indomain_min, complete )
-   minimize objective;
-
-%-----------------------------------------------------------------------------%
 % Output.
 %-----------------------------------------------------------------------------%
 
-output [show(objective), "\n"];
+output ["objective=", show(objective), "\n"];
 
 % output [
 %    "% rcpsp_max\n",
@@ -154,8 +146,3 @@ output [show(objective), "\n"];
 %    show( objective ),
 %    ";\n"
 % ];
-
-%-----------------------------------------------------------------------------%
-% EOF.
-%-----------------------------------------------------------------------------%
-

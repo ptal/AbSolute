@@ -42,11 +42,13 @@ struct
     ) accu (Tools.range 0 (dimension-1))
 end
 
+let make_canonical_itv k = as_interval {l=k*2; c=k*2+1}
+
 module Fold_intervals_canonical =
 struct
   let fold f accu dimension =
     List.fold_left (fun accu k ->
-      f accu (as_interval {l=k*2; c=k*2+1})
+      f accu (make_canonical_itv k)
     ) accu (Tools.range 0 (dimension-1))
 end
 
@@ -66,11 +68,13 @@ end
 module type Array_store_sig =
 sig
   type 'a t
+  val init : int -> (int -> 'a) -> 'a t
   val make : int -> 'a -> 'a t
   val get : 'a t -> int -> 'a
   val set' : 'a t -> int -> 'a -> 'a t
   val to_list : 'a t -> 'a list
-  val copy_n: 'a t -> int -> ('a t) list
+  val copy: 'a t -> 'a t
+  val lazy_copy: 'a t -> int -> ('a t) list
 end
 
 module Array_store =
@@ -78,14 +82,15 @@ struct
   include Array
   type 'a t = 'a array
   let set' m i e = (set m i e; m)
-  let copy_n m n = m::(List.init (n-1) (fun _ -> Array.copy m))
+  let lazy_copy m n = m::(List.init (n-1) (fun _ -> copy m))
 end
 
 module Parray_store =
 struct
   include Parray
   let set' = Parray.set
-  let copy_n m n = List.init n (fun _ -> m)
+  let copy m = m
+  let lazy_copy m n = List.init n (fun _ -> m)
 end
 
 module type DBM_sig =
@@ -94,10 +99,13 @@ sig
   type bound = B.t
   type t
   val init: int -> t
+  val empty: t
+  val extend: t -> (t * dbm_interval)
   val get : t -> dbm_var -> bound
   val set : t -> bound dbm_constraint -> t
   val project: t -> dbm_interval -> (bound * bound)
-  val copy : t -> int -> t list
+  val lazy_copy : t -> int -> t list
+  val copy : t -> t
   val dimension: t -> int
   val to_list: t -> bound list
   val print: Format.formatter -> t -> unit
@@ -115,6 +123,15 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
     let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
     {dim=n; m=A.make (size n) B.inf}
 
+  let empty = {dim=0; m=A.make 0 B.inf}
+
+  let extend dbm =
+    let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
+    let n = size dbm.dim in
+    let n' = size (dbm.dim+1) in
+    let dbm' = {dim=(dbm.dim+1); m=A.init n' (fun i -> if i < n then A.get dbm.m i else B.inf)} in
+    (dbm', make_canonical_itv dbm.dim)
+
   (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
   let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
 
@@ -128,7 +145,8 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
       dbm
 
   let project dbm itv = (B.neg (get dbm itv.lb)), get dbm itv.ub
-  let copy dbm n = List.map (fun m -> {dim=dbm.dim; m=m}) (A.copy_n dbm.m n)
+  let lazy_copy dbm n = List.map (fun m -> {dim=dbm.dim; m=m}) (A.lazy_copy dbm.m n)
+  let copy dbm = {dim=dbm.dim; m=(A.copy dbm.m)}
 
   let dimension dbm = dbm.dim
 

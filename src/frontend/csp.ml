@@ -18,20 +18,30 @@ type binop = ADD | SUB | MUL | DIV | POW
 type cmpop =
   | EQ | LEQ | GEQ | NEQ | GT | LT
 
+(* Expressions are parametrized by a variable identifier.
+   In the logical specification, it is a string representing the textual name of the variable.
+   These structures can be reused in abstract domains where the variable's ID is an integer for example (such as in Box). *)
+
 (* numeric expressions *)
-type expr =
-  | Funcall of var * expr list
-  | Unary   of unop * expr
-  | Binary  of binop * expr * expr
-  | Var     of var
+type 'var gexpr =
+  | Funcall of string * ('var gexpr) list
+  | Unary   of unop * 'var gexpr
+  | Binary  of binop * 'var gexpr * 'var gexpr
+  | Var     of 'var
   | Cst     of i * annot
 
 (* boolean expressions *)
-type bexpr =
-  | Cmp of cmpop * expr * expr
-  | And of bexpr * bexpr
-  | Or  of bexpr * bexpr
-  | Not of bexpr
+type 'var gbexpr =
+  | Cmp of cmpop * 'var gexpr * 'var gexpr
+  | And of 'var gbexpr * 'var gbexpr
+  | Or  of 'var gbexpr * 'var gbexpr
+  | Not of 'var gbexpr
+
+type 'var gbconstraint = ('var gexpr * cmpop * 'var gexpr)
+
+type expr = var gexpr
+type bexpr = var gbexpr
+type bconstraint = var gbconstraint
 
 type dom = Finite of i * i   (* [a;b] *)
          | Minf   of i       (* [-oo; a] *)
@@ -58,8 +68,6 @@ type csts = (var * (i*i)) list
 
 (* the instance type *)
 type instance = i VarMap.t
-
-type bconstraint = (expr * cmpop * expr)
 
 (* we can annotate a problem with information on the resolution,
    to check the soundness of the solver *)
@@ -147,30 +155,55 @@ let rec print_all_csts fmt = function
   | a::[] -> Format.fprintf fmt "%a" print_csts a
   | a::tl -> Format.fprintf fmt "%a " print_csts a; print_all_csts fmt tl
 
-let rec print_expr fmt = function
+let print_gexpr print_var fmt e =
+  let rec aux fmt = function
   | Funcall(name,args) ->
      let print_args fmt =
        Format.pp_print_list
          ~pp_sep:(fun fmt () -> Format.fprintf fmt ",")
-         print_expr fmt
+         aux fmt
      in
      Format.fprintf fmt "%s(%a)" name print_args args
   | Unary (NEG, e) ->
-    Format.fprintf fmt "(- %a)" print_expr e
+      Format.fprintf fmt "(- %a)" aux e
   | Binary (b, e1 , e2) ->
-    Format.fprintf fmt "(%a %a %a)" print_expr e1 print_binop b print_expr e2
-  | Var v -> Format.fprintf fmt "%s" v
+      Format.fprintf fmt "(%a %a %a)" aux e1 print_binop b aux e2
+  | Var v -> Format.fprintf fmt "%a" print_var v
   | Cst (c,Int) -> Format.fprintf fmt "%d" (Bound_rat.to_int_up c)
   | Cst (c,_) -> Format.fprintf fmt "%a" pp_print_rat c
+  in
+  aux fmt e
 
-let rec print_bexpr fmt = function
+let print_gbexpr print_var fmt e =
+  let rec aux fmt = function
   | Cmp (c,e1,e2) ->
-    Format.fprintf fmt "%a %a %a" print_expr e1 print_cmpop c print_expr e2
+    Format.fprintf fmt "%a %a %a"
+      (print_gexpr print_var) e1 print_cmpop c (print_gexpr print_var) e2
   | And (b1,b2) ->
-    Format.fprintf fmt "%a && %a" print_bexpr b1 print_bexpr b2
+    Format.fprintf fmt "%a && %a"
+      aux b1 aux b2
   | Or  (b1,b2) ->
-    Format.fprintf fmt "%a || %a" print_bexpr b1 print_bexpr b2
-  | Not b -> Format.fprintf fmt "not %a" print_bexpr b
+    Format.fprintf fmt "%a || %a"
+      aux b1 aux b2
+  | Not b -> Format.fprintf fmt "not %a" aux b in
+  aux fmt e
+
+let print_gconstraint print_var fmt (e1,op,e2) =
+  Format.fprintf fmt "%a" (print_gbexpr print_var) (Cmp (op,e1,e2))
+
+let print_gconstraints print_var constraints =
+  List.iter (Format.printf "%a\n" (print_gconstraint print_var)) constraints
+
+let string_of_gconstraint print_var c = begin
+  print_gconstraint print_var Format.str_formatter c;
+  Format.flush_str_formatter ()
+end
+
+let print_expr = print_gexpr print_var
+let print_bexpr = print_gbexpr print_var
+let print_bconstraint = print_gconstraint print_var
+let print_bconstraints = print_gconstraints print_var
+let string_of_bconstraint = string_of_gconstraint print_var
 
 let print_constraints fmt constraints =
   List.iter
@@ -191,17 +224,6 @@ let print_view fmt (v, e) =
 let print fmt prog =
   Format.fprintf fmt "%a\n" print_assign prog.init;
   Format.fprintf fmt "%a\n" print_constraints prog.constraints
-
-let print_bconstraint fmt (e1,op,e2) =
-  Format.fprintf fmt "%a" print_bexpr (Cmp (op,e1,e2))
-
-let print_bconstraints fmt constraints =
-  List.iter (Format.printf "%a\n" print_bconstraint) constraints
-
-let string_of_bconstraint c = begin
-  print_bconstraint Format.str_formatter c;
-  Format.flush_str_formatter ()
-end
 
 (*************************************************************)
 (*                         PREDICATES                        *)
@@ -592,6 +614,8 @@ let rec get_vars_bexpr = function
   | Not b -> get_vars_bexpr b
 
 let get_vars_set_bexpr bexpr = Variables.of_list (get_vars_bexpr bexpr)
+
+let vars_of_bconstraint (e1,op,e2) = get_vars_bexpr (Cmp (op,e1,e2))
 
 (* True if the constraint is fully defined over the set of variables `vars`. *)
 let is_defined_over vars (e1,op,e2) =

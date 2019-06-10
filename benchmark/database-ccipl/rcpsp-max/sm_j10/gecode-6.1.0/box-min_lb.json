@@ -1,0 +1,30 @@
+{
+  "problem_set_path":
+    "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/rcpsp-max/sm_j10/",
+  "timeout": 600,
+  "solver_instance": [
+    "DecomposedKind",
+    {
+      "solver": {
+        "name": "gecode",
+        "version": "6.1.0",
+        "exec": "fzn-gecode -s",
+        "globals": "/usr/share/minizinc/gecode"
+      },
+      "strategy": {
+        "mzn_annot": "smallest, indomain_min, complete",
+        "short": "min_lb"
+      }
+    }
+  ],
+  "csv": {
+    "fields": [
+      "ProblemName",
+      "Nodes",
+      "Solutions",
+      "Fails",
+      [ "Time", "Sec" ],
+      "Optimum"
+    ]
+  }
+}

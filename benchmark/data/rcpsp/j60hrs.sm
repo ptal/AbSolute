@@ -1,0 +1,484 @@
+solutionlist data/j60hrs.sm
+================================================================================
+Par	Inst	Makespan	Date			Author
+================================================================================
+1	1	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	2	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	3	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	4	91		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	5	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	6	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	7	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	8	75		Wed Aug 14 12:07:44 1996  Haase / Kohlmorgen / Schmeck
+1	9	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+1	10	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	1	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	2	82		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	3	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	4	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	5	54		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	6	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	7	53		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	8	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	9	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+2	10	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	1	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	2	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	3	105		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	4	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	5	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	6	57		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	7	59		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	8	55		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	9	67		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+3	10	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	1	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	2	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	3	58		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	4	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	5	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	6	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	7	67		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	8	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	9	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+4	10	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+5	1	76		Tue Jan 25 17:59:48 2000  K. Fleszar, K. S. Hindi
+5	2	106		Thu Sep  3 04:13:06 1998  J. Alcaraz and C. Maroto
+5	3	80		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+5	4	72		Tue Oct 20 04:00:05 1998  J. Alcaraz and C. Maroto
+5	5	108		Thu Feb 12 11:43:21 1998  A. Sprecher
+5	6	74		Fri Jul  6 18:50:41 2001  M. Palpant, C. Artigues, P. Michelon
+5	7	75		Wed Aug 20 04:00:25 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+5	8	78		Tue Oct 20 04:00:08 1998  J. Alcaraz and C. Maroto
+5	9	83		Sun Nov  8 12:00:05 1998  K. Nonobe and T. Ibaraki
+5	10	81		Thu May 27 14:48:00 2004  D. Debels and M. Vanhoucke
+6	1	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+6	2	67		Wed Aug 14 12:29:30 1996  Haase / Kohlmorgen / Schmeck
+6	3	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+6	4	67		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+6	5	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+6	6	55		Wed Aug 14 12:29:47 1996  Haase / Kohlmorgen / Schmeck
+6	7	61		Wed Aug 14 12:29:51 1996  Haase / Kohlmorgen / Schmeck
+6	8	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+6	9	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+6	10	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	1	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	2	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	3	62		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	4	63		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	5	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	6	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	7	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	8	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	9	44		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+7	10	82		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	1	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	2	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	3	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	4	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	5	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	6	56		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	7	62		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	8	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	9	58		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+8	10	97		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+9	1	87		Thu Nov 21 18:13:49 2002  M. Palpant, C. Artigues, P. Michelon
+9	2	82		Mon Sep 10 14:11:42 2001  V. Valls, M. Quintanilla, F. Ballestin
+9	3	100		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+9	4	87		Fri May 30 10:21:37 2003  A. Stolyar, Yu. Kochetov
+9	5	85		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+9	6	111		Fri May 30 10:21:39 2003  A. Stolyar, Yu. Kochetov
+9	7	109		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+9	8	96		Mon Sep 10 14:11:48 2001  V. Valls, M. Quintanilla, F. Ballestin
+9	9	99		Thu May 27 14:48:00 2004  D. Debels and M. Vanhoucke
+9	10	93		Sun Oct 26 11:20:05 2008  A. Horbach
+10	1	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+10	2	62		Wed Aug 14 12:00:14 1996  Haase / Kohlmorgen / Schmeck
+10	3	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+10	4	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+10	5	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+10	6	67		Wed Aug 14 12:00:29 1996  Haase / Kohlmorgen / Schmeck
+10	7	69		Wed Aug 14 12:00:33 1996  Haase / Kohlmorgen / Schmeck
+10	8	65		Wed Aug 14 12:00:37 1996  Haase / Kohlmorgen / Schmeck
+10	9	73		Wed Aug 14 12:00:40 1996  Haase / Kohlmorgen / Schmeck
+10	10	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	1	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	2	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	3	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	4	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	5	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	6	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	7	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	8	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	9	62		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+11	10	58		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	1	59		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	2	58		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	3	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	4	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	5	63		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	6	54		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	7	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	8	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	9	59		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+12	10	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+13	1	112		Fri May 30 10:21:22 2003  A. Stolyar, Yu. Kochetov
+13	2	106		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+13	3	88		Mon Sep 10 14:11:44 2001  V. Valls, M. Quintanilla, F. Ballestin
+13	4	103		Fri May 30 10:21:21 2003  A. Stolyar, Yu. Kochetov
+13	5	97		Thu May 27 14:48:00 2004  D.Debels and M. Vanhoucke
+13	6	94		Fri May 30 10:21:22 2003  A. Stolyar, Yu. Kochetov
+13	7	87		Fri Apr 19 13:45:03 2002  V. Valls, M. Quintanilla, F. Ballestin
+13	8	120		Fri May 30 10:21:19 2003  A. Stolyar, Yu. Kochetov
+13	9	102		Mon Sep 10 14:11:49 2001  V. Valls, M. Quintanilla, F. Ballestin
+13	10	117		Fri Apr 19 13:45:07 2002  V. Valls, M. Quintanilla, F. Ballestin
+14	1	61		Tue Sep  3 12:00:04 1996  Haase / Kohlmorgen / Schmeck
+14	2	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+14	3	61		Thu May 27 14:48:00 2004  D. Debels and M. Vanhoucke
+14	4	65		Wed Aug 20 04:02:29 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+14	5	59		Wed Aug 14 12:03:34 1996  Haase / Kohlmorgen / Schmeck
+14	6	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+14	7	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+14	8	88		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+14	9	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+14	10	72		Fri Jul  6 18:47:30 2001  M. Palpant, C. Artigues, P. Michelon
+15	1	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	2	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	3	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	4	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	5	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	6	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	7	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	8	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	9	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+15	10	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	1	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	2	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	3	53		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	4	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	5	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	6	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	7	82		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	8	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	9	54		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+16	10	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	1	86		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	2	69		Wed Aug 14 12:05:20 1996  Haase / Kohlmorgen / Schmeck
+17	3	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	4	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	5	59		Wed Aug 14 12:05:31 1996  Haase / Kohlmorgen / Schmeck
+17	6	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	7	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	8	85		Wed Aug 14 12:05:43 1996  Haase / Kohlmorgen / Schmeck
+17	9	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+17	10	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	1	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	2	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	3	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	4	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	5	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	6	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	7	93		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	8	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	9	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+18	10	97		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	1	62		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	2	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	3	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	4	67		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	5	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	6	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	7	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	8	87		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	9	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+19	10	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	1	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	2	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	3	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	4	86		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	5	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	6	97		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	7	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	8	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	9	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+20	10	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+21	1	103		Thu Feb 12 11:44:09 1998  A. Sprecher
+21	2	108		Thu Feb 12 11:44:14 1998  A. Sprecher
+21	3	87		Wed Sep  3 04:00:36 1997  Soenke Hartmann
+21	4	95		Thu Feb 12 11:44:24 1998  A. Sprecher
+21	5	89		Wed Aug 20 04:02:42 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+21	6	84		Wed Aug 14 12:08:51 1996  Haase / Kohlmorgen / Schmeck
+21	7	103		Wed Aug 14 12:08:55 1996  Haase / Kohlmorgen / Schmeck
+21	8	110		Wed Aug 20 04:02:48 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+21	9	89		Tue Oct 20 04:00:28 1998  J. Alcaraz and C. Maroto
+21	10	80		Wed Aug 14 12:08:33 1996  Haase / Kohlmorgen / Schmeck
+22	1	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	2	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	3	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	4	73		Wed Aug 20 04:02:55 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+22	5	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	6	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	7	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	8	59		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	9	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+22	10	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	1	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	2	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	3	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	4	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	5	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	6	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	7	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	8	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	9	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+23	10	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	1	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	2	55		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	3	67		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	4	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	5	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	6	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	7	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	8	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	9	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+24	10	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+25	1	114		Fri Jan 31 20:17:18 2003  M. Palpant, C. Artigues, P. Michelon
+25	2	98		Fri Apr 19 13:44:55 2002  V. Valls, M. Quintanilla, F. Ballestin
+25	3	113		Fri May 30 10:21:34 2003  A. Stolyar, Yu. Kochetov
+25	4	108		Fri Jul  6 18:49:10 2001  V. Valls, M. Quintanilla, F. Ballestin
+25	5	98		Wed Feb 20 10:39:57 2002  M. Palpant, C. Artigues, P. Michelon
+25	6	112		Fri May 30 10:21:35 2003  A. Stolyar, Yu. Kochetov
+25	7	90		Wed Feb 20 10:39:59 2002  M. Palpant, C. Artigues, P. Michelon
+25	8	99		Fri Jul  6 18:50:33 2001  V. Valls, M. Quintanilla, F. Ballestin
+25	9	99		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+25	10	108		Fri May 30 10:21:33 2003  A. Stolyar, Yu. Kochetov
+26	1	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+26	2	66		Mon Jun 22 12:00:07 1998  K. Nonobe and T. Ibaraki
+26	3	76		Tue Sep  3 04:00:14 1996  Haase / Kohlmorgen / Schmeck
+26	4	67		Wed Sep  3 04:00:47 1997  Soenke Hartmann
+26	5	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+26	6	74		Thu Feb 12 11:45:23 1998  A. Sprecher
+26	7	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+26	8	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+26	9	65		Tue Sep  3 04:00:18 1996  Haase / Kohlmorgen / Schmeck
+26	10	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	1	96		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	2	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	3	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	4	60		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	5	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	6	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	7	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	8	88		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	9	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+27	10	57		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	1	92		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	2	64		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	3	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	4	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	5	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	6	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	7	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	8	62		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	9	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+28	10	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+29	1	103		Fri Apr 19 13:44:54 2002  V. Valls, M. Quintanilla, F. Ballestin
+29	2	133		Mon Aug 13 15:22:00 2001  M. Palpant, C. Artigues, P. Michelon
+29	3	121		Fri Apr 19 13:44:57 2002  V. Valls, M. Quintanilla, F. Ballestin
+29	4	134		Fri May 30 10:21:31 2003  A. Stolyar, Yu. Kochetov
+29	5	110		Thu May 27 14:48:00 2004  D. Debels and M. Vanhoucke
+29	6	154		Mon Oct  7 14:28:12 2002  A. Stolyar, Yu. Kochetov
+29	7	123		Fri May 30 10:21:29 2003  A. Stolyar, Yu. Kochetov
+29	8	103		Mon Aug 13 15:22:00 2001  M. Palpant, C. Artigues, P. Michelon
+29	9	112		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+29	10	119		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+30	1	70		Tue Sep  3 04:00:53 1996  Haase / Kohlmorgen / Schmeck
+30	2	70		Wed Sep  3 04:00:58 1997  Soenke Hartmann
+30	3	82		Thu Feb 12 11:45:37 1998  A. Sprecher
+30	4	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+30	5	76		Wed Sep  3 04:01:03 1997  Soenke Hartmann
+30	6	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+30	7	86		Fri Jul  6 18:51:19 2001  M. Palpant, C. Artigues, P. Michelon
+30	8	63		Wed Aug 14 12:15:44 1996  Haase / Kohlmorgen / Schmeck
+30	9	98		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+30	10	86		Fri Jul  6 18:49:18 2001  V. Valls, M. Quintanilla, F. Ballestin
+31	1	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	2	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	3	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	4	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	5	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	6	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	7	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	8	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	9	86		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+31	10	56		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	1	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	2	114		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	3	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	4	56		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	5	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	6	93		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	7	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	8	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	9	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+32	10	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	1	105		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	2	100		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	3	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	4	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	5	108		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	6	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	7	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	8	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	9	108		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+33	10	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	1	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	2	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	3	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	4	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	5	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	6	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	7	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	8	63		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	9	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+34	10	92		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	1	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	2	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	3	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	4	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	5	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	6	79		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	7	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	8	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	9	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+35	10	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	1	61		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	2	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	3	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	4	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	5	57		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	6	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	7	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	8	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	9	86		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+36	10	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+37	1	97		Wed Aug 20 04:04:50 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+37	2	95		Thu Feb 12 11:46:03 1998  A. Sprecher
+37	3	139		Wed Aug 14 12:20:00 1996  Haase / Kohlmorgen / Schmeck
+37	4	101		Thu Feb 12 11:46:08 1998  A. Sprecher
+37	5	98		Thu Feb 12 11:46:14 1998  A. Sprecher
+37	6	102		Thu Feb 12 11:46:19 1998  A. Sprecher
+37	7	110		Thu Feb 12 11:46:25 1998  A. Sprecher
+37	8	93		Thu Feb 12 11:46:35 1998  A. Sprecher
+37	9	96		Thu Feb 12 11:46:41 1998  A. Sprecher
+37	10	96		Thu Feb 12 11:46:48 1998  A. Sprecher
+38	1	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	2	76		Fri Jun 25 12:00:12 1999  V. Valls, M. Quintanilla, F. Ballestin
+38	3	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	4	58		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	5	103		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	6	86		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	7	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	8	71		Wed Aug 14 12:21:01 1996  Haase / Kohlmorgen / Schmeck
+38	9	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+38	10	66		Tue Sep  3 04:00:22 1996  Haase / Kohlmorgen / Schmeck
+39	1	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	2	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	3	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	4	92		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	5	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	6	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	7	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	8	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	9	72		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+39	10	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	1	86		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	2	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	3	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	4	87		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	5	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	6	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	7	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	8	80		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	9	90		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+40	10	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+41	1	122		Thu Feb 12 11:47:05 1998  A. Sprecher
+41	2	113		Tue Jan 25 17:59:58 2000  K. Fleszar, K. S. Hindi
+41	3	98		Mon Sep 10 14:11:44 2001  V. Valls, M. Quintanilla, F. Ballestin
+41	4	133		Thu Feb 12 11:47:36 1998  A. Sprecher
+41	5	115		Fri Apr 19 13:45:01 2002  V. Valls, M. Quintanilla, F. Ballestin
+41	6	134		Mon Aug 13 15:22:01 2001  M. Palpant, C. Artigues, P. Michelon
+41	7	132		Thu Feb 12 11:47:44 1998  A. Sprecher
+41	8	135		Thu Feb 12 11:47:53 1998  A. Sprecher
+41	9	131		Mon Sep 10 14:11:50 2001  V. Valls, M. Quintanilla, F. Ballestin
+41	10	111		Tue Oct 20 04:00:46 1998  J. Alcaraz and C. Maroto
+42	1	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+42	2	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+42	3	78		Thu Feb 12 11:48:08 1998  A. Sprecher
+42	4	103		Wed Aug 14 12:23:59 1996  Haase / Kohlmorgen / Schmeck
+42	5	73		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+42	6	82		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+42	7	59		Tue Sep  3 04:01:02 1996  Haase / Kohlmorgen / Schmeck
+42	8	82		Wed Aug 20 04:05:36 1997  Branke, Franck, Heidt, Kohlmorgen, Schm
+42	9	71		Wed Aug 14 12:24:18 1996  Haase / Kohlmorgen / Schmeck
+42	10	87		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	1	108		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	2	85		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	3	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	4	75		Wed Aug 14 12:24:39 1996  Haase / Kohlmorgen / Schmeck
+43	5	64		Wed Aug 14 12:24:45 1996  Haase / Kohlmorgen / Schmeck
+43	6	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	7	89		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	8	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	9	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+43	10	78		Tue Aug 20 04:00:55 1996  Haase / Kohlmorgen / Schmeck
+44	1	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	2	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	3	87		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	4	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	5	74		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	6	81		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	7	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	8	83		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	9	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+44	10	65		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+45	1	96		Wed Feb 13 18:43:11 2002  M. Palpant, C. Artigues, P. Michelon
+45	2	144		Fri May 30 10:21:28 2003  A. Stolyar, Yu. Kochetov
+45	3	143		Mon Oct 24 09:05:06 2005  F. Xiao, A. Lim and B. Rodrigues
+45	4	108		Fri May 30 10:21:25 2003  A. Stolyar, Yu. Kochetov
+45	5	106		Fri May 30 10:21:26 2003  A. Stolyar, Yu. Kochetov
+45	6	144		Fri May 30 10:21:27 2003  A. Stolyar, Yu. Kochetov
+45	7	122		Fri Apr 19 13:45:04 2002  V. Valls, M. Quintanilla, F. Ballestin
+45	8	129		Fri Apr 19 13:45:05 2002  V. Valls, M. Quintanilla, F. Ballestin
+45	9	123		Fri May 30 10:21:24 2003  A. Stolyar, Yu. Kochetov
+45	10	114		Fri Apr 19 13:45:09 2002  V. Valls, M. Quintanilla, F. Ballestin
+46	1	79		Thu Feb 12 11:48:46 1998  A. Sprecher
+46	2	78		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+46	3	79		Tue Jan 25 18:00:02 2000  K. Fleszar, K. S. Hindi
+46	4	74		Tue Oct 20 04:00:57 1998  J. Alcaraz and C. Maroto
+46	5	91		Thu Feb 12 11:49:08 1998  A. Sprecher
+46	6	90		Thu Feb 12 11:49:15 1998  A. Sprecher
+46	7	78		Mon Sep 10 14:11:47 2001  V. Valls, M. Quintanilla, F. Ballestin
+46	8	75		Thu Feb 12 11:49:20 1998  A. Sprecher
+46	9	69		Wed Sep  3 04:01:25 1997  Soenke Hartmann
+46	10	88		Fri Jun 25 12:00:57 1999  V. Valls, M. Quintanilla, F. Ballestin
+47	1	75		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	2	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	3	69		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	4	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	5	87		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	6	76		Wed Aug 14 12:27:15 1996  Haase / Kohlmorgen / Schmeck
+47	7	68		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	8	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	9	76		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+47	10	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	1	71		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	2	87		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	3	84		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	4	62		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	5	101		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	6	66		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	7	77		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	8	88		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	9	82		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl
+48	10	70		Tue Apr  2 16:26:00 1996  R. Kolisch / A. Drexl

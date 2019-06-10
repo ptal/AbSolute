@@ -2,12 +2,13 @@ open Var_store
 open Csp
 open Abstract_domain
 open Bot
+open Box_representation
 
 module type Box_closure_sig = functor (S: Var_store_sig) ->
 sig
   module Store : Var_store_sig
-  val incremental_closure: Store.t -> bconstraint -> Store.t
-  val entailment: Store.t -> bconstraint -> kleene
+  val incremental_closure: Store.t -> box_constraint -> Store.t
+  val entailment: Store.t -> box_constraint -> kleene
 end with module Store=S
 
 module Make(Store: Var_store_sig) =
@@ -22,7 +23,7 @@ struct
     | BFuncall of string * node list
     | BUnary   of unop * node
     | BBinary  of binop * node * node
-    | BVar     of var
+    | BVar     of Store.key
     | BCst     of I.t
   and node = node_kind * I.t
 
@@ -43,31 +44,31 @@ struct
      let r = debot (I.eval_fun name iargs) in
      BFuncall(name, bargs),r
   | Var v ->
-      let r = Store.find v store in
+      let r = Store.get store v in
       BVar v, r
   | Cst (c,_) ->
-      let r = I.of_rat c in
+      let r = I.create (I.OF_RAT c) in
       BCst r, r
   | Unary (o,e1) ->
       let _,i1 as b1 = eval store e1 in
       let r = match o with
-        | NEG -> I.neg i1
+        | NEG -> I.unop I.NEG i1
       in
       BUnary (o,b1), r
   | Binary (o,e1,e2) ->
      let _,i1 as b1 = eval store e1
      and _,i2 as b2 = eval store e2 in
      let r = match o with
-       | ADD -> I.add i1 i2
-       | SUB -> I.sub i1 i2
+       | ADD -> I.binop I.ADD i1 i2
+       | SUB -> I.binop I.SUB i1 i2
        | DIV -> debot (I.div i1 i2)
        | MUL ->
-          let r = I.mul i1 i2 in
+          let r = I.binop I.MUL i1 i2 in
           if e1=e2 then
             (* special case: squares are positive *)
-            I.abs r
+            I.unop I.ABS r
           else r
-       | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
+       | POW -> I.binop I.POW i1 i2 in BBinary (o,b1,b2), r
 
   (* II. Refine part
 
@@ -82,39 +83,39 @@ struct
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
     match e1, e2, b with
-    | BCst c1, BCst c2, _ -> Nb (i1, i2)
-    | BCst c, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
-    | BCst c, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
-    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
+    | BCst _, BCst _, _ -> Nb (i1, i2)
+    | BCst _, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
+    | BCst _, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
+    | _, BCst _, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
     | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
     | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
 
   (* u + v = r => u = r - v /\ v = r - u *)
   let refine_add u v r =
-    refine_bop I.filter_add_f I.filter_add_f u v r true
+    refine_bop (I.filter_binop_f I.ADD) (I.filter_binop_f I.ADD) u v r true
 
   (* u - v = r => u = r + v /\ v = u - r *)
   let refine_sub u v r =
-    refine_bop I.filter_sub_f I.filter_add_f u v r false
+    refine_bop (I.filter_binop_f I.SUB) (I.filter_binop_f I.ADD) u v r false
 
   (* u * v = r => (u = r/v \/ v=r=0) /\ (v = r/u \/ u=r=0) *)
   let refine_mul u v r =
-    refine_bop I.filter_mul_f I.filter_mul_f u v r true
+    refine_bop (I.filter_binop_f I.MUL) (I.filter_binop_f I.MUL) u v r true
 
   (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
   let refine_div u v r =
-    refine_bop I.filter_div_f I.filter_mul_f u v r false
+    refine_bop I.filter_div_f (I.filter_binop_f I.MUL) u v r false
 
   let rec refine store root = function
   | BFuncall(name,args) ->
      let nodes_kind, itv = List.split args in
      let res = I.filter_fun name itv root in
      List.fold_left2 refine store (debot res) nodes_kind
-  | BVar v -> Store.add v (debot (I.meet root (Store.find v store))) store
+  | BVar v -> Store.set store v root
   | BCst i -> ignore (debot (I.meet root i)); store
   | BUnary (o,(e1,i1)) ->
      let j = match o with
-       | NEG -> I.filter_neg i1 root
+       | NEG -> I.filter_unop I.NEG i1 root
       in refine store (debot j) e1
   | BBinary (o,(e1,i1),(e2,i2)) ->
      let j = match o with
@@ -122,7 +123,7 @@ struct
        | SUB -> refine_sub (e1,i1) (e2,i2) root
        | MUL -> refine_mul (e1,i1) (e2,i2) root
        | DIV -> refine_div (e1,i1) (e2,i2) root
-       | POW -> I.filter_pow i1 i2 root
+       | POW -> I.filter_binop I.POW i1 i2 root
      in
      let j1,j2 = debot j in
      refine (refine store j1 e1) j2 e2
@@ -132,8 +133,7 @@ struct
      Apply the evaluation followed by the refine step of the HC4-revise algorithm.
      It prunes the domain of the variables in `store` according to the constraint `e1 o e2`.
   *)
-  let hc4_revise store (e1,op,e2) =
-    let (b1,i1), (b2,i2) = eval store e1, eval store e2 in
+  let hc4_revise store ((b1,i1),op,(b2,i2)) =
     let j1,j2 = match op with
       | LT  -> debot (I.filter_lt i1 i2)
       | LEQ -> debot (I.filter_leq i1 i2)
@@ -146,12 +146,17 @@ struct
     let refined_store = if I.equal j1 i1 then store else refine store j1 b1 in
     if j2 = i2 then refined_store else refine refined_store j2 b2
 
+  let hc4_eval_revise store (e1,op,e2) =
+    let e1, e2 = eval store e1, eval store e2 in
+    hc4_revise store (e1,op,e2)
+
   let incremental_closure store c =
     (* let _ = (Printf.printf "HC4 with %s\n" (string_of_bconstraint c); flush_all ()) in *)
-    hc4_revise store c
+    hc4_eval_revise store c
 
   let entailment store (e1,op,e2) =
     try
+      let e1, e2 = eval store e1, eval store e2 in
       ignore(hc4_revise store (e1,op,e2));
       try
         ignore(hc4_revise store (e1,neg op,e2));

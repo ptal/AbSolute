@@ -67,9 +67,6 @@ let get_domain : string -> (module FullDomain) = function
   | "oct"    -> (module MakeFullDomain (ADCP.OctBoxCP) (Apron_drawer.OctDrawer))
   | "poly"   -> (module MakeFullDomain (ADCP.PolyCP) (Apron_drawer.PolyDrawer))
   | "vpl"    -> (module MakeFullDomain (Vpl_domain.VplCP) (Vpl_drawer))
-  | "boctF"  -> (module MakeFullDomain (Boxed_octagon.BoxedOctagonF) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagonF)))
-  | "boctQ"  -> (module MakeFullDomain (Boxed_octagon.BoxedOctagonQ) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagonQ)))
-  | "boctZ"  -> (module MakeFullDomain (Boxed_octagon.BoxedOctagonZ) (Boxed_octagon_drawer.Make(Boxed_octagon.BoxedOctagonZ)))
   | s        -> Tools.fail_fmt "Domain %s does not exist" s
 
 let set_domain_from_names : string list -> (module FullDomain)
@@ -121,8 +118,6 @@ let speclist =
     ("-pruning_iter" , Int set_pruning_iter , "Changes the number of times the pruning process is applied");
     ("-split"        , String set_split     , options "Changes the splitting strategy used for the solving" "default, maxSmear, smear");
     ("-lin"          , String Vpl_domain.set_lin      , "Sets the linearization algorithm of the VPL");
-    ("-boct_strat"    , String Boxed_octagon.set_octagonalisation, options "Sets the octogonalisation strategy of the boxed octagon domain (boct)" "cb,random,sl,promising");
-    ("-boct_split"    , String Boxed_octagon.set_split, options "Sets the split strategy of the boxed octagon domain (boct)." "lf,lcf,lof,os");
     ("-no-rewrite"   , Clear rewrite        , default_bool "Disables the constraint rewriting" rewrite);
     ("-debug"        , Unit set_debug       , "Prints the execution for debug purpose");
     ("-debug_lv"     , Int set_debug_lv     , "Set the debug level. The higher, most print you get");

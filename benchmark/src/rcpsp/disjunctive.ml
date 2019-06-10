@@ -22,10 +22,10 @@ let disjunctive jobs =
       []
   )
 
-let disjunctive_constraints rcpsp =
+let disjunctive_constraints rcpsp project =
   List.flatten (List.mapi (fun ir r ->
-    if r = 1 then
-      disjunctive (List.filter (fun job -> (List.nth job.resources_usage ir) = 1) rcpsp.jobs)
+    if (List.nth rcpsp.resources_capacities r) = 1 then
+      disjunctive (List.filter (fun job -> (List.nth job.resources_usage ir) = 1) project.jobs)
     else
       []
-  ) rcpsp.resources)
+  ) project.resources_idx)

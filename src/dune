@@ -3,7 +3,7 @@
 (library
   (name libabsolute)
   (wrapped false)
-  (libraries bigarray gmp apron apron.polkaMPQ apron.octD apron.boxMPQ str unix graphics mtime mtime.clock.os
+  (libraries bigarray gmp apron apron.polkaMPQ apron.octD apron.boxMPQ str unix graphics mtime mtime.clock.os containers containers.data
     (select vpl_domain.ml from
       (vpl zarith -> domains/vpl_domain.ok.ml)
       (!vpl       -> domains/vpl_domain.ko.ml))
@@ -22,6 +22,7 @@
  (public_name absolute)
  (package absolute)
  ;(ocamlopt_flags (:standard -p))
+ (ocamlopt_flags (:standard -O3))
  (modules absolute)
  (libraries libabsolute)
 )

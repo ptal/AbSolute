@@ -1,0 +1,57 @@
+{
+  "bench_exec": "./exec.sh",
+  "input_dir" : "benchmark/data/",
+  "output_dir" : "benchmark/database2/",
+  "problem_sets" : [
+    { "path": "rcpsp/patterson.rcp/",
+      "timeout": 60 },
+    { "path": "rcpsp/j30.sm/",
+      "timeout": 60 },
+    { "path": "rcpsp/j60.sm/",
+      "timeout": 60 }
+  ],
+  "solvers_kind": [
+    <DecomposedMzn: {
+      "solvers": ["gecode", "chuffed"],
+      "strategies": [
+        { "mzn_annot" : "smallest, indomain_min, complete",
+          "short": "min_lb" }
+      ]
+    }>,
+    <MiniZinc: {
+      "solvers": ["chuffed", "gecode"],
+      "models": ["benchmark/data/minizinc/rcpsp-cumulative.mzn"],
+      "strategies": [
+        { "mzn_annot" : "int_search(s, smallest, indomain_min, complete) minimize objective",
+          "short": "min_lb" }
+      ]
+    }>,
+    <AbSolute: {
+      "domains": [
+        { "name": "Octagon", "strategies": ["MSLF_simple"] },
+        { "name": "Box", "strategies": ["First_fail_LB"] }
+      ]
+    }>
+  ],
+  "csv" : {
+    "fields" : [<ProblemName>, <Nodes>, <Solutions>, <Fails>, <Time : <Sec>>, <Optimum>]
+  },
+  "solvers_config": [
+    { "name": "gecode",
+      "version": "6.1.0",
+      "exec": "fzn-gecode -s",
+      "globals": "/usr/share/minizinc-ide/share/minizinc/gecode" },
+    { "name": "chuffed",
+      "version": "0.10.3@develop",
+      "exec": "/home/ptalbot/repositories/resources/solvers/chuffed/build/fzn-chuffed -v",
+      "globals": "/home/ptalbot/repositories/resources/solvers/chuffed/chuffed/flatzinc/mznlib" },
+    { "name": "choco",
+      "version": "4.10.1",
+      "exec": "java -cp .:/home/ptalbot/repositories/resources/solvers/choco-parsers/target/choco-parsers-4.0.5-SNAPSHOT-with-dependencies.jar org.chocosolver.parser.flatzinc.ChocoFZN -stat",
+      "globals": "/home/ptalbot/repositories/resources/solvers/choco-parsers/src/main/mzn_lib" },
+    { "name": "absolute",
+      "version": "88ff83f",
+      "exec": "",
+      "globals": "" }
+  ]
+}

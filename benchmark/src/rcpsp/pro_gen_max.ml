@@ -5,27 +5,29 @@ open Rcpsp_data
    In this file format, there are initially indexed from 0. *)
 
 let read_resources_info file =
-  bscanf file " %d %d %d" (fun a b c ->
-    {renewable=a; nonrenewable=b; doubly_constrained=c})
+  let r = bscanf file " %d %d %d" (fun a b c ->
+    {renewable=a; nonrenewable=b; doubly_constrained=c}) in
+  check_resources_info r
 
 let read_pro_gen_info file =
   let jobs_number = bscanf file "%d " (fun x->x+2) in
   let resources_info = read_resources_info file in
   ignore_lines file 1;
-  { projects=0;
+  let project = {
+    project_idx = 0;
     jobs_number=jobs_number;
     horizon=0;
-    resources_info=resources_info;
-    project_info=make_dumb_project_info jobs_number;
     precedence_relations=[];
     jobs=[];
-    resources=[]
-  }
+    resources_idx=(Tools.range 0 (resources_info.renewable-1));
+  } in
+  { resources_capacities=[];
+    projects=[project] }
 
 let read_trailing_weights file n =
   List.map (fun _ -> bscanf file " [%d]" (fun x->x)) (Tools.range 1 n)
 
-let read_job file rcpsp _ =
+let read_job file project _ =
   let job_index = bscanf file "%d " (fun a -> a+1) in
   let mode = bscanf file " %d " (fun a -> a) in (* Not sure it's the mode; always at "1" in the data set. *)
   let successor_number = bscanf file " %d" (fun a -> a) in
@@ -45,37 +47,40 @@ let read_job file rcpsp _ =
     job_successors=job_successors;
     weights=weights;
   } in
-  { rcpsp with
-      jobs=rcpsp.jobs@[job];
-      precedence_relations=rcpsp.precedence_relations@[precedence] }
+  { project with
+      jobs=project.jobs@[job];
+      precedence_relations=project.precedence_relations@[precedence] }
 
 let read_jobs file rcpsp =
-  List.fold_left (read_job file) rcpsp (Tools.range 1 rcpsp.jobs_number)
+  let project = (List.hd rcpsp.projects) in
+  let project = List.fold_left (read_job file) project (Tools.range 1 project.jobs_number) in
+  { rcpsp with projects=[project] }
 
 let read_job_info file rcpsp _ =
   let job_index = bscanf file "%d " (fun a -> a+1) in
   let _ = bscanf file " %d " (fun a -> a) in (* Not sure it's the mode; always at "1" in the data set. *)
   let duration = bscanf file " %d " (fun a -> a) in
-  let resources_usage = read_trailing_int_list file rcpsp.resources_info.renewable in
+  let project = List.hd rcpsp.projects in
+  let resources_usage = read_trailing_int_list file (List.length project.resources_idx) in
   let jobs = List.map (fun job ->
     if job.job_index = job_index then
       {job with duration=duration; resources_usage=resources_usage}
-    else job) rcpsp.jobs in
-  { rcpsp with jobs=jobs }
+    else job) project.jobs in
+  { rcpsp with projects=[{project with jobs=jobs}] }
 
-let read_resources_capacity file rcpsp =
-  {rcpsp with
-    resources = read_trailing_int_list file rcpsp.resources_info.renewable}
+let read_resources_capacities file rcpsp =
+  let resources_number = (List.length (List.hd rcpsp.projects).resources_idx) in
+  { rcpsp with resources_capacities = read_trailing_int_list file resources_number }
 
 let read_duration_and_resources file rcpsp =
-  let rcpsp = List.fold_left (read_job_info file) rcpsp (Tools.range 1 rcpsp.jobs_number) in
-  read_resources_capacity file rcpsp
+  List.fold_left (read_job_info file) rcpsp (Tools.range 1 (List.hd rcpsp.projects).jobs_number) |>
+  read_resources_capacities file
 
 let read_pro_gen file =
   read_pro_gen_info file |>
   read_jobs file |>
   read_duration_and_resources file |>
-  compute_horizon
+  map_projects compute_horizon
 
 (* see preconditions on `problem_path` at `psplib_to_absolute`. *)
 let read_pro_gen_file (problem_path: string) : rcpsp =

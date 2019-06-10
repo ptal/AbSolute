@@ -2,37 +2,58 @@ open Csp
 open Octagon
 open Box_dom
 open Abstract_domain
+open Box_representation
+
+module type Box_oct_rep_sig = functor (Oct_rep: Representation_sig) ->
+sig
+  type t = {
+    box_rep: Box_rep.t;
+    oct_rep: Oct_rep.t;
+  }
+  type var_kind = BoxKind of Box_rep.var_kind | OctKind of Oct_rep.var_kind
+  type var_id = BoxVar of Box_rep.var_id | OctVar of Oct_rep.var_id
+  type reified_octagonal = Box_rep.var_id * Oct_rep.rconstraint list
+  type rconstraint =
+    BoxConstraint of Box_rep.rconstraint
+  | OctConstraint of Oct_rep.rconstraint
+  | ReifiedConstraint of reified_octagonal
+
+  val empty: t
+  val extend: t -> (Csp.var * var_id) -> t
+  val to_logic_var: t -> var_id -> var
+  val to_abstract_var: t -> var -> var_id
+  val rewrite: t -> bconstraint -> rconstraint list
+  (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
+  val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
+  val relax: t -> bconstraint -> rconstraint list
+  val negate: rconstraint -> rconstraint
+end
+
+module Box_oct_rep: Box_oct_rep_sig
 
 module type Box_octagon_disjoint_sig =
 sig
-  module B: Bound_sig.BOUND
+  module B : Bound_sig.BOUND
+  module R : Representation_sig
   type t
   type bound = B.t
-
-  (** `init v1 v2 c oc` initializes the reduced product of box and octagon where:
-        * The variable's sets `v1` and `v2` are disjoint; the reified constraints allow to link the box and octagon domains.
-        * The variables in `v1` are registered in box.
-        * The variables in `v2` are registered in octagon.
-        * The constraints in `c` are filtered in box or octagon according to the variables of this constraint.
-        * The constraints in `oc` are octagonal constraints reified with a boolean variable registered in box.
-  *)
-  val init: var list -> var list -> bconstraint list -> Box_reified.box_reified_constraint list -> t
+  val empty: t
+  val extend: t -> R.var_kind -> (t * R.var_id)
+  val project: t -> R.var_id -> (B.t * B.t)
+  val lazy_copy: t -> int -> t list
+  val copy: t -> t
 
   (** This closure filters the box and octagon with regards to the (reified) constraints in `box_oct`.
       Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
   val closure: t -> t
-
-  (** Add the constraint in the box or octagon without performing the closure.
-      It throws `Bot_found` if the constraint is disentailed. *)
-  val weak_incremental_closure: t -> bconstraint -> t
-
+  val weak_incremental_closure: t -> R.rconstraint -> t
+  val entailment: t -> R.rconstraint -> kleene
   val split: t -> t list
   val volume: t -> float
   val state_decomposition: t -> kleene
-  val project_one: t -> var -> (bound * bound)
-  val project: t -> var list -> (var * (bound * bound)) list
+  val print: R.t -> Format.formatter -> t -> unit
 end
 
 module Make
   (BOX: Box_functor)
-  (Octagon: Octagon_sig) : Box_octagon_disjoint_sig
+  (Octagon: Octagon_sig) : Box_octagon_disjoint_sig with module R = Box_oct_rep(Octagon.R)

@@ -1,19 +1,30 @@
+open Box_representation
 
 module type Var_store_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   type cell=I.t
+  type key=box_var
 
-  val add: string -> cell -> t -> t
-  val find: string -> t -> cell
   val empty: t
-  val filter: (string -> cell -> bool) -> t -> t
-  val fold: (string -> cell -> 'b -> 'b) -> t -> 'b -> 'b
-  val iter: (string -> cell -> unit) -> t -> unit
-  val print: Format.formatter -> t -> unit
+  val extend: t -> (t * key)
+
+  (** `set store k v` is a monotonic `set`.
+      It merges `v` with `store[k]` using `I.meet`. *)
+  val set: t -> key -> cell -> t
+  val get: t -> key -> cell
+  val lazy_copy : t -> int -> t list
+  val copy : t -> t
+  val iter: (key -> cell -> unit) -> t -> unit
+  val fold: ('a -> key -> cell -> 'a) -> 'a -> t -> 'a
+  val print: Format.formatter -> Box_rep.t -> t -> unit
+
+  (** This function consumes the registered delta in the store.
+      The returned store has an empty list of delta. *)
+  val delta: t -> t * key list
 end
 
-module type Var_store_functor = functor (I: Itv_sig.ITV) -> Var_store_sig with module I=I
+module type Var_store_functor = functor (I: Vardom_sig.Vardom_sig) -> Var_store_sig with module I=I
 
 module Make : Var_store_functor

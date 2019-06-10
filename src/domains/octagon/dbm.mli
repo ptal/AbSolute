@@ -81,6 +81,13 @@ sig
   (** Initialize a DBM of dimension `n`. *)
   val init: int -> t
 
+  (** Initialize an empty DBM. *)
+  val empty: t
+
+  (** Increase the dimension of the DBM by one.
+      We return the interval of the canonical interval in this dimension. *)
+  val extend: t -> (t * dbm_interval)
+
   (** Low level access to a cell of the DBM where `get m l c` returns DBM[l][c].
       Precondition: `c/2 <= l/2` (always ensured if `dbm_var` is built with `make_var`). *)
   val get : t -> dbm_var -> bound
@@ -95,8 +102,9 @@ sig
   val project: t -> dbm_interval -> (bound * bound)
 
   (** Return `n` copies of the current DBM with the assumption that this one will not be used anymore.
-      Internally, some informations can be shared by the different copies (until they are modified). *)
-  val copy : t -> int -> t list
+      See `Abstract_domain.lazy_copy`. *)
+  val lazy_copy : t -> int -> t list
+  val copy : t -> t
 
   (** The dimension of the DBM is its number of variables. *)
   val dimension: t -> int

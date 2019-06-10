@@ -1,20 +1,3 @@
-type bound = [
-    Rational
-  | Integer
-  | Float
-]
-
-type interval = [
-    Interval of bound
-  | IntervalOpenClose of bound
-  | IntervalMixFloatInteger
-]
-
-type abstract_domain = [
-    Box of interval
-  | BoxedOctagon of bound
-]
-
 type time_unit = [
     NSec
   | MSec
@@ -25,8 +8,6 @@ type csv_field = [
     ProblemPath
   | ProblemName
   | Time of time_unit
-  | AbstractDomain
-  | Precision
   | Solutions
   | Fails
   | Nodes
@@ -34,60 +15,60 @@ type csv_field = [
 ]
 
 type csv_desc = {
-  human: bool;
   fields: csv_field list
 }
 
-type center_of_trials = [
-    Average
-  | Median
-]
-
-type problem_kind = [
-  | PSPlib
-  | Patterson
-  | ProGenMax
-]
-
-type solver = [
-  | AbSolute
-  | MiniZinc of string
-  | FlatMiniZinc of string
-]
-
-type var_order = [
-  | InputOrder
-  | FirstFail
-  | AntiFirstFail
-]
-
-type val_order = [
-  | Middle
-  | LowerBound
-  | UpperBound
-]
-
-type distributor = [
-  | Assign
-  | Bisect
-]
-
-type strategy = {
-  var_order: var_order;
-  val_order: val_order;
-  distributor: distributor;
+type mzn_strategy = {
+  mzn_annot: string;
+  short: string;
 }
 
-type benchmark = {
-  problem_set: string;
-  problem_kind: problem_kind;
-  domains: abstract_domain list;
-  solvers: solver list;
-  precisions: float list;
-  trials: int;
+type mzn_kind = {
+  solvers: string list;
+  models: string list;
+  strategies: mzn_strategy list;
+}
+
+type decomposed_mzn_kind = {
+  solvers: string list;
+  strategies: mzn_strategy list;
+}
+
+type domain = {
+  name: string;
+  strategies: string list;
+}
+
+type absolute_kind = {
+  domains: domain list
+}
+
+type solver_kind = [
+  | AbSolute of absolute_kind
+  | MiniZinc of mzn_kind
+  | DecomposedMzn of decomposed_mzn_kind
+]
+
+type problem_set = {
+  path: string;
   timeout: int;
-  print_solutions: bool;
-  center_of_trials: center_of_trials;
+}
+
+type solver_config = {
+  name: string;
+  version: string;
+  exec: string;
+  globals: string;
+}
+
+type solvers_config = solver_config list
+
+type benchmark = {
+  bench_exec: string;
+  input_dir: string;
+  output_dir: string;
+  problem_sets: problem_set list;
+  solvers_kind: solver_kind list;
   csv: csv_desc;
-  strategies: strategy list
+  solvers_config: solvers_config;
 }

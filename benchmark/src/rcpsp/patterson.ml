@@ -1,34 +1,23 @@
 open Scanf
 open Rcpsp_data
 
-let make_resources_info r = {
-  renewable=r;
-  nonrenewable=0;
-  doubly_constrained=0;
-}
-
-let read_resource_availabilities file resources_number =
-  let resources = read_trailing_int_list file resources_number in
-  resources
-
 let read_rcpsp_info file =
   let (jobs_number, resources_number) = bscanf file " %d %d " (fun a b -> (a,b)) in
-  let project_info = make_dumb_project_info jobs_number in
-  let resources_info = make_resources_info resources_number in
-  let resources = read_resource_availabilities file resources_number in
-  { projects=0;
+  let resources_capacities = read_trailing_int_list file resources_number in
+  let project =
+  { project_idx = 0;
     jobs_number=jobs_number;
     horizon=0;
-    resources_info=resources_info;
-    project_info=project_info;
     precedence_relations=[];
     jobs=[];
-    resources=resources
-  }
+    resources_idx=Tools.range 0 (resources_number-1)
+  } in
+  { resources_capacities=resources_capacities;
+    projects=[project] }
 
-let read_job file rcpsp job_index =
+let read_job file project job_index =
   let duration = bscanf file " %d " (fun a -> a) in
-  let resources_usage = read_trailing_int_list file (List.length rcpsp.resources) in
+  let resources_usage = read_trailing_int_list file (List.length project.resources_idx) in
   let successor_number = bscanf file " %d " (fun a -> a) in
   let job_successors = read_trailing_int_list file successor_number in
   let job = {
@@ -44,17 +33,19 @@ let read_job file rcpsp job_index =
     job_successors=job_successors;
     weights=List.map (fun _ -> duration) job_successors;
   } in
-  { rcpsp with
-      jobs=rcpsp.jobs@[job];
-      precedence_relations=rcpsp.precedence_relations@[precedence] }
+  { project with
+      jobs=project.jobs@[job];
+      precedence_relations=project.precedence_relations@[precedence] }
 
 let read_jobs file rcpsp =
-  List.fold_left (read_job file) rcpsp (Tools.range 1 rcpsp.jobs_number)
+  map_projects (fun project ->
+    List.fold_left (read_job file) project (Tools.range 1 project.jobs_number)
+  ) rcpsp
 
 let read_patterson file =
   read_rcpsp_info file |>
   read_jobs file |>
-  compute_horizon
+  map_projects compute_horizon
 
 (* see preconditions on `problem_path` at `psplib_to_absolute`. *)
 let read_patterson_file (problem_path: string) : rcpsp =

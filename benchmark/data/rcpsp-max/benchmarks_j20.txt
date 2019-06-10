@@ -1,0 +1,297 @@
+RCPSPmax j20	Lower Bound	upper bound	opt	dev.	Algorithm	Date
+psp1	35					
+psp2	41					
+psp3	49					
+psp4	40					
+psp5	72					
+psp6	65					
+psp7	65	65	*	0.00%	BB	11.12.98
+psp8	70	70	*	0.00%	BB	11.12.98
+psp9	61					
+psp10	49					
+psp11	56	56	*	0.00%	BB	11.12.98
+psp12	45					
+psp13	53	53	*	0.00%	BB	11.12.98
+psp14	38					
+psp15	93	93	*	0.00%	BB	11.12.98
+psp16	51	51	*	0.00%	BB	11.12.98
+psp17	46	46	*	0.00%	BB	11.12.98
+psp18	39	39	*	0.00%	BB	11.12.98
+psp19	35	35	*	0.00%	BB	11.12.98
+psp20	30					
+psp21	30	30	*	0.00%	PR	08.12.98
+psp22	39	39	*	0.00%	BB	11.12.98
+psp23	96					
+psp24	47	47	*	0.00%	BB	11.12.98
+psp25	30	30	*	0.00%	BB	11.12.98
+psp26	41	41	*	0.00%	BB	11.12.98
+psp27	60	60	*	0.00%	BB	11.12.98
+psp28	36	36	*	0.00%	BB	11.12.98
+psp29	49	49	*	0.00%	BB	11.12.98
+psp30	52	52	*	0.00%	BB	11.12.98
+psp31	75					
+psp32	72	72	*	0.00%	BB	11.12.98
+psp33	67					
+psp34	59	95		61.02%	PR	08.12.98
+psp35	67	103		53.73%	GA	11.12.98
+psp36	70	70	*	0.00%	BB	11.12.98
+psp37	59					
+psp38	74	106		43.24%	BB	11.12.98
+psp39	50					
+psp40	94	94	*	0.00%	BB	11.12.98
+psp41	38					
+psp42	44	44	*	0.00%	BB	11.12.98
+psp43	55					
+psp44	64					
+psp45	37	37	*	0.00%	BB	11.12.98
+psp46	55	55	*	0.00%	BB	11.12.98
+psp47	50	50	*	0.00%	BB	11.12.98
+psp48	43	50		16.28%	BB	11.12.98
+psp49	38					
+psp50	57	57	*	0.00%	BB	11.12.98
+psp51	41	41	*	0.00%	BB	11.12.98
+psp52	32	32	*	0.00%	BB	11.12.98
+psp53	72	72	*	0.00%	BB	11.12.98
+psp54	47	47	*	0.00%	BB	11.12.98
+psp55	45	45	*	0.00%	BB	11.12.98
+psp56	48	48	*	0.00%	BB	11.12.98
+psp57	48	48	*	0.00%	BB	11.12.98
+psp58	59	63		6.78%	BB	11.12.98
+psp59	42	42	*	0.00%	BB	11.12.98
+psp60	40	40	*	0.00%	BB	11.12.98
+psp61	76					
+psp62	86					
+psp63	59					
+psp64	61					
+psp65	68	92		35.29%	GA	11.12.98
+psp66	90					
+psp67	72					
+psp68	87	87	*	0.00%	BB	11.12.98
+psp69	82					
+psp70	79	117		48.10%	BB	11.12.98
+psp71	45	58		28.89%	BB	11.12.98
+psp72	42	50		19.05%	BB	11.12.98
+psp73	50	59		18.00%	GA	11.12.98
+psp74	69	69	*	0.00%	BB	11.12.98
+psp75	21	24		14.29%	GA	11.12.98
+psp76	58	58	*	0.00%	BB	11.12.98
+psp77	36	46		27.78%	BB	11.12.98
+psp78	34	38		11.76%	GA	11.12.98
+psp79	89	89	*	0.00%	BB	11.12.98
+psp80	23	28		21.74%	GA	11.12.98
+psp81	41	43		4.88%	BB	11.12.98
+psp82	35	35	*	0.00%	BB	11.12.98
+psp83	41	41	*	0.00%	BB	11.12.98
+psp84	29	29	*	0.00%	BB	11.12.98
+psp85	36	36	*	0.00%	BB	11.12.98
+psp86	49	49	*	0.00%	BB	11.12.98
+psp87	31	31	*	0.00%	BB	11.12.98
+psp88	34	36		5.88%	BB	11.12.98
+psp89	48	48	*	0.00%	BB	11.12.98
+psp90	35	40		14.29%	BB	11.12.98
+psp91	73	73	*	0.00%	BB	11.12.98
+psp92	62					
+psp93	55	55	*	0.00%	BB	11.12.98
+psp94	64					
+psp95	52	52	*	0.00%	BB	11.12.98
+psp96	61	61	*	0.00%	BB	11.12.98
+psp97	60	60	*	0.00%	BB	11.12.98
+psp98	93	93	*	0.00%	BB	11.12.98
+psp99	45					
+psp100	63	63	*	0.00%	BB	11.12.98
+psp101	71	71	*	0.00%	BB	11.12.98
+psp102	66	66	*	0.00%	BB	11.12.98
+psp103	97	97	*	0.00%	BB	11.12.98
+psp104	52	52	*	0.00%	BB	11.12.98
+psp105	47	47	*	0.00%	BB	11.12.98
+psp106	86					
+psp107	112					
+psp108	66					
+psp109	43	43	*	0.00%	BB	11.12.98
+psp110	53	53	*	0.00%	BB	11.12.98
+psp111	54	54	*	0.00%	BB	11.12.98
+psp112	90	90	*	0.00%	BB	11.12.98
+psp113	60	60	*	0.00%	BB	11.12.98
+psp114	54	54	*	0.00%	BB	11.12.98
+psp115	58	58	*	0.00%	BB	11.12.98
+psp116	70	70	*	0.00%	BB	11.12.98
+psp117	39	39	*	0.00%	BB	11.12.98
+psp118	63					
+psp119	102	102	*	0.00%	BB	11.12.98
+psp120	31	31	*	0.00%	BB	11.12.98
+psp121	57					
+psp122	72					
+psp123	77	77	*	0.00%	BB	11.12.98
+psp124	85					
+psp125	73					
+psp126	74					
+psp127	59					
+psp128	65	100		53.85%	GA	11.12.98
+psp129	67					
+psp130	59	98		66.10%	GA	11.12.98
+psp131	51	51	*	0.00%	BB	11.12.98
+psp132	46					
+psp133	69					
+psp134	80					
+psp135	59					
+psp136	68	68	*	0.00%	BB	11.12.98
+psp137	75	75	*	0.00%	BB	11.12.98
+psp138	50	50	*	0.00%	BB	11.12.98
+psp139	117	117	*	0.00%	BB	11.12.98
+psp140	93					
+psp141	75	75	*	0.00%	BB	11.12.98
+psp142	89	89	*	0.00%	BB	11.12.98
+psp143	62	62	*	0.00%	BB	11.12.98
+psp144	68	68	*	0.00%	BB	11.12.98
+psp145	61	61	*	0.00%	BB	11.12.98
+psp146	59	59	*	0.00%	BB	11.12.98
+psp147	45	45	*	0.00%	BB	11.12.98
+psp148	51	51	*	0.00%	BB	11.12.98
+psp149	62	64		3.23%	BB	11.12.98
+psp150	42	47		11.90%	BB	11.12.98
+psp151	69					
+psp152	116					
+psp153	128	128	*	0.00%	BB	11.12.98
+psp154	85	119		40.00%	BB	11.12.98
+psp155	124	124	*	0.00%	BB	11.12.98
+psp156	125	125	*	0.00%	BB	11.12.98
+psp157	70					
+psp158	105	105	*	0.00%	BB	11.12.98
+psp159	70					
+psp160	86	86	*	0.00%	BB	11.12.98
+psp161	71	71	*	0.00%	BB	11.12.98
+psp162	49					
+psp163	86					
+psp164	67	67	*	0.00%	BB	11.12.98
+psp165	124					
+psp166	79	79	*	0.00%	BB	11.12.98
+psp167	42	52		23.81%	GA	11.12.98
+psp168	70					
+psp169	64	64	*	0.00%	BB	11.12.98
+psp170	57	63		10.53%	BB	11.12.98
+psp171	91	91	*	0.00%	BB	11.12.98
+psp172	48	48	*	0.00%	BB	11.12.98
+psp173	81	81	*	0.00%	BB	11.12.98
+psp174	42	42	*	0.00%	BB	11.12.98
+psp175	75	75	*	0.00%	BB	11.12.98
+psp176	53	53	*	0.00%	BB	11.12.98
+psp177	39	39	*	0.00%	BB	11.12.98
+psp178	50	50	*	0.00%	BB	11.12.98
+psp179	68	68	*	0.00%	BB	11.12.98
+psp180	68	68	*	0.00%	BB	11.12.98
+psp181	63	63	*	0.00%	BB	11.12.98
+psp182	97	97	*	0.00%	BB	11.12.98
+psp183	124	124	*	0.00%	BB	11.12.98
+psp184	98	98	*	0.00%	BB	11.12.98
+psp185	69	69	*	0.00%	BB	11.12.98
+psp186	113					
+psp187	125	125	*	0.00%	BB	11.12.98
+psp188	108	108	*	0.00%	BB	11.12.98
+psp189	98	98	*	0.00%	BB	11.12.98
+psp190	131	131	*	0.00%	BB	11.12.98
+psp191	102	102	*	0.00%	BB	11.12.98
+psp192	88	88	*	0.00%	BB	11.12.98
+psp193	85					
+psp194	152					
+psp195	65	65	*	0.00%	BB	11.12.98
+psp196	66					
+psp197	116	116	*	0.00%	BB	11.12.98
+psp198	100					
+psp199	103	103	*	0.00%	BB	11.12.98
+psp200	105					
+psp201	84	84	*	0.00%	BB	11.12.98
+psp202	69					
+psp203	52	52	*	0.00%	BB	11.12.98
+psp204	97	97	*	0.00%	BB	11.12.98
+psp205	129	129	*	0.00%	BB	11.12.98
+psp206	69	69	*	0.00%	BB	11.12.98
+psp207	102					
+psp208	85	85	*	0.00%	BB	11.12.98
+psp209	88	88	*	0.00%	BB	11.12.98
+psp210	139	139	*	0.00%	BB	11.12.98
+psp211	65					
+psp212	72					
+psp213	133	133	*	0.00%	BB	11.12.98
+psp214	99	99	*	0.00%	BB	11.12.98
+psp215	118	118	*	0.00%	BB	11.12.98
+psp216	87	87	*	0.00%	BB	11.12.98
+psp217	74					
+psp218	147	147	*	0.00%	BB	11.12.98
+psp219	82					
+psp220	74	113		52.70%	BB	11.12.98
+psp221	104	104	*	0.00%	BB	11.12.98
+psp222	80					
+psp223	32					
+psp224	83	83	*	0.00%	BB	11.12.98
+psp225	68	68	*	0.00%	BB	11.12.98
+psp226	82					
+psp227	86	86	*	0.00%	BB	11.12.98
+psp228	128					
+psp229	107	107	*	0.00%	BB	11.12.98
+psp230	52					
+psp231	112	112	*	0.00%	BB	11.12.98
+psp232	56	56	*	0.00%	BB	11.12.98
+psp233	70	70	*	0.00%	BB	11.12.98
+psp234	93					
+psp235	117	117	*	0.00%	BB	11.12.98
+psp236	86	86	*	0.00%	BB	11.12.98
+psp237	175	175	*	0.00%	BB	11.12.98
+psp238	64	64	*	0.00%	BB	11.12.98
+psp239	166	166	*	0.00%	BB	11.12.98
+psp240	121	121	*	0.00%	BB	11.12.98
+psp241	67					
+psp242	88					
+psp243	74					
+psp244	62					
+psp245	120					
+psp246	87	119		36.78%	BB	11.12.98
+psp247	100					
+psp248	148	148	*	0.00%	BB	11.12.98
+psp249	77					
+psp250	109	109	*	0.00%	BB	11.12.98
+psp251	77	77	*	0.00%	BB	11.12.98
+psp252	69					
+psp253	109	109	*	0.00%	BB	11.12.98
+psp254	128	128	*	0.00%	BB	11.12.98
+psp255	122	122	*	0.00%	BB	11.12.98
+psp256	144					
+psp257	127	127	*	0.00%	BB	11.12.98
+psp258	135					
+psp259	74					
+psp260	52					
+psp261	64	64	*	0.00%	BB	11.12.98
+psp262	81	81	*	0.00%	BB	11.12.98
+psp263	94	94	*	0.00%	BB	11.12.98
+psp264	78	78	*	0.00%	BB	11.12.98
+psp265	114					
+psp266	52	52	*	0.00%	BB	11.12.98
+psp267	75					
+psp268	142	142	*	0.00%	BB	11.12.98
+psp269	122	122	*	0.00%	BB	11.12.98
+psp270	71	71	*	0.00%	BB	11.12.98
+			
+
+References:							
+===========
+							
+GA: Genetic Algorithm: Franck, B., Selle, T. (1998): Metaheuristics for the resource-constrained project scheduling with schedule-dependent time windows. WIOR-Report 546, University of Karlsruhe
+
+SA: Simulated Annealing: Franck, B., Selle, T. (1998): Metaheuristics for the resource-constrained project scheduling with schedule-dependent time windows. WIOR-Report 546, University of Karlsruhe
+
+TS: Tabu Search: Franck, B., Selle, T. (1998): Metaheuristics for the resource-constrained project Scheduling with schedule-dependent time windows. WIOR-Report 546, University of Karlsruhe
+						
+PR: Priority Rule Methods: Franck, B., Neumann, K. (1997): Resource-constrained project scheduling with time windows. WIOR-Report 492, University of Karlsruhe
+
+BB: Schwindt, C. (1998): Verfahren zur Lösung des ressourcenbeschränkten Projektdauerminimierungsproblems mit planungsabhängigen Zeitfenstern. Shaker, Aachen; Computation Time <= 30 sec.
+
+
+Comments:
+=========
+
+*: optimality/infeasibility proven by one of the exact algorithms (BB, RD, CP, or VLS)
+
+GA, TS, PR, and BB have been published in the paper
+Franck, B., Neumann, K., Schwindt, C. (2001): Truncated branch-and-bound, schedule-construction, and schedule-improvement procedures for resource-constrained project scheduling. OR Spectrum 23:297–324
+
+
+File as of: 26/02/2015					
