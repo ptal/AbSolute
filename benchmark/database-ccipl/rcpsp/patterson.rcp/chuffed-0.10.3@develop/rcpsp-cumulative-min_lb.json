@@ -1,0 +1,33 @@
+{
+  "problem_set_path":
+    "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/rcpsp/patterson.rcp/",
+  "timeout": 60,
+  "solver_instance": [
+    "MznKind",
+    {
+      "solver": {
+        "name": "chuffed",
+        "version": "0.10.3@develop",
+        "exec": "/home/LS2N/talbot-p-1/chuffed/build/fzn-chuffed -v",
+        "globals": "/home/LS2N/talbot-p-1/chuffed/chuffed/flatzinc/mznlib"
+      },
+      "model":
+        "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/minizinc/rcpsp-cumulative.mzn",
+      "strategy": {
+        "mzn_annot":
+          "int_search(s, smallest, indomain_min, complete) minimize objective",
+        "short": "min_lb"
+      }
+    }
+  ],
+  "csv": {
+    "fields": [
+      "ProblemName",
+      "Nodes",
+      "Solutions",
+      "Fails",
+      [ "Time", "Sec" ],
+      "Optimum"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "problem_set_path":
+    "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/rcpsp/patterson.rcp/",
+  "timeout": 1200,
+  "solver_instance": [
+    "AbSoluteKind",
+    { "version": "ad51292", "domain": "Box", "strategy": "First_fail_LB" }
+  ],
+  "csv": {
+    "fields": [
+      "ProblemName",
+      "Nodes",
+      "Solutions",
+      "Fails",
+      [ "Time", "Sec" ],
+      "Optimum"
+    ]
+  }
+}
