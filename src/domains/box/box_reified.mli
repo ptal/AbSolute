@@ -33,7 +33,7 @@ module Reified_box_rep: Reified_box_rep_sig
 module type Box_reified_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module B = I.B
   module R = Reified_box_rep
   type bound = B.t

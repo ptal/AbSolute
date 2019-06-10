@@ -5,7 +5,7 @@ open Box_representation
 module type Box_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module R = Box_rep
   type itv = I.t
   type bound = I.B.t
@@ -39,9 +39,6 @@ sig
       The store of variables is left unchanged, and `closure` should be applied to reduce the box. *)
   val weak_incremental_closure: t -> R.rconstraint -> t
 
-  (** Equivalent to `closure (weak_incremental_closure box c)`. *)
-  val incremental_closure: t -> R.rconstraint -> t
-
   (** Return the entailment status of the constraint in `box`. *)
   val entailment: t -> R.rconstraint -> kleene
 
@@ -65,7 +62,7 @@ module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.
 
 module Make
   (B: Bound_sig.BOUND)
-  (INTERVAL: Itv_sig.Itv_functor)
+  (VARDOM: Vardom_sig.Vardom_functor)
   (STORE: Var_store_functor)
   (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) : Box_sig

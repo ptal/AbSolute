@@ -46,13 +46,13 @@ struct
   let relax = rewrite
   let negate = function
   | BoxConstraint c -> BoxConstraint (R.negate c)
-  | ReifiedConstraint (b, c) -> recursive_reified ()
+  | ReifiedConstraint (_, _) -> recursive_reified ()
 end
 
 module type Box_reified_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module B = I.B
   module R = Reified_box_rep
   type bound = B.t
@@ -93,12 +93,12 @@ struct
 
   let extend box () =
     let (inner, idx) = Box.extend box.inner () in
-    ({ box with inner=inner; }, idx)
+    ({ box with inner }, idx)
 
   (* The following functions just forward the call to `Box`. *)
   let entailment box = function
     | BoxConstraint c -> Box.entailment box.inner c
-    | ReifiedConstraint c -> recursive_reified ()
+    | ReifiedConstraint _ -> recursive_reified ()
   let project_itv box v = Box.project_itv box.inner v
   let project box v = Box.project box.inner v
   let lazy_copy box n = List.map (fun i -> { box with inner=i }) (Box.lazy_copy box.inner n)
