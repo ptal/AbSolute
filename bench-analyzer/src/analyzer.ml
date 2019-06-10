@@ -132,6 +132,14 @@ let to_json_database database =
   let json_2 = database_to_json_string computed 60. 30 in
   ("{\"analyses\":["^json_1^","^json_2^"]}")
 
-let _ = let (database : database) = read_database "benchmark/database-ccipl/" in
-  let (database : database) = process_database database in
-  print_string (to_json_database database)
+let _ =
+  Printexc.record_backtrace true;
+  try
+    let (database : database) = read_database "benchmark/database-ccipl/" in
+    let (database : database) = process_database database in
+    print_string (to_json_database database)
+  with e ->
+  begin
+    Printexc.print_backtrace stdout;
+    Printf.printf "Exception: %s\n" (Printexc.to_string e);
+  end
