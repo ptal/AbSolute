@@ -9,9 +9,9 @@ sig
   val extend_task: t -> t
   val react: t -> event list -> unit
   val subscribe: t -> task_id -> event list -> t
-  val deactivate_tasks: t -> (task_id -> bool) -> t
   val num_active_tasks: t -> int
-  val fixpoint: t -> ('a -> task_id -> ('a * event list)) -> 'a -> 'a
+  val fixpoint: t -> ('a -> task_id -> ('a * bool * event list)) -> 'a -> (t * 'a)
+  val delta: t -> event list
 end
 
 module Pengine =
@@ -33,28 +33,26 @@ struct
        This field is local to a node, so it is not backtracked nor copied. *)
     scheduler: task_id CCDeque.t;
     inside_queue: CCBV.t;
-  }
 
-  let empty_parray () = Parray.init 0 (fun _ -> failwith "unreachable")
+    (* Cache the events that happened until the function `delta` is called. *)
+    delta: CCBV.t;
+  }
 
   let empty () = {
-    actives = empty_parray ();
+    actives = Tools.empty_parray ();
     num_actives = 0;
-    reactor = empty_parray ();
+    reactor = Tools.empty_parray ();
     scheduler=CCDeque.create ();
     inside_queue=CCBV.empty ();
+    delta=CCBV.empty ();
   }
 
-  let extend_parray pa a =
-    let n = Parray.length pa in
-    Parray.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
-
   let extend_event engine =
-    let reactor = extend_parray engine.reactor [] in
+    let reactor = Tools.extend_parray engine.reactor [] in
     { engine with reactor }
 
   let extend_task engine =
-    let actives = extend_parray engine.actives true in
+    let actives = Tools.extend_parray engine.actives true in
     let num_actives = engine.num_actives + 1 in
     { engine with actives; num_actives }
 
@@ -74,20 +72,14 @@ struct
     task
 
   let react engine events =
-    let react_on_event engine ev = List.iter (schedule engine) (Parray.get engine.reactor ev) in
+    let react_on_event engine ev =
+      CCBV.set engine.delta ev;
+      List.iter (schedule engine) (Parray.get engine.reactor ev) in
     List.iter (react_on_event engine) events
 
-  let fold_active_tasks engine f acc =
-    let i = ref (-1) in
-    Parray.fold_left (fun acc b ->
-      i := !i + 1;
-      if b then f acc !i else acc)
-      acc engine.actives
-
-  let deactivate_tasks engine f =
-    let actives, num_actives = fold_active_tasks engine (fun (actives,n) i ->
-      if f i then (Parray.set actives i false, n)
-      else (actives, (n+1))) (engine.actives, 0) in
+  let deactivate_task engine task =
+    let actives = Parray.set engine.actives task false in
+    let num_actives = engine.num_actives-1 in
     { engine with actives; num_actives }
 
   let num_active_tasks engine = engine.num_actives
@@ -96,11 +88,14 @@ struct
   let fixpoint engine f acc =
     let rec aux engine acc =
       if CCDeque.is_empty engine.scheduler then
-        acc
+        engine, acc
       else
       begin
         let task = pop engine in
-        let acc, events = f acc task in
+        let acc, task_fixpoint, events = f acc task in
+        let engine = if task_fixpoint then
+            deactivate_task engine task
+          else engine in
         react engine events;
         aux engine acc
       end
@@ -110,6 +105,7 @@ struct
     with e -> begin
       CCDeque.clear engine.scheduler;
       CCBV.clear engine.inside_queue;
+      CCBV.clear engine.delta;
       raise e
     end
 
@@ -117,4 +113,11 @@ struct
     let subscribe_to_event reactor ev = Parray.set reactor ev (task::(Parray.get reactor ev)) in
     let reactor = List.fold_left subscribe_to_event engine.reactor events in
     { engine with reactor }
+
+  let delta engine =
+    let acc = ref [] in
+    CCBV.iter_true engine.delta (fun i ->
+      CCBV.reset engine.delta i;
+      acc := i::!acc);
+    !acc
 end

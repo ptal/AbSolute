@@ -4,16 +4,36 @@ type optimum =
 | Bounded of int * int (* [lb, ub] is the interval in which the optimum must be if it is satisfiable. *)
 | Unsat
 
-let no_ub = max_int
 let no_lb = min_int
+let no_ub = max_int
 
 let optimum_dir = "optimum"
 let optimum_file = optimum_dir ^ "/optimum.csv"
 
+(** Solving information of an instance from a problems' set. *)
+type instance = {
+  problem: string;
+  time: float option;
+  bound: optimum;
+  (* For nodes, solutions and fails, when the information is not available, we set it to 0. *)
+  nodes: int;
+  solutions: int;
+  fails: int;
+}
+
+let empty_instance = {
+  problem="";
+  time=None;
+  bound=Bounded(no_lb, no_ub);
+  nodes=0;
+  solutions=0;
+  fails=0;
+}
+
 type strategy = {
   name: string;
   (* The name of the instance mapped to the time (if it did not timeout) and optimum found. *)
-  all: (string, (float option * optimum)) Hashtbl.t;
+  all: (string, instance) Hashtbl.t;
   (* number of instances with at least one solution that is not proven optimal. *)
   feasible: int;
   (* number of instances with a proven optimum solution. *)
@@ -45,7 +65,10 @@ type database = problem list
 
 let check_solution name best_optimum obtained_optimum =
   match best_optimum, obtained_optimum with
-  | Bounded(lb,_), Bounded(_,ub') when ub' < lb -> failwith ("wrong optimum upper bound computed on " ^ name)
+  | Bounded(lb,_), Bounded(_,ub') when ub' < lb -> failwith (
+      "wrong optimum upper bound computed on " ^ name ^ " - " ^
+      "expected LB: " ^ (string_of_int lb) ^
+      "obtained UB: " ^ (string_of_int ub'))
   | Bounded(_,ub), Bounded(lb',_) when lb' > ub -> failwith (
       "wrong optimum lower bound computed on " ^ name ^ " - " ^
       "expected UB: " ^ (string_of_int ub) ^
@@ -58,17 +81,21 @@ let check_solution name best_optimum obtained_optimum =
 
 let check_solutions_validity optimum strategy =
   Hashtbl.iter (fun name expected_opt ->
-    let obtained_opt = Hashtbl.find strategy.all name in
-    check_solution name expected_opt (snd obtained_opt)) optimum
+    try
+      let instance = Hashtbl.find strategy.all name in
+      check_solution name expected_opt instance.bound
+    with Not_found ->
+      Printf.printf "[error] Could not find instance %s\n" name)
+    optimum
 
 let compute_delta_lb best opt =
   match best with
   | Bounded(_, ub) -> ((float_of_int opt) -. (float_of_int ub)) /. (float_of_int ub)
   | Unsat -> failwith "expected unsatisfiable instance: unreachable (should be checked in `check_solution`)."
 
-let process_instances optimum name (_, opt) (strat: strategy) =
+let process_instances optimum name instance (strat: strategy) =
   let best = Hashtbl.find optimum name in
-  match opt with
+  match instance.bound with
   | Bounded(lb,ub) when lb = ub -> {strat with optimum=(strat.optimum + 1)}
   | Bounded(_,ub) when ub <> no_ub -> { strat with
       feasible=(strat.feasible + 1);
@@ -79,6 +106,7 @@ let process_instances optimum name (_, opt) (strat: strategy) =
 
 let process_strategy optimum (strategy : strategy) =
 begin
+  (* Printf.printf "%s\n" strategy.name; *)
   check_solutions_validity optimum strategy;
   let strategy = Hashtbl.fold (process_instances optimum) strategy.all strategy in
   if strategy.feasible > 0 then
@@ -87,10 +115,15 @@ begin
     strategy
 end
 
-let process_solver optimum solver = {solver with strategies=(List.map (process_strategy optimum) solver.strategies)}
-let process_instances_set instances_set = { instances_set with
+let process_solver optimum (solver:solver) =
+  (* Printf.printf "%s/" solver.name; *)
+  {solver with strategies=(List.map (process_strategy optimum) solver.strategies)}
+let process_instances_set (instances_set : instances_set) =
+  (* Printf.printf "%s/" instances_set.name; *)
+  { instances_set with
   solvers=(List.map (process_solver instances_set.optimum) instances_set.solvers) }
 let process_problem (problem : problem) =
+  (* Printf.printf "%s/" problem.name; *)
    { problem with instances_set=(List.map process_instances_set problem.instances_set) }
 let process_database db = List.map process_problem db
 
@@ -183,25 +216,38 @@ let parse_time raw_time =
     let raw_time = remove_trailing_letters raw_time in
     Some (float_of_string raw_time)
 
-let parse_name_time_bound_line line =
+let parse_csv_line entries line =
+  let push_entry instance entry value =
+    match entry with
+    | "problem" -> {instance with problem=value}
+    | "time" -> {instance with time=(parse_time value)}
+    | "optimum" -> {instance with bound=(parse_bound instance.time value)}
+    | "solutions" -> {instance with solutions=(int_of_string value)}
+    | "nodes" -> {instance with nodes=(int_of_string value)}
+    | "fails" -> {instance with fails=(int_of_string value)}
+    | s -> failwith ("unsupported CSV field `" ^ s ^ "`")
+  in
   let tokens = clean_split ',' line in
-  let time = parse_time (List.nth tokens 1) in
-  let bound = parse_bound time (List.nth tokens 2) in
-  (List.nth tokens 0, (time, bound))
+  let instance = List.fold_left2 push_entry empty_instance entries tokens in
+  (* We call `push_entry` two times because some entries such as `optimum` depends on another entry.
+     It helps to keep an order-independant parsing of the CSV fields. *)
+  List.fold_left2 push_entry instance entries tokens
+
+let parse_csv_header file =
+  let header = bscanf file "%[^\n]\n" (fun l -> l) in
+  clean_split ',' header
 
 let read_strategy solver_path strategy_file =
   let strat_path = concat_dir solver_path strategy_file in
   let file = Scanning.open_in strat_path in
   begin
-    (* Strategy title *)
-    let name = bscanf file "%[^\n]\n" (fun x -> x) in
-    (* Empty line and header of CSV to ignore *)
-    List.iter (fun _ -> ignore(bscanf file "%[^\n]\n" (fun _ -> ()))) [1;2];
+    (* CSV header contains the recorded fields. *)
+    let entries = parse_csv_header file in
     let all_instances = Hashtbl.create 500 in
-    let lines = List.map parse_name_time_bound_line (file_to_lines file) in
-    List.iter (fun (x,y) -> Hashtbl.add all_instances x y) lines;
+    let instances = List.map (parse_csv_line entries) (file_to_lines file) in
+    List.iter (fun instance -> Hashtbl.add all_instances instance.problem instance) instances;
     {
-      name=name;
+      name=strategy_file;
       all=all_instances;
       (* All the following fields are filled when `process_database` is called. *)
       feasible=0;
@@ -224,6 +270,7 @@ let parse_name_bound_line line =
 
 let read_optimum_file path =
   let opt_path = concat_dir path optimum_file in
+  (* Printf.printf "%s\n" opt_path; *)
   let file = Scanning.open_in opt_path in
   begin
     (* Header of CSV to ignore *)
@@ -249,15 +296,3 @@ let read_problem db_dir pb_dir =
 
 let read_database db_dir =
   List.map (read_problem db_dir) (subdirs db_dir)
-
-let _ =
-  Printexc.record_backtrace true;
-  try
-    let (database : database) = read_database "benchmark/database/" in
-    let (database : database) = process_database database in
-    print_database database
-  with e ->
-  begin
-    Printexc.print_backtrace stdout;
-    Printf.printf "Exception: %s\n" (Printexc.to_string e);
-  end

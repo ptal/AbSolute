@@ -1,0 +1,19 @@
+{
+  "problem_set_path":
+    "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/rcpsp-max/sm_j10/",
+  "timeout": 600,
+  "solver_instance": [
+    "AbSoluteKind",
+    { "version": "2d33cd7", "domain": "Octagon", "strategy": "MSLF_simple" }
+  ],
+  "csv": {
+    "fields": [
+      "ProblemName",
+      "Nodes",
+      "Solutions",
+      "Fails",
+      [ "Time", "Sec" ],
+      "Optimum"
+    ]
+  }
+}

@@ -1,9 +1,10 @@
 open Box_representation
+open Vardom_sig
 
 module type Var_store_sig =
 sig
   type t
-  module I: Vardom_sig.Vardom_sig
+  module I: Vardom_sig
   type cell=I.t
   type key=box_var
 
@@ -25,6 +26,6 @@ sig
   val delta: t -> t * key list
 end
 
-module type Var_store_functor = functor (I: Vardom_sig.Vardom_sig) -> Var_store_sig with module I=I
+module type Var_store_functor = functor (I: Vardom_sig) -> Var_store_sig with module I=I
 
 module Make : Var_store_functor
