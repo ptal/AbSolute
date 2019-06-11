@@ -33,12 +33,12 @@ struct
   }
 
   let empty = {
-    store=Store.make 0 (I.create TOP);
+    store=Store.make 0 (I.create I.TOP);
     delta=[] }
 
   let extend data =
     let n = Store.length data.store in
-    let store = Store.init (n+1) (fun i -> if i < n then Store.get data.store i else (I.create TOP)) in
+    let store = Store.init (n+1) (fun i -> if i < n then Store.get data.store i else (I.create I.TOP)) in
     ({data with store}, n)
 
   let set data k merge =
