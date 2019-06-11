@@ -1,5 +1,4 @@
 open Var_store
-open Abstract_domain
 open Box_representation
 
 module type Box_sig =
@@ -40,7 +39,7 @@ sig
   val weak_incremental_closure: t -> R.rconstraint -> t
 
   (** Return the entailment status of the constraint in `box`. *)
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
 
   (** See `Abstract_domain.split`. *)
   val split: t -> t list
@@ -52,7 +51,7 @@ sig
   (** Characterize the state of the box.
       `True` is returned when all the constraints are entailed.
       `False` is never returned because `Bot_found` is raised in case of unsatisfiability (in `incremental_closure` or `closure`). *)
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
 
   (** Print the variables store and the remaining constraints (those not yet entailed). *)
   val print: R.t -> Format.formatter -> t -> unit

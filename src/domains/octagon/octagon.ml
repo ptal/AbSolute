@@ -1,6 +1,6 @@
-open Abstract_domain
 open Dbm
 open Octagon_representation
+open Kleene
 
 module type Octagon_sig =
 sig
@@ -16,11 +16,11 @@ sig
   val closure: t -> t
   val incremental_closure: t -> R.rconstraint -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> kleene
-  val strong_entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
+  val strong_entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
   val print: R.t -> Format.formatter -> t -> unit
   val unwrap: t -> DBM.t
 end
@@ -54,6 +54,7 @@ struct
   let copy octagon = {octagon with dbm=(DBM.copy octagon.dbm)}
 
   let entailment octagon oc =
+    let open Kleene in
     let current = DBM.get octagon.dbm oc.v in
     if B.geq oc.d current then True
     (* If the addition of the bounds is less than zero then the two sides of the octagon are reversed. *)
@@ -61,6 +62,7 @@ struct
     else Unknown
 
   let strong_entailment octagon oc =
+    let open Kleene in
     match entailment octagon oc with
     | Unknown ->
       begin
@@ -100,10 +102,10 @@ struct
     List.map2 weak_incremental_closure octagons branches
 
   let state_decomposition octagon =
-    if (List.length octagon.constraints) = 0 then
-      True
-    else
-      Unknown
+    let open Kleene in
+    match octagon.constraints with
+    | [] -> True
+    | _ -> Unknown
 
   (* Get the value of the lower bound and the volume between the lower and upper bound. *)
   let volume_of octagon itv =

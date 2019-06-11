@@ -47,10 +47,10 @@ sig
       Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
   val print: R.t -> Format.formatter -> t -> unit
 end
 

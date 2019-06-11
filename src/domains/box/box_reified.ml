@@ -1,7 +1,7 @@
 open Csp
-open Abstract_domain
 open Box_dom
 open Box_representation
+open Kleene
 
 type rbox_constraint =
   | BoxConstraint of box_constraint
@@ -67,10 +67,10 @@ sig
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
   val incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
   val print: R.t -> Format.formatter -> t -> unit
 end
 
@@ -98,7 +98,7 @@ struct
   (* The following functions just forward the call to `Box`. *)
   let entailment box = function
     | BoxConstraint c -> Box.entailment box.inner c
-    | ReifiedConstraint c -> recursive_reified ()
+    | ReifiedConstraint _ -> recursive_reified ()
   let project_itv box v = Box.project_itv box.inner v
   let project box v = Box.project box.inner v
   let lazy_copy box n = List.map (fun i -> { box with inner=i }) (Box.lazy_copy box.inner n)
@@ -110,7 +110,7 @@ struct
     | ReifiedConstraint c -> {box with reified_constraints=c::box.reified_constraints}
 
   let propagate_negation_conjunction box (b, conjunction) =
-    match and_reified (List.map (entailment box) conjunction) with
+    match Kleene.and_reified (List.map (entailment box) conjunction) with
     | False,_ -> box
     | True,_ -> raise Bot.Bot_found
     | Unknown, Some(u) ->

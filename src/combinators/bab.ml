@@ -46,15 +46,15 @@ struct
         let domain = optimize this.repr op x best domain in
         let domain = Domain.closure domain in
         match Domain.state_decomposition domain with
-        | False ->
+        | Kleene.False ->
             this.print_node "false'" depth domain;
             (best, {stats with fails=(stats.fails+1)})
-        | True when (Domain.volume domain) = 1. ->
+        | Kleene.True when (Domain.volume domain) = 1. ->
             this.print_bound domain;
             this.print_node "true" depth domain;
             (Some domain, {stats with sols=(stats.sols+1)})
         | x ->
-            let status = match x with True -> "almost true" | Unknown -> "unknown" | _ -> failwith "unreachable" in
+            let status = match x with Kleene.True -> "almost true" | Kleene.Unknown -> "unknown" | _ -> failwith "unreachable" in
             this.print_node status depth domain;
             let branches = Domain.split domain in
             List.fold_left (aux (depth+1)) (best,stats) branches
