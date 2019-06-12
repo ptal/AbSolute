@@ -1,0 +1,33 @@
+{
+  "problem_set_path":
+    "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/rcpsp-max/sm_j20/",
+  "timeout": 600,
+  "solver_instance": [
+    "MznKind",
+    {
+      "solver": {
+        "name": "gecode",
+        "version": "6.1.0",
+        "exec": "fzn-gecode -s",
+        "globals": "/usr/share/minizinc/gecode"
+      },
+      "model":
+        "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/minizinc/rcpsp-cumulative.mzn",
+      "strategy": {
+        "mzn_annot":
+          "int_search(s, smallest, indomain_min, complete) minimize objective",
+        "short": "min_lb"
+      }
+    }
+  ],
+  "csv": {
+    "fields": [
+      "ProblemName",
+      "Nodes",
+      "Solutions",
+      "Fails",
+      [ "Time", "Sec" ],
+      "Optimum"
+    ]
+  }
+}

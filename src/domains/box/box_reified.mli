@@ -31,7 +31,7 @@ module Reified_box_rep: Reified_box_rep_sig
 module type Box_reified_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module B = I.B
   module R = Reified_box_rep
   type bound = B.t
@@ -45,7 +45,6 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float

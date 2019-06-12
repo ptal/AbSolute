@@ -104,3 +104,12 @@ module VarMap = struct
   let of_list (assoc: (string*'a) list) =
     List.fold_left (fun acc (k,m) -> add k m acc) empty assoc
 end
+
+(* 4. Utilities for Parray. *)
+
+let empty_parray () = Parray.init 0 (fun _ -> failwith "unreachable")
+
+let extend_parray pa a =
+  let n = Parray.length pa in
+  Parray.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
+

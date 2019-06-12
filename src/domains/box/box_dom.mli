@@ -4,7 +4,7 @@ open Box_representation
 module type Box_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module R = Box_rep
   type itv = I.t
   type bound = I.B.t
@@ -33,9 +33,8 @@ sig
       Throw `Bot_found` one of the constraints is unsatisfiable. *)
   val closure: t -> t
 
-  (** Add the constraint `c` into the box.
-      Precondition: The variables in `c` must range over the current store.
-      The store of variables is left unchanged, and `closure` should be applied to reduce the box. *)
+  (** Propagated and add the constraint `c` into the box.
+      Precondition: The variables in `c` must range over the current store. *)
   val weak_incremental_closure: t -> R.rconstraint -> t
 
   (** Return the entailment status of the constraint in `box`. *)
@@ -55,13 +54,17 @@ sig
 
   (** Print the variables store and the remaining constraints (those not yet entailed). *)
   val print: R.t -> Format.formatter -> t -> unit
+
+  (** See `Var_store.delta`.
+      It returns the variables modified since last call. *)
+  val delta: t -> R.var_id list
 end
 
 module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
 
 module Make
   (B: Bound_sig.BOUND)
-  (INTERVAL: Itv_sig.Itv_functor)
+  (VARDOM: Vardom_sig.Vardom_functor)
   (STORE: Var_store_functor)
   (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) : Box_sig

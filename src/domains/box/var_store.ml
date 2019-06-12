@@ -1,9 +1,10 @@
 open Box_representation
+open Vardom_sig
 
 module type Var_store_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig
   type cell=I.t
   type key=box_var
 
@@ -19,9 +20,9 @@ sig
   val delta: t -> t * key list
 end
 
-module type Var_store_functor = functor (I: Itv_sig.ITV) -> Var_store_sig with module I=I
+module type Var_store_functor = functor (I: Vardom_sig) -> Var_store_sig with module I=I
 
-module Make(I: Itv_sig.ITV) =
+module Make(I: Vardom_sig) =
 struct
   module I = I
   type cell = I.t
@@ -33,12 +34,12 @@ struct
   }
 
   let empty = {
-    store=Store.make 0 I.top;
+    store=Store.make 0 (I.create I.TOP);
     delta=[] }
 
   let extend data =
     let n = Store.length data.store in
-    let store = Store.init (n+1) (fun i -> if i < n then Store.get data.store i else I.top) in
+    let store = Store.init (n+1) (fun i -> if i < n then Store.get data.store i else (I.create I.TOP)) in
     ({data with store}, n)
 
   let set data k merge =

@@ -7,9 +7,9 @@ sig
   val select: Store.t -> (Store.key * Store.cell) option
 end with module Store=S
 
-module type Value_order = functor (I: Itv_sig.ITV) ->
+module type Value_order = functor (I: Vardom_sig.Vardom_sig) ->
 sig
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   val select: I.t -> box_expr
 end with module I=I
 
@@ -73,7 +73,7 @@ struct
   let select store = W.select store Store.I.B.gt
 end
 
-module Middle (I: Itv_sig.ITV) =
+module Middle (I: Vardom_sig.Vardom_sig) =
 struct
   module I = I
   module B = I.B
@@ -83,7 +83,7 @@ struct
     Cst (B.to_rat (B.div_down (B.add_up l u) B.two), Int)
 end
 
-module Lower_bound (I: Itv_sig.ITV) =
+module Lower_bound (I: Vardom_sig.Vardom_sig) =
 struct
   module I = I
   module B = I.B
@@ -91,7 +91,7 @@ struct
   let select itv = on_bound itv fst
 end
 
-module Upper_bound (I: Itv_sig.ITV) =
+module Upper_bound (I: Vardom_sig.Vardom_sig) =
 struct
   module I = I
   module LB = Lower_bound(I)

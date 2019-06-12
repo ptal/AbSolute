@@ -1,14 +1,22 @@
 open Csp
+open Abstract_domain
 open Box_dom
 open Box_representation
-open Kleene
+open Pengine
 
 type rbox_constraint =
   | BoxConstraint of box_constraint
   | ReifiedConstraint of box_reified_constraint
 and box_reified_constraint = box_var * rbox_constraint list
 
-let recursive_reified () = failwith "Reified constraint inside reified constraint is not implemented."
+let rec vars_of_reified (b, conj) =
+  let vars_of_rbox_cons acc = function
+  | BoxConstraint c -> (Csp.vars_of_bconstraint c)@acc
+  | ReifiedConstraint c -> (vars_of_reified c)@acc in
+  let vars = List.fold_left vars_of_rbox_cons [] conj in
+  List.sort_uniq compare (b::vars)
+
+let recursive_reified () = raise (Wrong_modelling "Reified constraint inside reified constraint is not implemented.")
 
 module type Reified_box_rep_sig =
 sig
@@ -46,13 +54,13 @@ struct
   let relax = rewrite
   let negate = function
   | BoxConstraint c -> BoxConstraint (R.negate c)
-  | ReifiedConstraint (b, c) -> recursive_reified ()
+  | ReifiedConstraint (_, _) -> recursive_reified ()
 end
 
 module type Box_reified_sig =
 sig
   type t
-  module I: Itv_sig.ITV
+  module I: Vardom_sig.Vardom_sig
   module B = I.B
   module R = Reified_box_rep
   type bound = B.t
@@ -66,7 +74,6 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
@@ -83,17 +90,20 @@ struct
   type itv = I.t
   type t = {
     inner: Box.t;
-    reified_constraints: box_reified_constraint list;
+    reified_constraints: box_reified_constraint Parray.t;
+    engine: Pengine.t;
   }
 
   let empty = {
     inner=Box.empty;
-    reified_constraints=[]
+    reified_constraints=Tools.empty_parray ();
+    engine=Pengine.empty ();
   }
 
   let extend box () =
     let (inner, idx) = Box.extend box.inner () in
-    ({ box with inner }, idx)
+    let engine = Pengine.extend_event box.engine in
+    ({ box with inner; engine }, idx)
 
   (* The following functions just forward the call to `Box`. *)
   let entailment box = function
@@ -107,17 +117,23 @@ struct
 
   let weak_incremental_closure box = function
     | BoxConstraint c -> {box with inner=Box.weak_incremental_closure box.inner c}
-    | ReifiedConstraint c -> {box with reified_constraints=c::box.reified_constraints}
+    | ReifiedConstraint (b, conj) ->
+        let c_idx = Parray.length box.reified_constraints in
+        let reified_constraints = Tools.extend_parray box.reified_constraints (b, conj) in
+        let engine = Pengine.extend_task box.engine in
+        let vars = vars_of_reified (b, conj) in
+        let engine = Pengine.subscribe engine c_idx vars in
+        { box with reified_constraints; engine; }
 
   let propagate_negation_conjunction box (b, conjunction) =
+    let open Kleene in
     match Kleene.and_reified (List.map (entailment box) conjunction) with
-    | False,_ -> box
+    | False,_ -> box, true
     | True,_ -> raise Bot.Bot_found
     | Unknown, Some(u) ->
         let c = (List.nth conjunction u) in
-        weak_incremental_closure box (R.negate c)
-    | Unknown, None ->
-        { box with reified_constraints=(b, conjunction)::box.reified_constraints}
+        weak_incremental_closure box (R.negate c), true
+    | Unknown, None -> box, false
 
   (* Propagate the reified constraints.
      Entailed reified constraints are removed from `box`. *)
@@ -126,35 +142,37 @@ struct
     if Box.I.is_singleton itv then
       let (value,_) = Box.I.to_range itv in
       if B.equal B.one value then
-        List.fold_left weak_incremental_closure box conjunction
+        List.fold_left weak_incremental_closure box conjunction, true
       else if B.equal B.zero value then
         propagate_negation_conjunction box (b, conjunction)
       else failwith "Reified boolean should be equal to 0 or 1."
     else
+      let open Kleene in
       match fst (and_reified (List.map (entailment box) conjunction)) with
-      | False -> weak_incremental_closure box (BoxConstraint (Var b, EQ, constant_zero))
-      | True -> weak_incremental_closure box (BoxConstraint (Var b, EQ, constant_one))
-      | Unknown -> { box with reified_constraints=(b, conjunction)::box.reified_constraints }
+      | False -> weak_incremental_closure box (BoxConstraint (Var b, EQ, constant_zero)), true
+      | True -> weak_incremental_closure box (BoxConstraint (Var b, EQ, constant_one)), true
+      | Unknown -> box, false
 
-  let propagate_all_reified box =
-    List.fold_left propagate_reified { box with reified_constraints=[] } box.reified_constraints
+  let closure_one box c_idx =
+    let box, entailed = propagate_reified box (Parray.get box.reified_constraints c_idx) in
+    let deltas = Box.delta box.inner in
+    box, entailed, deltas
 
-  let rec propagate box =
-    let box = { box with inner=Box.closure box.inner } in
-    let count_reified = List.length box.reified_constraints in
-    let box = propagate_all_reified box in
-    let count_reified' = List.length box.reified_constraints in
-    if count_reified <> count_reified' then
-      propagate box
+  let rec closure box =
+    let inner = Box.closure box.inner in
+    let box = { box with inner } in
+    let deltas = Box.delta box.inner in
+    if List.length deltas = 0 then box
     else
-      box
-
-  let closure box = propagate box
-
-  let incremental_closure box c = closure (weak_incremental_closure box c)
+    begin
+      Pengine.react box.engine deltas;
+      let engine, box = Pengine.fixpoint box.engine closure_one box in
+      closure { box with engine }
+    end
 
   let state_decomposition box =
-    let state = if (List.length box.reified_constraints) = 0 then True else Unknown in
+    let open Kleene in
+    let state = if Pengine.num_active_tasks box.engine = 0 then True else Unknown in
     and_kleene state (Box.state_decomposition box.inner)
 
   let rec print_reified_constraint repr fmt (b, conjunction) =
@@ -177,7 +195,7 @@ struct
   begin
     Box.print repr fmt box.inner;
     Format.fprintf fmt "\n";
-    List.iter (print_reified_constraint repr fmt) box.reified_constraints;
+    Parray.iter (print_reified_constraint repr fmt) box.reified_constraints;
   end
 
   let split box = List.map (fun branch -> { box with inner=branch}) (Box.split box.inner)
