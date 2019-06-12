@@ -562,16 +562,16 @@ module Itv(B:BOUND) = struct
 
     
   (* Function of the signature *)
-  let filter_unop op i = match op with
-    | NEG -> filter_neg i
-    | ABS -> filter_abs i
+  let filter_unop op = match op with
+    | NEG -> filter_neg
+    | ABS -> filter_abs
     | _ -> failwith "This unary operation is not implemented for intervals"
 
-  let filter_binop op i1 i2 = match op with
-    | ADD -> filter_add i1 i2
-    | SUB -> filter_sub i1 i2
-    | MUL -> filter_mul i1 i2
-    | POW -> filter_pow i1 i2
+  let filter_binop op = match op with
+    | ADD -> filter_add
+    | SUB -> filter_sub
+    | MUL -> filter_mul
+    | POW -> filter_pow
     | _ -> failwith "This binary operation is not implemented for intervals"
 
   let filter_binop_f op i1 i2 = match op with
