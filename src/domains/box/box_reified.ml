@@ -74,10 +74,10 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
   val print: R.t -> Format.formatter -> t -> unit
 end
 
@@ -126,7 +126,8 @@ struct
         { box with reified_constraints; engine; }
 
   let propagate_negation_conjunction box (_b, conjunction) =
-    match and_reified (List.map (entailment box) conjunction) with
+    let open Kleene in
+    match Kleene.and_reified (List.map (entailment box) conjunction) with
     | False,_ -> box, true
     | True,_ -> raise Bot.Bot_found
     | Unknown, Some(u) ->
@@ -146,6 +147,7 @@ struct
         propagate_negation_conjunction box (b, conjunction)
       else failwith "Reified boolean should be equal to 0 or 1."
     else
+      let open Kleene in
       match fst (and_reified (List.map (entailment box) conjunction)) with
       | False -> weak_incremental_closure box (BoxConstraint (Var b, EQ, constant_zero)), true
       | True -> weak_incremental_closure box (BoxConstraint (Var b, EQ, constant_one)), true
@@ -169,6 +171,7 @@ struct
     end
 
   let state_decomposition box =
+    let open Kleene in
     let state = if Pengine.num_active_tasks box.engine = 0 then True else Unknown in
     and_kleene state (Box.state_decomposition box.inner)
 

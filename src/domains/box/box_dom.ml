@@ -1,7 +1,7 @@
 open Var_store
-open Abstract_domain
 open Box_representation
 open Pengine
+open Kleene
 
 module type Box_sig =
 sig
@@ -19,10 +19,10 @@ sig
   val copy: t -> t
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
   val print: R.t -> Format.formatter -> t -> unit
   val delta: t -> R.var_id list
 end

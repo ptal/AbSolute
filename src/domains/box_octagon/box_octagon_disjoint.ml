@@ -3,6 +3,7 @@ open Octagon
 open Csp
 open Abstract_domain
 open Box_representation
+open Kleene
 
 module type Box_oct_rep_sig = functor (Oct_rep: Representation_sig) ->
 sig
@@ -115,10 +116,10 @@ sig
       Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
   val split: t -> t list
   val volume: t -> float
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
   val print: R.t -> Format.formatter -> t -> unit
 end
 
@@ -172,7 +173,7 @@ struct
 
   let entailment_of_reified box_oct conjunction =
     let entailed = List.map (Octagon.entailment box_oct.octagon) conjunction in
-    and_reified entailed
+    Kleene.and_reified entailed
 
   let propagate_negation_conjunction box_oct (b, conjunction) =
     match entailment_of_reified box_oct conjunction with

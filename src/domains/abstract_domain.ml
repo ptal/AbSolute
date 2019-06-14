@@ -1,29 +1,6 @@
 (** Signature of abstract domain.
     It differs from `Adcp_sig` because we suppose here that the constraints are encapsulated in the abstract element. *)
 
-type kleene = False | True | Unknown
-
-let rec and_kleene x y =
-  match x, y with
-  | False, _ -> False
-  | True, True -> True
-  | True, Unknown -> Unknown
-  | Unknown, Unknown -> Unknown
-  | _ -> and_kleene y x
-
-(* `conjunction` is the result of the entailment of a conjunction in a reified context.
-   It returns the entailment status of the conjunction, with an optional index representing the only `unknown` value, if any.
-   See `box_reified` for an example. *)
-let and_reified conjunction =
-  let (n, t, f, u) =
-    List.fold_left (fun (n, t, f, u) -> function
-      | True -> (n+1, t+1, f, u)
-      | False -> (n+1, t, f+1, u)
-      | Unknown -> (n+1, t, f, n::u)) (0,0,0,[]) conjunction in
-  if f > 0 then (False, None)
-  else if t = n then (True, None)
-  else if (List.length u) = 1 then (Unknown, Some(List.hd u))
-  else (Unknown, None)
 
 (* This exception is raised when a constraint is passed to an abstract domain that cannot represent this constraint. *)
 exception Wrong_modelling of string
@@ -107,7 +84,7 @@ sig
       Being entailed means that the constraint is redundant in comparison to the information already in `a`.
       It returns `False` if adding `c` to `a` would make the element inconsistant.
       If `c` can become either `True` or `False` in the future, then `Unknown` is returned. *)
-  val entailment: t -> R.rconstraint -> kleene
+  val entailment: t -> R.rconstraint -> Kleene.t
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split t` should be equal to `t`. *)
@@ -121,7 +98,7 @@ sig
 
   (** An element belongs to one category: failed, satisfiable and unknown.
       Note that this function cannot be recovered from `volume` because `state_decomposition` can return satisfiable even if `volume t > 1` on integers or a given precision on floating numbers and rational. *)
-  val state_decomposition: t -> kleene
+  val state_decomposition: t -> Kleene.t
 
   (** Print the current element in the abstract domain using the initial names of variables. *)
   val print: R.t -> Format.formatter -> t -> unit
