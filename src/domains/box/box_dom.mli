@@ -66,4 +66,4 @@ module Make
   (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) : Box_sig
 
-module Box_base(V: Vardom_sig.Vardom_sig)(SPLIT: Box_split.Box_split_sig) : Box_sig
+module Box_base(V: Vardom_sig.Vardom_sig)(SPLIT: Box_split.Box_split_sig) : Box_sig with module I=V

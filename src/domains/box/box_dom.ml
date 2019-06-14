@@ -27,8 +27,6 @@ sig
   val delta: t -> R.var_id list
 end
 
-module type Box_functor = functor (I: Vardom_sig.Vardom_sig) -> Box_sig with module I = I
-
 module Make
   (VARDOM: Vardom_sig.Vardom_sig)
   (STORE: Var_store_functor)

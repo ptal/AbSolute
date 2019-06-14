@@ -31,9 +31,10 @@ end
 
 module RCPSP_Octagon(SPLIT: Octagon_split.Octagon_split_sig) : RCPSP_sig =
 struct
+  module Oct = Octagon.OctagonZ(SPLIT)
   include Box_octagon_disjoint.Make
-    (Box_dom.Box_base(Itv.ItvI)(Box_split.First_fail_bisect))
-    (Octagon.OctagonZ(SPLIT))
+    (Box_dom.Box_base(Itv.Itv(Oct.B))(Box_split.First_fail_bisect))
+    (Oct)
 
   let init_rcpsp rcpsp =
     let extend kind (dom,repr) v =
