@@ -9,7 +9,7 @@ sig
   module I: Vardom_sig.Vardom_sig
   module R = Box_rep
   type itv = I.t
-  (*type bound = I.B.t*)
+  type bound = I.B.t
 
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
@@ -43,7 +43,7 @@ struct
   module B = I.B
   module R = Box_rep
   type itv = I.t
-  (*type bound = I.B.t*)
+  type bound = I.B.t
 
   (* We use `Parray` for most arrays because the structures must be backtrackable.
      Note that for `constraints` and `reactor` these structures should be static during the resolution.
