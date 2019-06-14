@@ -9,7 +9,7 @@ sig
   module I: Vardom_sig.Vardom_sig
   module R = Box_rep
   type itv = I.t
-  type bound = I.B.t
+  (*type bound = I.B.t*)
 
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
@@ -27,16 +27,15 @@ sig
   val delta: t -> R.var_id list
 end
 
-module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
+module type Box_functor = functor (I: Vardom_sig.Vardom_sig) -> Box_sig with module I = I
 
 module Make
-  (B: Bound_sig.BOUND)
-  (VARDOM: Vardom_sig.Vardom_functor)
+  (VARDOM: Vardom_sig.Vardom_sig)
   (STORE: Var_store_functor)
   (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) =
 struct
-  module Vardom = VARDOM(B)
+  module Vardom = VARDOM
   module Store = STORE(Vardom)
   module Closure = CLOSURE(Store)
   module Split = SPLIT(Store)
@@ -44,7 +43,7 @@ struct
   module B = I.B
   module R = Box_rep
   type itv = I.t
-  type bound = I.B.t
+  (*type bound = I.B.t*)
 
   (* We use `Parray` for most arrays because the structures must be backtrackable.
      Note that for `constraints` and `reactor` these structures should be static during the resolution.
@@ -149,5 +148,6 @@ struct
   let delta box = Pengine.delta box.engine
 end
 
-module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->
-  Make(B)(Itv.Itv)(Var_store.Make)(Hc4.Make)(SPLIT)
+module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (I: Vardom_sig.Vardom_sig) ->
+  Make(I)(Var_store.Make)(Hc4.Make)(SPLIT)
+

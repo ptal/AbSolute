@@ -95,7 +95,7 @@ struct
   let negate = function
     | BoxConstraint c -> BoxConstraint (Box_rep.negate c)
     | OctConstraint c -> OctConstraint (Oct_rep.negate c)
-    | ReifiedConstraint(b, conjunction) -> failwith "Negation of reified constraints is not yet supported."
+    | ReifiedConstraint(_b, _conjunction) -> failwith "Negation of reified constraints is not yet supported."
 
 end
 
@@ -122,13 +122,15 @@ sig
   val print: R.t -> Format.formatter -> t -> unit
 end
 
+open Vardom_sig
+  
 module Make
   (BOX: Box_functor)
-  (Octagon: Octagon_sig) =
+  (Octagon: Octagon_sig) = 
 struct
   module B = Octagon.B
-  module Box=BOX(B)
-  type bound = B.t
+  module Box=BOX(Itv.Itv(B))
+  type bound = Box.bound
   module R = Box_oct_rep(Octagon.R)
 
   type t = {
@@ -166,7 +168,7 @@ struct
   let entailment box_oct = function
     | R.BoxConstraint(c) -> Box.entailment box_oct.box c
     | R.OctConstraint(c) -> Octagon.entailment box_oct.octagon c
-    | R.ReifiedConstraint(b, c) -> failwith "entailment of reified constraint is not implemented."
+    | R.ReifiedConstraint(_b, _c) -> failwith "entailment of reified constraint is not implemented."
 
   let entailment_of_reified box_oct conjunction =
     let entailed = List.map (Octagon.entailment box_oct.octagon) conjunction in

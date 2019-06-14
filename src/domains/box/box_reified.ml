@@ -125,7 +125,7 @@ struct
         let engine = Pengine.subscribe engine c_idx vars in
         { box with reified_constraints; engine; }
 
-  let propagate_negation_conjunction box (b, conjunction) =
+  let propagate_negation_conjunction box (_b, conjunction) =
     match and_reified (List.map (entailment box) conjunction) with
     | False,_ -> box, true
     | True,_ -> raise Bot.Bot_found
@@ -198,6 +198,6 @@ struct
   let split box = List.map (fun branch -> { box with inner=branch}) (Box.split box.inner)
 end
 
-module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Bound_int))
-module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Bound_rat))
-module BoxReifiedF(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Bound_float))
+module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Itv.ItvI))
+module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Itv.ItvQ))
+module BoxReifiedF(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Itv.ItvF))

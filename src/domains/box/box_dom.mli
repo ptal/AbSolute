@@ -61,10 +61,9 @@ sig
   val delta: t -> R.var_id list
 end
 
-module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
+module type Box_functor = functor (I: Vardom_sig.Vardom_sig) -> Box_sig 
 
 module Make
-  (B: Bound_sig.BOUND)
   (VARDOM: Vardom_sig.Vardom_functor)
   (STORE: Var_store_functor)
   (CLOSURE: Hc4.Box_closure_sig)
