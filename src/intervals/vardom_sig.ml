@@ -181,4 +181,4 @@ val top_int: t
   val shrink : t -> Bound_rat.t -> t bot
 end
 
-module type Itv_functor = functor (B: Bound_sig.BOUND) -> Vardom_sig with module B=B
+module type Vardom_functor = functor (B: Bound_sig.BOUND) -> Vardom_sig with module B=B
