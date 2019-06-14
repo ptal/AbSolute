@@ -201,6 +201,6 @@ struct
   let split box = List.map (fun branch -> { box with inner=branch}) (Box.split box.inner)
 end
 
-module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Itv.ItvI))
-module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Itv.ItvQ))
-module BoxReifiedF(SPLIT: Box_split.Box_split_sig) = Make(Box_base(SPLIT)(Itv.ItvF))
+module BoxReifiedZ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(Itv.ItvI)(SPLIT))
+module BoxReifiedQ(SPLIT: Box_split.Box_split_sig) = Make(Box_base(Itv.ItvQ)(SPLIT))
+module BoxReifiedF(SPLIT: Box_split.Box_split_sig) = Make(Box_base(Itv.ItvF)(SPLIT))

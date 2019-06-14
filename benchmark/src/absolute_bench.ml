@@ -32,7 +32,7 @@ end
 module RCPSP_Octagon(SPLIT: Octagon_split.Octagon_split_sig) : RCPSP_sig =
 struct
   include Box_octagon_disjoint.Make
-    (Box_dom.Box_base(Box_split.First_fail_bisect))
+    (Box_dom.Box_base(Itv.ItvI)(Box_split.First_fail_bisect))
     (Octagon.OctagonZ(SPLIT))
 
   let init_rcpsp rcpsp =

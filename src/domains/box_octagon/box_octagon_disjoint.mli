@@ -36,7 +36,6 @@ sig
   module B : Bound_sig.BOUND
   module R : Representation_sig
   type t
-  type bound = B.t
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
@@ -55,5 +54,6 @@ sig
 end
 
 module Make
-  (BOX: Box_functor)
-  (Octagon: Octagon_sig) : Box_octagon_disjoint_sig with module R = Box_oct_rep(Octagon.R)
+  (Box: Box_sig)
+  (Octagon: Octagon_sig with module DBM.B=Box.B) : Box_octagon_disjoint_sig
+ with module B = Box.B and module R = Box_oct_rep(Octagon.R)

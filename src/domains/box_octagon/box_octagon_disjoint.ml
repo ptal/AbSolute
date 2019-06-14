@@ -105,7 +105,6 @@ sig
   module B : Bound_sig.BOUND
   module R : Representation_sig
   type t
-  type bound = B.t
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
@@ -123,15 +122,11 @@ sig
   val print: R.t -> Format.formatter -> t -> unit
 end
 
-open Vardom_sig
-  
 module Make
-  (BOX: Box_functor)
-  (Octagon: Octagon_sig) = 
+  (Box: Box_sig)
+  (Octagon: Octagon_sig with module DBM.B=Box.B) =
 struct
-  module B = Octagon.B
-  module Box=BOX(Itv.Itv(B))
-  type bound = Box.bound
+  module B = Box.B
   module R = Box_oct_rep(Octagon.R)
 
   type t = {
