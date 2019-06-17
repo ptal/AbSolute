@@ -148,3 +148,4 @@ end
 module Box_base(V: Vardom_sig.Vardom_sig)(SPLIT: Box_split.Box_split_sig) =
   Make(V)(Var_store.Make)(Hc4.Make)(SPLIT)
 
+module Bdd_box = Box_base(Bdd_vardom.Bdd)(Box_split.First_fail_bisect)

@@ -122,7 +122,7 @@ sig
   val print: R.t -> Format.formatter -> t -> unit
 end
 
-module Make
+module Makes
   (Box: Box_sig)
   (Octagon: Octagon_sig with module DBM.B=Box.B) =
 struct

@@ -53,7 +53,7 @@ sig
   val print: R.t -> Format.formatter -> t -> unit
 end
 
-module Make
+module Makes
   (Box: Box_sig)
   (Octagon: Octagon_sig with module DBM.B=Box.B) : Box_octagon_disjoint_sig
  with module B = Box.B and module R = Box_oct_rep(Octagon.R)

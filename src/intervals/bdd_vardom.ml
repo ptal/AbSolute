@@ -77,8 +77,7 @@ module Bdd = struct
 
   (** returns the type annotation of the represented values *)
   let to_annot _ = failwith "TODO I don't know what is the point of this function"
-  let print fmt = Format.printf fmt "BDDs are too hard to print"
-
+  let print fmt _t = Format.fprintf fmt "%s" "BDDs are too hard to print"
   let to_expr _ = failwith "BDDs can't be represented by expressions"
 
   (************************************************************************)
@@ -154,14 +153,18 @@ module Bdd = struct
   let score = float_size
 
   (** Splits at the first possible depth *)
-  let rec split m = match m with
-    | T | F -> raise (Wrong_modelling "split_backtrack: The BDD has cardinal 1 (or maybe 0) and can't be splitted")
-    | N(T,T) -> bdd_of T F, bdd_of F T
-    | N(b,a) when is_leaf b -> let c,d = split a in
-                               bdd_of b c, bdd_of b d
-    | N(a,b) when is_leaf b -> let c,d = split a in
-                               bdd_of c b, bdd_of d b
-    | N(a,b) -> bdd_of a F, bdd_of F b
+  let split m =
+    let rec aux m = match m with
+      | T | F -> raise (Wrong_modelling "split_backtrack: The BDD has cardinal 1 (or maybe 0) and can't be splitted")
+      | N(T,T) -> bdd_of T F, bdd_of F T
+      | N(b,a) when is_leaf b -> let c,d = aux a in
+                                 bdd_of b c, bdd_of b d
+      | N(a,b) when is_leaf b -> let c,d = aux a in
+                                 bdd_of c b, bdd_of d b
+      | N(a,b) -> bdd_of a F, bdd_of F b
+    in
+    let a,b = aux m in
+    [a;b]
   let split_on t _ = split t
 
   (** pruning TODO is it useful ? *)
@@ -291,10 +294,10 @@ module Bdd = struct
       simplified interface since a > b <=> b < a *)
 
   let filter_leq _ _ = raise (Wrong_modelling "filter leq not defined on BDDs")
-  let filter_lt _ _ = raise (Wrong_modelling "filter leq not defined on BDDs")
+  let filter_lt _ _ = raise (Wrong_modelling "filter lt not defined on BDDs")
   let filter_eq b1 b2 = let r = meet b1 b2 in
                        lift_bot (fun x -> x,x) r
-  let filter_neq _ _ = raise (Wrong_modelling "filter leq not defined on BDDs")
+  let filter_neq _ _ = raise (Wrong_modelling "filter lt not defined on BDDs")
 
   (** given the interval argument(s) and the expected interval result of
      a numeric operation, returns refined interval argument(s) where
@@ -326,7 +329,7 @@ module Bdd = struct
   let filter_binop op (b1:t) (b2:t) (r:t) = match op with
     | XOR -> let new_dom1 = bdd_xor r b2 in
              let new_dom2 = bdd_xor r b1 in
-             (bot_if_false new_dom1,bot_if_false new_dom2)
+             if new_dom1 == F || new_dom2 == F then Bot else Nb(new_dom1,new_dom2)
     | AND -> failwith "TODO inverse and"
     | OR -> failwith "TODO inverse or"
     | _ -> raise (Wrong_modelling "binary operation not supported on BDDs")
