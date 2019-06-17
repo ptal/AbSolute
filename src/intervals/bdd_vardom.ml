@@ -1,8 +1,8 @@
 (** Generic signature for intervals. The interface is functional.*)
 
 open Bot
-   
-
+exception Wrong_modelling of string
+                           
 module Bdd = struct
 
   (************************************************************************)
@@ -48,7 +48,7 @@ module Bdd = struct
            
   let create var = match var with
     | COMPLETE(i) -> complete_bdd i
-    | _ -> failwith "his creation of variable is not suited (or not implemented) for BDDs"
+    | _ -> raise (Wrong_modelling "his creation of variable is not suited (or not implemented) for BDDs")
 
   (************************************************************************)
   (** {1 PRINTING and CONVERSIONS } *)
@@ -133,7 +133,7 @@ module Bdd = struct
   let equal = (==)
             
   (** mesure *)
-  let float_size t =
+  let float_size =
     (* Returns the depth of the bdd and the cardinality of the set it represents (bounded by max_int, bigger than this will return max_int *)
     let data = Hashtbl.create 101 in
     let rec aux m =
@@ -155,7 +155,7 @@ module Bdd = struct
 
   (** Splits at the first possible depth *)
   let rec split m = match m with
-    | T | F -> failwith "split_backtrack: The BDD has cardinal 1 (or maybe 0) and can't be splitted"
+    | T | F -> raise (Wrong_modelling "split_backtrack: The BDD has cardinal 1 (or maybe 0) and can't be splitted")
     | N(T,T) -> bdd_of T F, bdd_of F T
     | N(b,a) when is_leaf b -> let c,d = split a in
                                bdd_of b c, bdd_of b d
@@ -183,7 +183,7 @@ module Bdd = struct
   val pow: t -> t -> t*)
 
   (** return valid values (possibly Bot, if dividend is nul) *)
-  let div _ _ = failwith "division is not suited for bdds"
+  let div _ _ = raise (Wrong_modelling "division is not suited for bdds")
               
   let bdd_not =
     let hash_and = Hashtbl.create 101 in
@@ -220,8 +220,8 @@ module Bdd = struct
     | NOT -> bdd_not m
     | PREF(i) -> pref m i
     | SUFF(_) -> failwith "The suffix operation has to be improved, depending on the problems"
-    | _ -> failwith "operation not supported by BDD domain"
-         
+    | _ -> raise (Wrong_modelling "operation not supported by BDD domain")
+             
   let bdd_and =
     let hash_and = Hashtbl.create 101 in
     let rec aux m m' =
@@ -247,7 +247,7 @@ module Bdd = struct
           match m, m' with
           | T, T -> T
           | F,_ | _,F -> F
-          | T,_ | _,T -> failwith "bdd_and: not the same depth"
+          | T,_ | _,T -> failwith "bdd_or: not the same depth"
           | N(a,b), N(c,d) -> bdd_of (aux a c) (join (aux a d) (join (aux b c) (aux b d)))
         in
         Hashtbl.add hash_or (ref m,ref m') res;
@@ -274,12 +274,12 @@ module Bdd = struct
     | XOR -> bdd_xor
     | AND -> bdd_and
     | OR -> bdd_or
-    | _ -> failwith "binary operation not supported on BDDs"
+    | _ -> raise (Wrong_modelling "binary operation not supported on BDDs")
     
   (** function calls (sqrt, exp, ln ...) are handled here :
       given a function name and and a list of argument,
      it returns a possibly bottom result *)
-  let eval_fun _ _ = failwith "There is no function to be applied on BDDs"
+  let eval_fun _ _ = raise (Wrong_modelling "There is no function to be applied on BDDs")
 
   (************************************************************************)
   (** {1 FILTERING (TEST TRANSFER FUNCTIONS)}                             *)
@@ -290,11 +290,11 @@ module Bdd = struct
       may also return Bot if no point can satisfy the predicate
       simplified interface since a > b <=> b < a *)
 
-  let filter_leq _ _ = failwith "filter leq not defined on BDDs"
-  let filter_lt _ _ = failwith "filter leq not defined on BDDs"
+  let filter_leq _ _ = raise (Wrong_modelling "filter leq not defined on BDDs")
+  let filter_lt _ _ = raise (Wrong_modelling "filter leq not defined on BDDs")
   let filter_eq b1 b2 = let r = meet b1 b2 in
                        lift_bot (fun x -> x,x) r
-  let filter_neq _ _ = failwith "filter leq not defined on BDDs"
+  let filter_neq _ _ = raise (Wrong_modelling "filter leq not defined on BDDs")
 
   (** given the interval argument(s) and the expected interval result of
      a numeric operation, returns refined interval argument(s) where
@@ -320,7 +320,7 @@ module Bdd = struct
     | NOT -> meet b (bdd_not r)
     | PREF(_) -> failwith "TODO prefix filter"
     | SUFF(_) -> failwith "The suffix operation has to be improved, depending on the problems"
-    | _ -> failwith "operation not supported by BDD domain"
+    | _ -> raise (Wrong_modelling "operation not supported by BDD domain")
 
   (* b1 xor b2 = r <=> b1 = r xor b2 <=> b2 = r xor b1 *)
   let filter_binop op (b1:t) (b2:t) (r:t) = match op with
@@ -329,7 +329,7 @@ module Bdd = struct
              (bot_if_false new_dom1,bot_if_false new_dom2)
     | AND -> failwith "TODO inverse and"
     | OR -> failwith "TODO inverse or"
-    | _ -> failwith "binary operation not supported on BDDs"
+    | _ -> raise (Wrong_modelling "binary operation not supported on BDDs")
 
   (** filtering function calls like (sqrt, exp, ln ...) is done here : Bonjour
 
@@ -356,17 +356,17 @@ Michel
   let filter_div_f _ _ _ = failwith "division can't be done on BDDs"
   let filter_root_f _ _ _ = failwith "root can't be done on BDDs"
                           
-  let filter_binop_f op (b1:t) (b2:t) (r:t) = match op with
+  let filter_binop_f op (_b1:t) (b2:t) (r:t) = match op with
     | XOR -> let new_dom1 = bdd_xor r b2 in
              bot_if_false new_dom1
     | AND -> failwith "TODO inverse and"
     | OR -> failwith "TODO inverse or"
-    | _ -> failwith "binary operation not supported on BDDs"
+    | _ -> raise (Wrong_modelling "binary operation not supported on BDDs")
 
   (** generate a random float within the given interval *)
-  let spawn _ = failwith "Can't spawn a float from a BDD"
+  let spawn _ = raise (Wrong_modelling "Can't spawn a float from a BDD")
 
   (** shrinks each bound of the interval by the given value *)
-  let shrink = failwith "Can't shrink the bounds of a BDD"
+  let shrink = raise (Wrong_modelling "Can't shrink the bounds of a BDD")
 end
 
