@@ -24,6 +24,7 @@ depends: [
   "apron"
   "extlib"
   "containers"
+  "libsatml"
   "alcotest" {test}
 ]
 depopts: [
