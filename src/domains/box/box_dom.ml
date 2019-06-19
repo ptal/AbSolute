@@ -125,10 +125,8 @@ struct
 
   (* Entailed constraints are automatically deactivated by Pengine.fixpoint. *)
   let state_decomposition box =
-    if Pengine.num_active_tasks box.engine = 0 then
-      True
-    else
-      Unknown
+    if Pengine.num_active_tasks box.engine = 0 then True
+    else Unknown
 
   let print repr fmt box =
   begin

@@ -18,9 +18,11 @@ type binop = ADD | SUB | MUL | DIV | POW
 type cmpop =
   | EQ | LEQ | GEQ | NEQ | GT | LT
 
-(* Expressions are parametrized by a variable identifier.
-   In the logical specification, it is a string representing the textual name of the variable.
-   These structures can be reused in abstract domains where the variable's ID is an integer for example (such as in Box). *)
+(* Expressions are parametrized by a variable identifier.  In the
+   logical specification, it is a string representing the textual name
+   of the variable.  These structures can be reused in abstract
+   domains where the variable's ID is an integer for example (such as
+   in Box). *)
 
 (* numeric expressions *)
 type 'var gexpr =
@@ -123,13 +125,15 @@ let print_typ fmt = function
 let print_var fmt s = Format.fprintf fmt "%s" s
 
 let print_dom fmt = function
-  | Finite (a,b) ->  Format.fprintf fmt "[%s; %s]" (Bound_rat.to_string a) (Bound_rat.to_string b)
+  | Finite (a,b) ->  Format.fprintf fmt "[%s; %s]"
+                       (Bound_rat.to_string a)
+                       (Bound_rat.to_string b)
   | Minf i -> Format.fprintf fmt "[-oo; %s]" (Bound_rat.to_string i)
   | Inf i -> Format.fprintf fmt "[%s; +oo]" (Bound_rat.to_string i)
   | Set l ->
      let print_set =
        (Format.pp_print_list
-          ~pp_sep:(fun fmt () -> Format.fprintf fmt "; ")
+          ~pp_sep:pp_sep_semicolon_space
           (fun fmt f -> Format.fprintf fmt "%s" (Bound_rat.to_string f)))
      in
      Format.fprintf fmt "{%a}" print_set l
@@ -144,8 +148,8 @@ let print_assign fmt assignations =
 
 let print_cst fmt (a, b) =
   match (a, b) with
-  | (a, b)  when a = b ->  Format.fprintf fmt "%a" pp_print_rat a
-  | (a, b) -> Format.fprintf fmt "[%a; %a]" pp_print_rat a pp_print_rat b
+  | (a, b)  when a = b ->  Format.fprintf fmt "%a" Bound_rat.pp_print a
+  | (a, b) -> Format.fprintf fmt "[%a; %a]" Bound_rat.pp_print a Bound_rat.pp_print b
 
 let print_csts fmt (a, b) =
   Format.fprintf fmt "%a = %a" print_var a print_cst b
@@ -157,35 +161,100 @@ let rec print_all_csts fmt = function
 
 let print_gexpr print_var fmt e =
   let rec aux fmt = function
-  | Funcall(name,args) ->
-     let print_args fmt =
-       Format.pp_print_list
-         ~pp_sep:(fun fmt () -> Format.fprintf fmt ",")
-         aux fmt
-     in
-     Format.fprintf fmt "%s(%a)" name print_args args
-  | Unary (NEG, e) ->
-      Format.fprintf fmt "(- %a)" aux e
-  | Binary (b, e1 , e2) ->
-      Format.fprintf fmt "(%a %a %a)" aux e1 print_binop b aux e2
-  | Var v -> Format.fprintf fmt "%a" print_var v
-  | Cst (c,Int) -> Format.fprintf fmt "%d" (Bound_rat.to_int_up c)
-  | Cst (c,_) -> Format.fprintf fmt "%a" pp_print_rat c
+    | Funcall(name,args) ->
+       let print_args fmt =
+         Format.pp_print_list ~pp_sep:pp_sep_comma aux fmt
+       in
+       Format.fprintf fmt "%s(%a)" name print_args args
+    | Unary (NEG, e) ->
+       Format.fprintf fmt "(- %a)" aux e
+    | Binary (b, e1 , e2) ->
+       Format.fprintf fmt "(%a %a %a)" aux e1 print_binop b aux e2
+    | Var v -> Format.fprintf fmt "%a" print_var v
+    | Cst (c,Int) -> Format.fprintf fmt "%d" (Bound_rat.to_int_up c)
+    | Cst (c,_) -> Format.fprintf fmt "%a" Bound_rat.pp_print c
   in
   aux fmt e
 
+(***************************************************************)
+(* Prettier printing that does not print redundant parenthesis *)
+
+let prior_level = function
+  | Funcall(_),Funcall(_) -> 0
+  | Funcall(_),_          -> 1
+  | Binary(POW,_,_),Binary(POW,_,_)  -> 0
+  | Binary(POW,_,_),Binary(_)  -> 0
+  | Binary((MUL | DIV),_,_),Binary((MUL | DIV),_,_) -> 0
+  | Binary((MUL | DIV),_,_),_ -> 1
+  | _ -> 0
+
+let must_parenthesis_right (father:expr) (e:expr) =
+  match father,e with
+  | Binary(x,_,_),Binary(SUB,_,_) -> x<>SUB
+  | _ -> false
+
+(* This function prints an expression without redundant parenthesis
+   and using continuation passing style to avoid a stack overflow
+   error over very large constraints *)
+let print_gexpr_cps print_var fmt t =
+  let rec loop parenflag (k:unit->unit) fmt t =
+    match t with
+    | Funcall("sqr",[x]) -> loop false k fmt (Binary(POW,x,Cst(Bound_rat.two,Int)))
+    | Funcall(("POWER"|"power"),[x;y]) -> loop false k fmt (Binary(POW,x,y))
+    | Funcall (name,args) ->
+       Format.fprintf fmt "%a(" print_var name;
+       Format.pp_print_list ~pp_sep:pp_sep_comma
+         (loop false (fun () -> Format.fprintf fmt ")"; k())) fmt args;
+    | Binary (b,t1,t2) as father ->
+       let right_prior = prior_level (father,t2) in
+       let k =
+         if parenflag then begin
+             Format.fprintf fmt "(";
+             (fun () -> Format.fprintf fmt ")";k())
+           end
+         else k
+       in
+       loop
+         (prior_level (father,t1) > 0)
+         (fun () ->
+           Format.fprintf fmt " %a " print_binop b;
+           loop
+             (right_prior > 0 || (right_prior=0 && must_parenthesis_right father t2)) k
+             fmt t2)
+         fmt t1
+
+    | Unary (u,e) ->
+       Format.fprintf fmt "(%a" print_unop u;
+       loop true (fun () -> Format.fprintf fmt ")"; k ()) fmt e
+    | Var v -> Format.fprintf fmt "%a" print_var v; k ()
+    | Cst (c,_) -> Format.fprintf fmt "%a" Bound_rat.pp_print c; k ()
+  in
+  loop false (fun () -> ()) fmt t
+
 let print_gbexpr print_var fmt e =
   let rec aux fmt = function
-  | Cmp (c,e1,e2) ->
-    Format.fprintf fmt "%a %a %a"
-      (print_gexpr print_var) e1 print_cmpop c (print_gexpr print_var) e2
-  | And (b1,b2) ->
-    Format.fprintf fmt "%a && %a"
-      aux b1 aux b2
-  | Or  (b1,b2) ->
-    Format.fprintf fmt "%a || %a"
-      aux b1 aux b2
-  | Not b -> Format.fprintf fmt "not %a" aux b in
+    | Cmp (c,e1,e2) ->
+       Format.fprintf fmt "%a %a %a"
+         (print_gexpr print_var) e1 print_cmpop c (print_gexpr print_var) e2
+    | And (b1,b2) ->
+       Format.fprintf fmt "%a && %a"
+         aux b1 aux b2
+    | Or  (b1,b2) ->
+       Format.fprintf fmt "%a || %a"
+         aux b1 aux b2
+    | Not b -> Format.fprintf fmt "not %a" aux b in
+  aux fmt e
+
+(* Same as print gbexpr but using CPS *)
+let print_gbexpr_cps print_var fmt e =
+  let rec aux fmt = function
+    | Cmp (c,e1,e2) -> Format.fprintf fmt "%a %a %a"
+         (print_gexpr_cps print_var) e1 print_cmpop c (print_gexpr_cps print_var) e2
+    | And (b1,b2) -> Format.fprintf fmt "%a && %a"
+         aux b1 aux b2
+    | Or  (b1,b2) -> Format.fprintf fmt "%a || %a"
+         aux b1 aux b2
+    | Not b -> Format.fprintf fmt "not %a" aux b in
   aux fmt e
 
 let print_gconstraint print_var fmt (e1,op,e2) =
@@ -195,9 +264,9 @@ let print_gconstraints print_var constraints =
   List.iter (Format.printf "%a\n" (print_gconstraint print_var)) constraints
 
 let string_of_gconstraint print_var c = begin
-  print_gconstraint print_var Format.str_formatter c;
-  Format.flush_str_formatter ()
-end
+    print_gconstraint print_var Format.str_formatter c;
+    Format.flush_str_formatter ()
+  end
 
 let print_expr = print_gexpr print_var
 let print_bexpr = print_gbexpr print_var
@@ -205,18 +274,17 @@ let print_bconstraint = print_gconstraint print_var
 let print_bconstraints = print_gconstraints print_var
 let string_of_bconstraint = string_of_gconstraint print_var
 
-let print_constraints fmt constraints =
-  List.iter
-    (fun c ->
-      Format.fprintf fmt "%a\n" print_bexpr c
-    ) constraints
+let print_constraints =
+  Format.pp_print_list ~pp_sep:pp_sep_newline (print_gbexpr_cps print_var)
 
 let print_jacob fmt (v, e) =
   Format.fprintf fmt "\t(%a, %a)" print_var v print_expr e
 
 let rec print_jacobian fmt = function
   | [] -> ()
-  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
+  | (c, _)::tl ->
+     Format.fprintf fmt "%a;\n" print_bexpr c;
+     print_jacobian fmt tl
 
 let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e
@@ -231,9 +299,9 @@ let print fmt prog =
 
 (* checks if an expression contains a variable *)
 let rec has_variable = function
-  | Funcall(name,args) -> List.exists has_variable args
-  | Unary (u, e) -> has_variable e
-  | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
+  | Funcall(_,args) -> List.exists has_variable args
+  | Unary (_, e) -> has_variable e
+  | Binary(_, e1, e2) -> has_variable e1 || has_variable e2
   | Var _ -> true
   | Cst _ -> false
 
@@ -290,16 +358,6 @@ let is_cst = function
   | Cst _ -> true
   | _ -> false
 
-let rec to_cst c b = function
-  | [] -> Cst (c,Real)
-  | (Cst (a, _))::t -> if b then to_cst (Bound_rat.add c a) b t else to_cst (Bound_rat.mul c a) b t
-  | h::t -> to_cst c b t
-
-let rec to_fcst c = function
-  | [] -> c
-  | (Cst (a,annt))::t -> to_fcst (Bound_rat.add c a) t
-  | h::t -> to_fcst c t
-
 let rec distribute (op, c) = function
   | Funcall (name, args) ->  Binary (op, Funcall(name, args), c)
   | Cst (a,annt) -> Binary (op, Cst (a,annt), c)
@@ -336,75 +394,75 @@ let rec simplify_expr expr change =
   | Cst (c,ant) -> (Cst (c,ant), change)
   | Var v -> (Var v, change)
   | Unary (NEG, e) ->
-    (match e with
-     | Cst (c,ant) when is_zero c -> (zero, true)
-     | Cst (c,ant) -> (Cst ((Bound_rat.neg c),ant), true)
-     | Unary (NEG, e') -> simplify_expr e' true
-     | Binary (SUB, Cst (a,ant), Cst (b,ant')) -> (Cst ((Bound_rat.sub b a),ant), true)
-     | Binary (SUB, a1, a2) -> simplify_expr (Binary (SUB, a2, a1)) true
-     | _ -> let (e', b) = simplify_expr e change in (Unary (NEG, e'), b)
-    )
+     (match e with
+      | Cst (c,ant) when is_zero c -> (zero, true)
+      | Cst (c,ant) -> (Cst ((Bound_rat.neg c),ant), true)
+      | Unary (NEG, e') -> simplify_expr e' true
+      | Binary (SUB, Cst (a,ant), Cst (b,ant')) -> (Cst ((Bound_rat.sub b a),ant), true)
+      | Binary (SUB, a1, a2) -> simplify_expr (Binary (SUB, a2, a1)) true
+      | _ -> let (e', b) = simplify_expr e change in (Unary (NEG, e'), b)
+     )
   | Binary (b, e1, e2) ->
-    (match b with
-     | ADD ->
-       (match e1, e2 with
-        | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.add a b),join_annot ant ant'), true)
-        | Cst (z,annot), e2 when is_zero z -> simplify_expr e2 change
-        | e1, Cst (z,annot) when is_zero z -> simplify_expr e1 change
-        | e1 , Cst (c,annot) when is_neg c ->
-           simplify_expr (Binary(SUB, e1, Cst ((Bound_rat.neg c),annot))) true
-        | Cst (c,annot), e1 when is_neg c ->
-           simplify_expr (Binary(SUB, e1, Cst ((Bound_rat.neg c),annot))) true
-        | e1, Unary(NEG, e) -> simplify_expr (Binary(SUB, e1, e)) true
-        | Unary(NEG, e), e2 -> simplify_expr (Binary(SUB, e2, e)) true
-        | e1, e2 -> apply simplify_expr e1 e2 change ADD
-       )
-     | SUB ->
-       (match e1, e2 with
-        | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.sub a b),(join_annot ant ant')), true)
-        | Cst (c,annt), _ when is_zero c->
-           let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
-        | _, Cst (c,ant) when is_zero c -> simplify_expr e1 change
-        | e1 , Cst (c,ant') when is_neg c -> simplify_expr (Binary(ADD, e1, Cst ((Bound_rat.neg c),ant'))) true
-        | Cst (c,ant), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(ADD, e1, Cst ((Bound_rat.neg c),ant)))) true
-        | _, Unary(NEG, e) -> simplify_expr (Binary(ADD, e1, e)) true
-        | Unary(NEG, e), _ -> simplify_expr (Unary(NEG, (Binary(ADD, e, e2)))) true
-        | _, _ -> apply simplify_expr e1 e2 change SUB
-       )
-     | MUL ->
-       (match e1, e2 with
-        | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.mul a b),join_annot ant ant'), true)
-        | Cst (c,annot), _ when is_zero c -> (zero, true)
-        | _, Cst (c,annot) when is_zero c -> (zero, true)
-        | Cst (c,annot), _ when Bound_rat.equal one_val c -> simplify_expr e2 change
-        | _, Cst (c,annot) when Bound_rat.equal one_val c -> simplify_expr e1 change
-        | e1 , Cst (c,annot) when is_neg c -> simplify_expr (Unary(NEG, (Binary(MUL, e1, Cst ((Bound_rat.neg c),annot))))) true
-        | Cst (c,annt), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(MUL, e1, Cst ((Bound_rat.neg c),annt)))) true
-        | e', Unary(NEG, e) | Unary(NEG, e), e' -> simplify_expr (Unary(NEG, (Binary(MUL, e, e')))) true
-        | _, _ -> apply simplify_expr e1 e2 change MUL
-       )
-     | DIV ->
-       (match e1, e2 with
-        | _, Cst (c,ant) when is_zero c -> (zero, true) (* TODO treat NaN *)
-        | Cst (c,ant), _ when is_zero c -> (zero, true)
-        (* | Cst a, Cst b when Bound_rat.equal a b -> (one, true)
-         * | Cst a, Cst b when Bound_rat.equal a (Bound_rat.neg b) -> (Cst (Bound_rat.of_int (-1)), true)
-         * | Cst a, Cst b -> (Cst (Bound_rat.div a b), true)
-         * | _, Cst c when Bound_rat.equal c one_val -> simplify_expr e1 change
-         * | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
-         * | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(DIV, e1, Cst (Bound_rat.neg c))))) true
-         * | Cst c, e2 when is_neg c -> simplify_expr (Unary(NEG, Binary(DIV, Cst (Bound_rat.neg c), e2))) true *)
-        | _, _ -> apply simplify_expr e1 e2 change DIV
-       )
-     | POW ->
-       (match e1, e2 with
-        (* | Cst a, Cst b -> (Cst (power a b), true)
-         * | Cst c, _ when is_zero c -> (zero, true)
-         * | _, Cst c when is_zero c -> (one, true)
-         * | _, Cst c when Bound_rat.equal one_val c -> simplify_expr e1 change *)
-        | _, _ -> apply simplify_expr e1 e2 change POW
-       )
-    )
+     (match b with
+      | ADD ->
+         (match e1, e2 with
+          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.add a b),join_annot ant ant'), true)
+          | Cst (z,annot), e2 when is_zero z -> simplify_expr e2 change
+          | e1, Cst (z,annot) when is_zero z -> simplify_expr e1 change
+          | e1 , Cst (c,annot) when is_neg c ->
+             simplify_expr (Binary(SUB, e1, Cst ((Bound_rat.neg c),annot))) true
+          | Cst (c,annot), e1 when is_neg c ->
+             simplify_expr (Binary(SUB, e1, Cst ((Bound_rat.neg c),annot))) true
+          | e1, Unary(NEG, e) -> simplify_expr (Binary(SUB, e1, e)) true
+          | Unary(NEG, e), e2 -> simplify_expr (Binary(SUB, e2, e)) true
+          | e1, e2 -> apply simplify_expr e1 e2 change ADD
+         )
+      | SUB ->
+         (match e1, e2 with
+          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.sub a b),(join_annot ant ant')), true)
+          | Cst (c,annt), _ when is_zero c->
+             let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
+          | _, Cst (c,ant) when is_zero c -> simplify_expr e1 change
+          | e1 , Cst (c,ant') when is_neg c -> simplify_expr (Binary(ADD, e1, Cst ((Bound_rat.neg c),ant'))) true
+          | Cst (c,ant), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(ADD, e1, Cst ((Bound_rat.neg c),ant)))) true
+          | _, Unary(NEG, e) -> simplify_expr (Binary(ADD, e1, e)) true
+          | Unary(NEG, e), _ -> simplify_expr (Unary(NEG, (Binary(ADD, e, e2)))) true
+          | _, _ -> apply simplify_expr e1 e2 change SUB
+         )
+      | MUL ->
+         (match e1, e2 with
+          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.mul a b),join_annot ant ant'), true)
+          | Cst (c,annot), _ when is_zero c -> (zero, true)
+          | _, Cst (c,annot) when is_zero c -> (zero, true)
+          | Cst (c,annot), _ when Bound_rat.equal one_val c -> simplify_expr e2 change
+          | _, Cst (c,annot) when Bound_rat.equal one_val c -> simplify_expr e1 change
+          | e1 , Cst (c,annot) when is_neg c -> simplify_expr (Unary(NEG, (Binary(MUL, e1, Cst ((Bound_rat.neg c),annot))))) true
+          | Cst (c,annt), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(MUL, e1, Cst ((Bound_rat.neg c),annt)))) true
+          | e', Unary(NEG, e) | Unary(NEG, e), e' -> simplify_expr (Unary(NEG, (Binary(MUL, e, e')))) true
+          | _, _ -> apply simplify_expr e1 e2 change MUL
+         )
+      | DIV ->
+         (match e1, e2 with
+          | _, Cst (c,ant) when is_zero c -> (zero, true) (* TODO treat NaN *)
+          | Cst (c,ant), _ when is_zero c -> (zero, true)
+          (* | Cst a, Cst b when Bound_rat.equal a b -> (one, true)
+           * | Cst a, Cst b when Bound_rat.equal a (Bound_rat.neg b) -> (Cst (Bound_rat.of_int (-1)), true)
+           * | Cst a, Cst b -> (Cst (Bound_rat.div a b), true)
+           * | _, Cst c when Bound_rat.equal c one_val -> simplify_expr e1 change
+           * | e1, Unary(NEG, e2) | Unary(NEG, e1), e2 -> simplify_expr (Unary(NEG, (Binary(DIV, e1, e2)))) true
+           * | e1 , Cst c when is_neg c -> simplify_expr (Unary(NEG, (Binary(DIV, e1, Cst (Bound_rat.neg c))))) true
+           * | Cst c, e2 when is_neg c -> simplify_expr (Unary(NEG, Binary(DIV, Cst (Bound_rat.neg c), e2))) true *)
+          | _, _ -> apply simplify_expr e1 e2 change DIV
+         )
+      | POW ->
+         (match e1, e2 with
+          (* | Cst a, Cst b -> (Cst (power a b), true)
+           * | Cst c, _ when is_zero c -> (zero, true)
+           * | _, Cst c when is_zero c -> (one, true)
+           * | _, Cst c when Bound_rat.equal one_val c -> simplify_expr e1 change *)
+          | _, _ -> apply simplify_expr e1 e2 change POW
+         )
+     )
 
 let rec simplify_fp expr =
   let (e, b) = simplify_expr expr false in
@@ -438,28 +496,28 @@ let rec derivate expr var =
   | Var v -> if var = v then one else zero
   | Unary (NEG, e) ->  Unary (NEG, derivate e var)
   | Binary (b, e1, e2) ->
-    (match b with
-     | ADD -> Binary (ADD, derivate e1 var, derivate e2 var)
-     | SUB -> Binary (SUB, derivate e1 var, derivate e2 var)
-     | MUL -> Binary (ADD, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var))
-     | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), sqr e2)
-     | POW -> begin
-        let rec flatten_pow e
+     (match b with
+      | ADD -> Binary (ADD, derivate e1 var, derivate e2 var)
+      | SUB -> Binary (SUB, derivate e1 var, derivate e2 var)
+      | MUL -> Binary (ADD, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var))
+      | DIV -> Binary (DIV, Binary (SUB, Binary (MUL, derivate e1 var, e2), Binary (MUL, e1, derivate e2 var)), sqr e2)
+      | POW -> begin
+          let rec flatten_pow e
             = function
             | 0 -> one
             | 1 -> e
             | n -> Binary (MUL, e, flatten_pow e (n-1))
-        in
-        match e2 with
-        | Cst (i,_) -> begin
-            match Polynom.RationalRing.to_int i with
-            | Some i -> let expr' = flatten_pow e1 i in
-                derivate expr' var
-            | None -> zero
+          in
+          match e2 with
+          | Cst (i,_) -> begin
+              match Polynom.RationalRing.to_int i with
+              | Some i -> let expr' = flatten_pow e1 i in
+                          derivate expr' var
+              | None -> zero
             end
-        | _ -> zero
+          | _ -> zero
         end
-    )
+     )
   | Funcall _ -> zero (* TODO IMPLEMENTATION *)
 
 let rec derivative bexpr var =
@@ -475,20 +533,20 @@ let is_arith = function
 
 let ctr_jacobian c vars =
   List.fold_left (
-    fun l (_, v, _) ->
+      fun l (_, v, _) ->
       let expr = if is_arith c then
-          let new_c = simplify_bexpr (derivative c v) in
-          let (op, e) = left_hand new_c in
-          e
-        else zero
+                   let new_c = simplify_bexpr (derivative c v) in
+                   let (op, e) = left_hand new_c in
+                   e
+                 else zero
       in
-    (v, expr)::l
-  ) [] vars
+      (v, expr)::l
+    ) [] vars
 
 let compute_jacobian csp =
   List.fold_left (
-    fun l c -> (c, ctr_jacobian c csp.init)::l
-  ) [] csp.constraints
+      fun l c -> (c, ctr_jacobian c csp.init)::l
+    ) [] csp.constraints
 
 
 (*****************************************)
@@ -509,11 +567,11 @@ let add_int_var csp name inf sup = add_var csp name inf sup Int
 
 let add_constr csp c =
   let jac = List.map (
-    fun (_, v, _) ->
-    let new_c = simplify_bexpr (derivative c v) in
-    let (_, expr) = left_hand new_c in
-    (v, expr)
-  ) csp.init in
+                fun (_, v, _) ->
+                let new_c = simplify_bexpr (derivative c v) in
+                let (_, expr) = left_hand new_c in
+                (v, expr)
+              ) csp.init in
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
 
 (* converts a domain representation to a couple of constraints *)
@@ -543,7 +601,7 @@ let rec iter_constr f_expr f_constr = function
      iter_expr f_expr e1;
      iter_expr f_expr e2
   | (And (b1,b2) as constr)
-  | (Or  (b1,b2) as constr) ->
+    | (Or  (b1,b2) as constr) ->
      f_constr constr;
      iter_constr f_expr f_constr b1;
      iter_constr f_expr f_constr b2
@@ -626,10 +684,10 @@ let get_vars_jacob jacob =
 
 let replace_cst_jacob (id, cst) jacob =
   List.map (fun (c, vars, j) ->
-    if Variables.mem id vars then
-      (replace_cst_bexpr (id, cst) c, Variables.remove id vars, j)
-    else (c, vars, j)
-  ) jacob
+      if Variables.mem id vars then
+        (replace_cst_bexpr (id, cst) c, Variables.remove id vars, j)
+      else (c, vars, j)
+    ) jacob
 
 let from_cst_to_expr (id, (l, u)) =
   if l = u then [(Var id, EQ, Cst (l,Real))]
