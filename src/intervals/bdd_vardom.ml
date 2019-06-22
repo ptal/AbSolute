@@ -48,7 +48,7 @@ module Bdd = struct
            
   let create var = match var with
     | COMPLETE(i) -> complete_bdd i
-    | _ -> raise (Wrong_modelling "his creation of variable is not suited (or not implemented) for BDDs")
+    | _ -> raise (Wrong_modelling "this creation of variable is not suited (or not implemented) for BDDs")
 
   (************************************************************************)
   (** {1 PRINTING and CONVERSIONS } *)

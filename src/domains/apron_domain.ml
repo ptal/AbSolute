@@ -1,6 +1,8 @@
 open Apron
 open Csp
 open Apron_utils
+   
+exception Wrong_modelling of string
 
 module type ADomain = sig
   type t
@@ -34,6 +36,7 @@ module SyntaxTranslator (D:ADomain) = struct
     | Unary (o,e1) ->
       let r = match o with
         | NEG  -> Texpr1.Neg
+        | LNOT -> raise (Wrong_modelling "LNOT currently not defined with apron")
       in
       let e1 = expr_to_apron a e1 in
       Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)

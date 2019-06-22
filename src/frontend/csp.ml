@@ -9,10 +9,10 @@ type i = Bound_rat.t
 type annot = Int | Real
 
 (* unary arithmetic operators *)
-type unop = NEG
+type unop = NEG | LNOT
 
 (* binary arithmetic operators *)
-type binop = ADD | SUB | MUL | DIV | POW
+type binop = ADD | SUB | MUL | DIV | POW | LXOR | LAND | LOR
 
 (* arithmetic comparison operators *)
 type cmpop =
@@ -100,6 +100,7 @@ let constant_zero = Cst (Bound_rat.zero, Int)
 
 let print_unop fmt = function
   | NEG -> Format.fprintf fmt "-"
+  | LNOT -> Format.fprintf fmt "lnot "
 
 let print_binop fmt = function
   | ADD -> Format.fprintf fmt "+"
@@ -107,6 +108,9 @@ let print_binop fmt = function
   | MUL -> Format.fprintf fmt "*"
   | DIV -> Format.fprintf fmt "/"
   | POW -> Format.fprintf fmt "^"
+  | LXOR -> Format.fprintf fmt " lxor "
+  | LAND -> Format.fprintf fmt " land "
+  | LOR -> Format.fprintf fmt " lor "
 
 let print_cmpop fmt = function
   | EQ  -> Format.fprintf fmt "="
@@ -165,7 +169,9 @@ let print_gexpr print_var fmt e =
      in
      Format.fprintf fmt "%s(%a)" name print_args args
   | Unary (NEG, e) ->
-      Format.fprintf fmt "(- %a)" aux e
+     Format.fprintf fmt "(- %a)" aux e
+  | Unary (LNOT, e) ->
+     Format.fprintf fmt "(lnot %a)" aux e
   | Binary (b, e1 , e2) ->
       Format.fprintf fmt "(%a %a %a)" aux e1 print_binop b aux e2
   | Var v -> Format.fprintf fmt "%a" print_var v
@@ -216,7 +222,7 @@ let print_jacob fmt (v, e) =
 
 let rec print_jacobian fmt = function
   | [] -> ()
-  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
+  | (c, _j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
 
 let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e
@@ -231,9 +237,9 @@ let print fmt prog =
 
 (* checks if an expression contains a variable *)
 let rec has_variable = function
-  | Funcall(name,args) -> List.exists has_variable args
-  | Unary (u, e) -> has_variable e
-  | Binary(b, e1, e2) -> has_variable e1 || has_variable e2
+  | Funcall(_name,args) -> List.exists has_variable args
+  | Unary (_u, e) -> has_variable e
+  | Binary(_b, e1, e2) -> has_variable e1 || has_variable e2
   | Var _ -> true
   | Cst _ -> false
 
@@ -293,18 +299,19 @@ let is_cst = function
 let rec to_cst c b = function
   | [] -> Cst (c,Real)
   | (Cst (a, _))::t -> if b then to_cst (Bound_rat.add c a) b t else to_cst (Bound_rat.mul c a) b t
-  | h::t -> to_cst c b t
+  | _h::t -> to_cst c b t
 
 let rec to_fcst c = function
   | [] -> c
-  | (Cst (a,annt))::t -> to_fcst (Bound_rat.add c a) t
-  | h::t -> to_fcst c t
+  | (Cst (a,_annt))::t -> to_fcst (Bound_rat.add c a) t
+  | _h::t -> to_fcst c t
 
 let rec distribute (op, c) = function
   | Funcall (name, args) ->  Binary (op, Funcall(name, args), c)
   | Cst (a,annt) -> Binary (op, Cst (a,annt), c)
   | Var v -> Binary (op, Var v, c)
   | Unary (NEG, e) -> Unary (NEG, distribute (op, c) e)
+  | Unary (LNOT, e) -> Unary (LNOT, e)
   | Binary (binop, _, _) as expr when binop = POW -> Binary (op, expr, c)
   | Binary (binop, e, Cst (a,annt)) when binop = op -> Binary (op, e, Binary (MUL, Cst (a,annt), c))
   | Binary (binop, Cst (a,annt), e) when binop = op -> Binary (op, Binary (op, Cst (a,annt), c), e)
@@ -337,20 +344,21 @@ let rec simplify_expr expr change =
   | Var v -> (Var v, change)
   | Unary (NEG, e) ->
     (match e with
-     | Cst (c,ant) when is_zero c -> (zero, true)
+     | Cst (c,_ant) when is_zero c -> (zero, true)
      | Cst (c,ant) -> (Cst ((Bound_rat.neg c),ant), true)
      | Unary (NEG, e') -> simplify_expr e' true
-     | Binary (SUB, Cst (a,ant), Cst (b,ant')) -> (Cst ((Bound_rat.sub b a),ant), true)
+     | Binary (SUB, Cst (a,ant), Cst (b,_ant')) -> (Cst ((Bound_rat.sub b a),ant), true)
      | Binary (SUB, a1, a2) -> simplify_expr (Binary (SUB, a2, a1)) true
      | _ -> let (e', b) = simplify_expr e change in (Unary (NEG, e'), b)
     )
+  | Unary (LNOT,e) -> Unary (LNOT,e),change
   | Binary (b, e1, e2) ->
     (match b with
      | ADD ->
        (match e1, e2 with
         | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.add a b),join_annot ant ant'), true)
-        | Cst (z,annot), e2 when is_zero z -> simplify_expr e2 change
-        | e1, Cst (z,annot) when is_zero z -> simplify_expr e1 change
+        | Cst (z,_annot), e2 when is_zero z -> simplify_expr e2 change
+        | e1, Cst (z,_annot) when is_zero z -> simplify_expr e1 change
         | e1 , Cst (c,annot) when is_neg c ->
            simplify_expr (Binary(SUB, e1, Cst ((Bound_rat.neg c),annot))) true
         | Cst (c,annot), e1 when is_neg c ->
@@ -362,9 +370,9 @@ let rec simplify_expr expr change =
      | SUB ->
        (match e1, e2 with
         | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.sub a b),(join_annot ant ant')), true)
-        | Cst (c,annt), _ when is_zero c->
+        | Cst (c,_annt), _ when is_zero c->
            let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
-        | _, Cst (c,ant) when is_zero c -> simplify_expr e1 change
+        | _, Cst (c,_ant) when is_zero c -> simplify_expr e1 change
         | e1 , Cst (c,ant') when is_neg c -> simplify_expr (Binary(ADD, e1, Cst ((Bound_rat.neg c),ant'))) true
         | Cst (c,ant), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(ADD, e1, Cst ((Bound_rat.neg c),ant)))) true
         | _, Unary(NEG, e) -> simplify_expr (Binary(ADD, e1, e)) true
@@ -374,10 +382,10 @@ let rec simplify_expr expr change =
      | MUL ->
        (match e1, e2 with
         | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.mul a b),join_annot ant ant'), true)
-        | Cst (c,annot), _ when is_zero c -> (zero, true)
-        | _, Cst (c,annot) when is_zero c -> (zero, true)
-        | Cst (c,annot), _ when Bound_rat.equal one_val c -> simplify_expr e2 change
-        | _, Cst (c,annot) when Bound_rat.equal one_val c -> simplify_expr e1 change
+        | Cst (c,_annot), _ when is_zero c -> (zero, true)
+        | _, Cst (c,_annot) when is_zero c -> (zero, true)
+        | Cst (c,_annot), _ when Bound_rat.equal one_val c -> simplify_expr e2 change
+        | _, Cst (c,_annot) when Bound_rat.equal one_val c -> simplify_expr e1 change
         | e1 , Cst (c,annot) when is_neg c -> simplify_expr (Unary(NEG, (Binary(MUL, e1, Cst ((Bound_rat.neg c),annot))))) true
         | Cst (c,annt), e1 when is_neg c -> simplify_expr (Unary(NEG, Binary(MUL, e1, Cst ((Bound_rat.neg c),annt)))) true
         | e', Unary(NEG, e) | Unary(NEG, e), e' -> simplify_expr (Unary(NEG, (Binary(MUL, e, e')))) true
@@ -385,8 +393,8 @@ let rec simplify_expr expr change =
        )
      | DIV ->
        (match e1, e2 with
-        | _, Cst (c,ant) when is_zero c -> (zero, true) (* TODO treat NaN *)
-        | Cst (c,ant), _ when is_zero c -> (zero, true)
+        | _, Cst (c,_ant) when is_zero c -> (zero, true) (* TODO treat NaN *)
+        | Cst (c,_ant), _ when is_zero c -> (zero, true)
         (* | Cst a, Cst b when Bound_rat.equal a b -> (one, true)
          * | Cst a, Cst b when Bound_rat.equal a (Bound_rat.neg b) -> (Cst (Bound_rat.of_int (-1)), true)
          * | Cst a, Cst b -> (Cst (Bound_rat.div a b), true)
@@ -404,6 +412,9 @@ let rec simplify_expr expr change =
          * | _, Cst c when Bound_rat.equal one_val c -> simplify_expr e1 change *)
         | _, _ -> apply simplify_expr e1 e2 change POW
        )
+     | LXOR -> (Binary (LXOR, e1,e2),change)
+     | LAND -> (Binary (LAND, e1,e2),change)
+     | LOR -> (Binary (LOR, e1,e2),change)
     )
 
 let rec simplify_fp expr =
@@ -421,13 +432,13 @@ let rec simplify_bexpr = function
 
 let left_hand_side (op, e1, e2) =
   match e1, e2 with
-  | Cst (c,ant), _  when is_zero c-> (inv op, e2)
-  | _, Cst (c,ant) when is_zero c -> (op, e1)
+  | Cst (c,_ant), _  when is_zero c-> (inv op, e2)
+  | _, Cst (c,_ant) when is_zero c -> (op, e1)
   | _, _ -> (op, simplify_fp (Binary (SUB, e1, e2)))
 
 let rec left_hand = function
   | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
-  | And (b1,b2) | Or (b1,b2) -> left_hand b1
+  | And (b1,_b2) | Or (b1,_b2) -> left_hand b1
   | Not b -> left_hand b
 
 
@@ -437,6 +448,7 @@ let rec derivate expr var =
   | Cst _ -> zero
   | Var v -> if var = v then one else zero
   | Unary (NEG, e) ->  Unary (NEG, derivate e var)
+  | Unary (LNOT, _e) ->  zero (* TODO what is the derivative of lnot ? *)
   | Binary (b, e1, e2) ->
     (match b with
      | ADD -> Binary (ADD, derivate e1 var, derivate e2 var)
@@ -458,7 +470,8 @@ let rec derivate expr var =
             | None -> zero
             end
         | _ -> zero
-        end
+       end
+     | LAND | LXOR | LOR -> zero (* TODO what is the derivative of xor, and, or ? *)
     )
   | Funcall _ -> zero (* TODO IMPLEMENTATION *)
 
@@ -478,7 +491,7 @@ let ctr_jacobian c vars =
     fun l (_, v, _) ->
       let expr = if is_arith c then
           let new_c = simplify_bexpr (derivative c v) in
-          let (op, e) = left_hand new_c in
+          let (_op, e) = left_hand new_c in
           e
         else zero
       in

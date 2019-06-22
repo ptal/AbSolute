@@ -62,7 +62,7 @@ let substitute_constr env =
 
 (* force evaluation of some expressions *)
 let evaluate env expr =
-  let unary = function Csp.NEG -> fun x -> (Bound_rat.neg x) in
+  let unary = function Csp.NEG -> fun x -> (Bound_rat.neg x) | Csp.LNOT -> fun x -> Bound_rat.of_int (lnot (Bound_rat.to_int_up x (*maybe it should raise an error when competud with rational *))) in
   let binary = function
     | Csp.ADD -> (Bound_rat.add)
     | Csp.SUB -> (Bound_rat.sub)
@@ -129,7 +129,7 @@ let toCsp m =
       let e1' = evaluate env e1 and e2' = evaluate env e2 in
       (env,Csp.add_real_var csp v e1' e2')
 
-   | ParamList (v, (lower, upper), e1, e2) ->
+   | ParamList (_v, (_lower, _upper), _e1, _e2) ->
        (* let l = evaluate env lower |> int_of_float *)
        (* and u = evaluate env upper |> int_of_float in *)
        (* if l < u then *)
@@ -157,7 +157,7 @@ let toCsp m =
          env,(loop l csp)
        else failwith ("vars with inf index greater than sup index : "^v)
 
-   | SubjectTo (v, constr) ->
+   | SubjectTo (_v, constr) ->
       let constr' = substitute_constr env constr in
       env,(Csp.add_constr csp (to_csp_constr constr'))
    | Ignore -> env,csp
