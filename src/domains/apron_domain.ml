@@ -47,6 +47,7 @@ module SyntaxTranslator (D:ADomain) = struct
          | DIV -> Texpr1.Div
          | MUL -> Texpr1.Mul
          | POW -> Texpr1.Pow
+         | LXOR | LAND | LOR -> raise (Wrong_modelling "LXOR, LAND and LOR nod defined with apron")
        in
        let e1 = expr_to_apron a e1
        and e2 = expr_to_apron a e2 in

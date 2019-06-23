@@ -3,6 +3,8 @@
    and multiple occurences of a same expression *)
 open Csp
 open Tools
+   
+exception Wrong_modelling of string
 
 module CoEnv = Map.Make(struct type t = expr let compare = compare end)
 module PI    = Polynom.Rational
@@ -68,11 +70,13 @@ let rec simplify env expr : (PI.t * string CoEnv.t) =
          | None ->
          let e1 = polynom_to_expr p1 env'' and e2 = polynom_to_expr p2 env'' in
          let e = Binary (POW,e1,e2) in
-         check_var e env''))
+         check_var e env'')
+      | LXOR | LAND | LOR -> raise (Wrong_modelling "LXOR, LAND and LOR are not defined on polynom.rat"))
   | Unary (u,e) ->
      let p,env = simplify env e in
      (match u with
-      | NEG -> (PI.neg p),env)
+      | NEG -> (PI.neg p),env
+      | LNOT -> raise (Wrong_modelling "LNOT is not defined on polynom.rat"))
   | Funcall(name,args) ->
      let p_args,env' =
        List.fold_left (fun (pargs,env) arg ->

@@ -67,3 +67,5 @@ module Make
   (SPLIT: Box_split.Box_split_sig) : Box_sig
 
 module Box_base(V: Vardom_sig.Vardom_sig)(SPLIT: Box_split.Box_split_sig) : Box_sig with module I=V
+
+module Bdd_box : Box_sig

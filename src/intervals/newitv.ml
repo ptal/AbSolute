@@ -7,6 +7,12 @@ module Make(B:BOUND) = struct
   type bound = B.t
 
   type kind = Strict | Large
+  type var_kind = ZERO | ONE | TOP_INT | TOP_REAL | TOP
+                  | OF_BOUNDS of bound*bound | OF_INTS of int*int | OF_RATS of Bound_rat.t*Bound_rat.t | OF_FLOATS of float*float
+                  | OF_INT of int | OF_RAT of Bound_rat.t | OF_FLOAT of float
+                  | COMPLETE of int (* complete BDD *)
+  type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
+  type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
 
   let sym = function
     | Large,x -> Strict,x
@@ -43,10 +49,10 @@ module Make(B:BOUND) = struct
 
   let ( *$ ) rb1 rb2 = bound_arith rb1 rb2 bound_mul_down
 
-  let ( /@ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_up
+  let ( /@ ) ((_k1, _b1) as rb1) ((_k2, _b2) as rb2) = bound_arith rb1 rb2 bound_div_up
 
   (*let ( /$ ) rb1 rb2 = *)
-  let ( /$ ) ((k1, b1) as rb1) ((k2, b2) as rb2) = bound_arith rb1 rb2 bound_div_down
+  let ( /$ ) ((_k1, _b1) as rb1) ((_k2, _b2) as rb2) = bound_arith rb1 rb2 bound_div_down
 
   type t = real_bound * real_bound
 
@@ -185,6 +191,22 @@ module Make(B:BOUND) = struct
                           (Csp.LT, Csp.Cst(B.to_rat h,Csp.Real)))
       | Large, Large -> ((Csp.GEQ, Csp.Cst(B.to_rat l,Csp.Real)),
                          (Csp.LEQ, Csp.Cst(B.to_rat h,Csp.Real)))
+
+  (* The only function of the signature, maybe we don't have to define the previous functions, and directly put it in this function *)
+  let create var = match var with
+    | ZERO -> zero
+    | ONE -> one
+    | TOP_INT -> top_int
+    | TOP_REAL -> top_real
+    | TOP -> top
+    | OF_BOUNDS(b1,b2) -> of_bounds b1 b2
+    | OF_INTS(i1,i2) -> of_ints i1 i2
+    | OF_RATS(r1,r2) -> of_rats r1 r2
+    | OF_FLOATS(f1,f2) -> of_floats f1 f2
+    | OF_INT(i) -> of_int i
+    | OF_RAT(r) -> of_rat r
+    | OF_FLOAT(f) -> of_float f
+    | _ -> failwith "This creation of variable is not suited (or not implemented) for new intervals"
 
    (************************************************************************)
   (* SET-THEORETIC *)
@@ -391,6 +413,19 @@ module Make(B:BOUND) = struct
       | _ -> failwith "can only handle stricly positive roots"
     else failwith  "cant handle non_singleton roots"
 
+    
+  (* Function of the signature *)
+  let unop op i = match op with
+    | NEG -> neg i
+    | ABS -> abs i
+    | _ -> failwith "This unary operation is not implemented for new intervals"
+
+  let binop op i1 i2 = match op with
+    | ADD -> add i1 i2
+    | SUB -> sub i1 i2
+    | MUL -> mul i1 i2
+    | POW -> pow i1 i2
+    | _ -> failwith "This binary operation is not implemented for new intervals"
 
 
   (*the two closest floating boundaries of pi*)
@@ -522,7 +557,7 @@ module Make(B:BOUND) = struct
   let ln (i:t) : t bot =
     match meet i positive with
     | Bot -> Bot
-    | Nb itv -> Nb (mon_incr (B.ln_down,B.ln_up) i)
+    | Nb _itv -> Nb (mon_incr (B.ln_down,B.ln_up) i)
 
   let exp (i:t) = mon_incr (B.exp_down,B.exp_up) i
 
@@ -627,7 +662,7 @@ module Make(B:BOUND) = struct
   let filter_eq (i1:t) (i2:t) : (t*t) bot =
     lift_bot (fun x -> x,x) (meet i1 i2)
 
-  let filter_neq ((l1,_) as i1:t) ((l2,_) as i2:t) : (t*t) bot =
+  let filter_neq ((_l1,_) as i1:t) ((_l2,_) as i2:t) : (t*t) bot =
     if is_singleton i1 && is_singleton i2 && equal i1 i2 then Bot
     else Nb (i1,i2)
 
@@ -706,7 +741,7 @@ module Make(B:BOUND) = struct
       else strict_bot (meet i2) (div i1 r))
 
   (* r = sqrt i => i = r*r or i < 0 *)
-  let filter_sqrt (((k_il,il),ih) as i:t) ((rl,rh):t) : t bot =
+  let filter_sqrt (((k_il,il),_ih) as i:t) ((rl,rh):t) : t bot =
     let rr = rl *$ rl, rh *@ rh in
     if B.sign il > 0 || (B.sign il = 0 && k_il = Large) then meet i rr
     else meet i ((Strict,B.minus_inf), snd rr)
@@ -723,7 +758,7 @@ module Make(B:BOUND) = struct
     let aux = div (add i i_pi_half) i_pi in
     match (aux, asin_r) with
     | Bot, _ | _, Bot -> Bot
-    | Nb (p1, p2), Nb ((l, h) as a_r) ->
+    | Nb (p1, p2), Nb ((_l, _h) as a_r) ->
       let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
       let itv = ref (compute_itv i a_r !idx !idx) in
       while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
@@ -746,7 +781,7 @@ module Make(B:BOUND) = struct
     let aux = div i i_pi in
     match (aux, acos_r) with
     | Bot, _ | _, Bot -> Bot
-    | Nb (p1,p2), Nb ((l,h) as a_r) ->
+    | Nb (p1,p2), Nb ((_l,_h) as a_r) ->
       let idx = ref ((int_of_float (B.to_float_up (B.floor (snd p1)))) - 1) in
       let itv = ref (compute_itv i a_r !idx (!idx+1)) in
       while !idx < (int_of_float (B.to_float_down (snd p2))) && is_Bot !itv do
@@ -790,7 +825,7 @@ module Make(B:BOUND) = struct
         Bot.join_bot2 join !itv !itv'
 
   (* r = cot i => i = arccot r *)
-  let filter_cot i r = failwith "todo filter_cot"
+  let filter_cot _i _r = failwith "todo filter_cot"
 
   (* r = asin i => i = sin r *)
   let filter_asin i r = meet i (sin r)
@@ -811,7 +846,7 @@ module Make(B:BOUND) = struct
   let filter_ln i r = meet i (exp r)
 
   (* r = log i => i = *)
-  let filter_log i r = failwith "todo filter_log"
+  let filter_log _i _r = failwith "todo filter_log"
 
   (* r = i ** n => i = nroot r *)
   let filter_pow (i:t) n (r:t) =
@@ -828,6 +863,27 @@ module Make(B:BOUND) = struct
   (* r = max (i1, i2) *)
   let filter_max (l1, u1) (l2, u2) (lr, ur) =
     merge_bot2 (check_bot (bf B.min l1 lr, bf B.min u1 ur)) (check_bot (bf B.min l2 lr, bf B.min u2 ur))
+
+    
+  (* Function of the signature *)
+  let filter_unop op = match op with
+    | NEG -> filter_neg
+    | ABS -> filter_abs
+    | _ -> failwith "This unary operation is not implemented for new intervals"
+
+  let filter_binop op = match op with
+    | ADD -> filter_add
+    | SUB -> filter_sub
+    | MUL -> filter_mul
+    | POW -> filter_pow
+    | _ -> failwith "This binary operation is not implemented for new intervals"
+         
+  let filter_binop_f op i1 i2 = match op with
+    | ADD -> filter_add_f i1 i2
+    | SUB -> filter_sub_f i1 i2
+    | MUL -> filter_mul_f i1 i2
+    | POW -> filter_pow_f i1 i2
+    | _ -> failwith "This binary operation is not implemented for new intervals"
 
   let filter_fun name args r : (t list) bot =
     let arity_1 (f: t -> t -> t bot) : (t list) bot =

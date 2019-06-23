@@ -53,6 +53,7 @@ struct
       let _,i1 as b1 = eval store e1 in
       let r = match o with
         | NEG -> I.unop I.NEG i1
+        | LNOT -> I.unop I.NOT i1
       in
       BUnary (o,b1), r
   | Binary (o,e1,e2) ->
@@ -68,8 +69,13 @@ struct
             (* special case: squares are positive *)
             I.unop I.ABS r
           else r
-       | POW -> I.binop I.POW i1 i2 in BBinary (o,b1,b2), r
+       | POW -> I.binop I.POW i1 i2
+       | LAND -> I.binop I.AND i1 i2
+       | LXOR -> I.binop I.XOR i1 i2
+       | LOR -> I.binop I.OR i1 i2
 
+     in BBinary (o,b1,b2), r
+                                     
   (* II. Refine part
 
      Second step of the HC4-revise algorithm.
@@ -116,6 +122,7 @@ struct
   | BUnary (o,(e1,i1)) ->
      let j = match o with
        | NEG -> I.filter_unop I.NEG i1 root
+       | LNOT -> I.filter_unop I.NOT i1 root
       in refine store (debot j) e1
   | BBinary (o,(e1,i1),(e2,i2)) ->
      let j = match o with
@@ -124,6 +131,9 @@ struct
        | MUL -> refine_mul (e1,i1) (e2,i2) root
        | DIV -> refine_div (e1,i1) (e2,i2) root
        | POW -> I.filter_binop I.POW i1 i2 root
+       | LAND -> I.filter_binop I.AND i1 i2 root
+       | LXOR -> I.filter_binop I.XOR i1 i2 root
+       | LOR -> I.filter_binop I.OR i1 i2 root
      in
      let j1,j2 = debot j in
      refine (refine store j1 e1) j2 e2

@@ -47,6 +47,7 @@ struct
   let rewrite_expr repr e : var_id gexpr =
     let rec aux = function
     | Funcall(x, exprs) -> Funcall(x, List.map aux exprs)
+    | Unary(LNOT, e) -> Unary(LNOT, aux e)
     | Unary(NEG, e) -> Unary(NEG, aux e)
     | Binary(op, e1, e2) -> Binary (op, aux e1, aux e2)
     | Var(x) -> Var(to_abstract_var repr x)

@@ -9,7 +9,7 @@ open Bot
 
 module F = Bound_float
 
-module Make (I:Itv_sig.ITV) = struct
+module Make (I:Vardom_sig.Vardom_sig) = struct
 
   (* All the classical interval computations are kept *)
   include I
@@ -115,7 +115,7 @@ module Make (I:Itv_sig.ITV) = struct
   let pi_fitv        = (F.of_float_down pi_down), (F.of_float_up pi_up)
   let twopi_fitv     = (twopidown, twopiup)
 
-  let fitv_to_i (f1,f2) = I.of_floats f1 f2
+  let fitv_to_i (f1,f2) = I.create (I.OF_FLOATS (f1,f2))
 
   let pihalf_itv = fitv_to_i pihalf_fitv
   let pi_itv     = fitv_to_i pi_fitv
@@ -200,7 +200,7 @@ module Make (I:Itv_sig.ITV) = struct
     | mon ->
        (* Format.printf "monotony is %a on %a\n%!" print_monotony mon print_fitv (a,b); *)
        fitv_to_i (itv mon cos_down cos_up (a,b))
-    | exception Exit -> I.of_floats (-1.) 1.
+    | exception Exit -> I.create (I.OF_FLOATS (-1.,1.))
 
   (* interval acos *)
   let acos_itv i =
@@ -209,14 +209,14 @@ module Make (I:Itv_sig.ITV) = struct
     else
       let l' = if 1. < u then 0. else debot (acos_down u)
       and u' =  if l < -1. then pi_up else debot (acos_up l)
-      in Nb(I.of_floats l' u')
+      in Nb(I.create (I.OF_FLOATS(l',u')))
 
   (* sinus of an interval *)
   let sin_itv i =
-    cos_itv (I.sub i pihalf_itv)
+    cos_itv (I.binop I.SUB i pihalf_itv)
 
   (* interval asin (arcos + arcsin = pi/2) *)
-  let asin_itv i = lift_bot (I.sub pihalf_itv) (acos_itv i)
+  let asin_itv i = lift_bot (I.binop I.SUB pihalf_itv) (acos_itv i)
 
   (* tangent of an interval *)
   let tan_itv i = (I.div (sin_itv i) (cos_itv i))
@@ -256,49 +256,49 @@ module Make (I:Itv_sig.ITV) = struct
   let normalize target maxsize i =
     if maxsize <= I.float_size i then raise Exit
     else
-      let (a,b) = I.to_float_range i in
+      let (a,_b) = I.to_float_range i in
       let nb = floor (F.div_down (a-.target) maxsize) in
-      let dist = I.mul (I.of_float nb) (I.of_float maxsize) in
-      let i' = I.sub i dist in
+      let dist = I.binop I.MUL (I.create (I.OF_FLOAT nb)) (I.create (I.OF_FLOAT maxsize)) in
+      let i' = I.binop I.SUB i dist in
       (* the interval can grow during the normalization so we have to recheck *)
       if maxsize <= I.float_size i' then raise Exit
       else i',dist
 
   (* general function for both arcsin and arcos *)
   let arc return_range fun_itv =
-    let other = I.add return_range pi_itv in
+    let other = I.binop I.ADD return_range pi_itv in
     fun itv result ->
     (* handling of the symetry *)
     match (I.meet itv return_range),(I.meet itv other) with
     | Bot,Bot -> Bot
     | Nb _,Bot  -> fun_itv result
-    | Bot,Nb _  -> lift_bot (I.add pi_itv) (fun_itv (I.neg result))
+    | Bot,Nb _  -> lift_bot (I.binop I.ADD pi_itv) (fun_itv (I.unop I.NEG result))
     | Nb _,Nb _   ->
-       lift_bot (I.add pi_itv) (fun_itv (I.neg result))
+       lift_bot (I.binop I.ADD pi_itv) (fun_itv (I.unop I.NEG result))
        |> join_bot2 I.join (fun_itv result)
 
   (* 0 < x < 2pi && cos(x) = r <=> x = arcos r || x = arcos(-r)+pi *)
-  let arcos_0_2pi = arc (I.of_floats 0. pi_up) acos_itv
+  let arcos_0_2pi = arc (I.create (I.OF_FLOATS(0.,pi_up))) acos_itv
 
   (* -pi/2 < x < 3pi/2 && sin(x) = r <=> x = arcsin r *)
-  let arcsin_mpih_pih = arc (I.sub (I.of_floats 0. pi_up) pihalf_itv) asin_itv
+  let arcsin_mpih_pih = arc (I.binop I.SUB (I.create (I.OF_FLOATS(0.,pi_up))) pihalf_itv) asin_itv
 
   (* general function for both filter_sin and filter_cos *)
   let filter domain_range fun_itv =
-    let other = I.add twopi_itv domain_range in
+    let other = I.binop I.ADD twopi_itv domain_range in
     fun (i:I.t) (r:I.t) : I.t bot ->
     try
       let i',delta  = normalize 0. twopiup i in
       let first_part =
         match (I.meet i' domain_range) with
         | Bot -> Bot
-        | Nb i' -> lift_bot (I.add delta) (fun_itv i' r)
+        | Nb i' -> lift_bot (I.binop I.ADD delta) (fun_itv i' r)
       in
       let second_part =
         match (I.meet i' other) with
         | Nb x ->
-           let x' = I.sub x twopi_itv in
-           lift_bot (I.add (I.add delta twopi_itv)) (fun_itv x' r)
+           let x' = I.binop I.SUB x twopi_itv in
+           lift_bot (I.binop I.ADD (I.binop I.ADD delta twopi_itv)) (fun_itv x' r)
         | Bot -> Bot
       in
       join_bot2 I.join first_part second_part
@@ -307,21 +307,21 @@ module Make (I:Itv_sig.ITV) = struct
 
   (* r = cos i => i mod 2pi = arccos r *)
   let filter_cos =
-    filter (I.of_floats 0. twopiup) arcos_0_2pi
+    filter (I.create (I.OF_FLOATS(0.,twopiup))) arcos_0_2pi
 
   (* r = sin i => i mod 2pi = arcsin r *)
   let filter_sin =
-    filter (I.sub (I.of_floats 0. twopiup) pihalf_itv) arcsin_mpih_pih
+    filter (I.binop I.SUB (I.create (I.OF_FLOATS(0.,twopiup))) pihalf_itv) arcsin_mpih_pih
 
   (* -pi/2 < x < 3pi/2 && tan(x) = r <=> x = arctan r *)
   let arctan_mpih_pih =
-    arc (I.sub (I.of_floats 0. pi_up) pihalf_itv) (fun i -> Nb (atan_itv i))
+    arc (I.binop I.SUB (I.create (I.OF_FLOATS(0.,pi_up))) pihalf_itv) (fun i -> Nb (atan_itv i))
 
   (* r = tan i => i = artan r) => *)
   let filter_tan (i:I.t) (r:I.t) : I.t bot =
     try
       let i',delta = normalize (-. pihalf_up) pi_up i in
-      lift_bot (I.add delta) (I.meet i' (atan_itv r))
+      lift_bot (I.binop I.ADD delta) (I.meet i' (atan_itv r))
     with
     | Exit -> Nb i
 

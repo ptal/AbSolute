@@ -41,11 +41,16 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
           | SUB -> Bound_rat.sub e1' e2'
           | MUL -> Bound_rat.mul e1' e2'
           | DIV -> Bound_rat.div e1' e2'
-        | POW -> Bound_rat.of_float ((Bound_rat.to_float_up e1') ** (Bound_rat.to_float_up e2')))
+          | POW -> Bound_rat.of_float ((Bound_rat.to_float_up e1') ** (Bound_rat.to_float_up e2'))
+          | LAND -> Bound_rat.of_int ((Bound_rat.to_int_up e1') land (Bound_rat.to_int_up e2'))
+          | LXOR -> Bound_rat.of_int ((Bound_rat.to_int_up e1') lxor (Bound_rat.to_int_up e2'))
+          | LOR -> Bound_rat.of_int ((Bound_rat.to_int_up e1') lor (Bound_rat.to_int_up e2'))
+         )
       | Unary(u,e) ->
          let e' = aux e in
          (match u with
-          | NEG -> (Bound_rat.neg e'))
+          | NEG -> Bound_rat.neg e'
+          | LNOT -> Bound_rat.of_int (lnot (Bound_rat.to_int_up e')))
       | Funcall(name, [e]) ->
          let e = Bound_rat.to_float_up (aux e) in
          let func =
@@ -112,7 +117,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
     check_type typ value && check_dom dom (Bound_rat.of_float value)
 
   (* checks if an instance satisfies a csp *)
-  let check_instance fn print (instance:Csp.instance) csp =
+  let check_instance _fn print (instance:Csp.instance) csp =
     List.for_all (belong_to instance) csp.init
     &&
     List.for_all (check_cstr print instance) csp.constraints

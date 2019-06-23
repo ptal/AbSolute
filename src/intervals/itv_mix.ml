@@ -7,7 +7,13 @@ type t = Int of I.t | Real of R.t
 (* Rational can represent both floating point numbers and integers. *)
 module B = Bound_rat
 type bound = B.t
-
+type var_kind = ZERO | ONE | TOP_INT | TOP_REAL | TOP
+                | OF_BOUNDS of bound*bound | OF_INTS of int*int | OF_RATS of Bound_rat.t*Bound_rat.t | OF_FLOATS of float*float
+                | OF_INT of int | OF_RAT of Bound_rat.t | OF_FLOAT of float
+                | COMPLETE of int (* complete BDD *)
+type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
+type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
+                                                    
 (* useful constructors *)
 let make_real x = Real x
 let make_int x  = Int x
@@ -82,6 +88,23 @@ let top : t = Real (R.top_real)
 let zero = of_int 0
 let one = of_int 1
 
+(* The only function of the signature, maybe we don't have to define the previous functions, and directly put it in this function *)
+let create var = match var with
+  | ZERO -> zero
+  | ONE -> one
+  | TOP_INT -> top_int
+  | TOP_REAL -> top_real
+  | TOP -> top
+  | OF_BOUNDS(b1,b2) -> of_bounds b1 b2
+  | OF_INTS(i1,i2) -> of_ints i1 i2
+  | OF_RATS(r1,r2) -> of_rats r1 r2
+  | OF_FLOATS(f1,f2) -> of_floats f1 f2
+  | OF_INT(i) -> of_int i
+  | OF_RAT(r) -> of_rat r
+  | OF_FLOAT(f) -> of_float f
+  | _ -> failwith "This creation of variable is not suited (or not implemented) for int_mix"
+       
+       
 (************************************************************************)
 (*                       PRINTING and CONVERSIONS                       *)
 (************************************************************************)
@@ -135,13 +158,13 @@ let equal (x1:t) (x2:t) : bool =
 (* retruns true if the interval is positive (large sense), false otherwise *)
 let is_positive (itv:t) : bool =
   match itv with
-  | Int (a,b) -> a >= 0
+  | Int (a,_b) -> a >= 0
   | Real r -> R.subseteq r R.positive
 
 (* retruns true if the interval is negative (large sense), false otherwise *)
 let is_negative (itv:t) : bool =
   match itv with
-  | Int (a,b) -> b <= 0
+  | Int (_a,b) -> b <= 0
   | Real r -> R.subseteq r R.negative
 
 let contains_float (x:t) (f:float) : bool =
@@ -184,7 +207,7 @@ let split_on (x:t) (value : Bound_rat.t) : t list =
 
 (* pruning *)
 (* ------- *)
-let prune (x1:t) (x2:t) : t list =
+let prune (_x1:t) (_x2:t) : t list =
   (* TODO: replace the "failwith" with your own code *)
   failwith "function 'prune' in file 'itv_mix.ml' not implemented"
 
@@ -273,7 +296,20 @@ let n_root (i1:t) (i2:t) =
 let eval_fun (name:string) (args:t list) : t bot =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
   lift_bot make_real (R.eval_fun name args)
-
+    
+(* Function of the signature *)
+let unop op i = match op with
+  | NEG -> neg i
+  | ABS -> abs i
+  | _ -> failwith "This unary operation is not implemented for intervals"
+       
+let binop op i1 i2 = match op with
+  | ADD -> add i1 i2
+  | SUB -> sub i1 i2
+  | MUL -> mul i1 i2
+  | POW -> pow i1 i2
+  | _ -> failwith "This binary operation is not implemented for intervals"
+       
 (************************************************************************)
 (* FILTERING (TEST TRANSRER RUNCTIONS) *)
 (************************************************************************)
@@ -448,7 +484,28 @@ let filter_pow_f (i:t) n (r:t) =
 (* r = nroot i => i = r ** n *)
 let filter_root_f i r n =
   meet i (pow r n)
-
+    
+(* Function of the signature *)
+let filter_unop op = match op with
+  | NEG -> filter_neg
+  | ABS -> filter_abs
+  | _ -> failwith "This unary operation is not implemented for intervals"
+       
+let filter_binop op = match op with
+  | ADD -> filter_add
+  | SUB -> filter_sub
+  | MUL -> filter_mul
+  | POW -> filter_pow
+  | _ -> failwith "This binary operation is not implemented for intervals"
+       
+let filter_binop_f op i1 i2 = match op with
+  | ADD -> filter_add_f i1 i2
+  | SUB -> filter_sub_f i1 i2
+  | MUL -> filter_mul_f i1 i2
+  | POW -> filter_pow_f i1 i2
+  | _ -> failwith "This binary operation is not implemented for intervals"
+       
+       
 let to_expr (itv:t) =
   dispatch I.to_expr R.to_expr itv
 

@@ -1,13 +1,13 @@
 open Tools
 open Bot
-open Itv_sig
+open Vardom_sig
 open Csp
 
 (*******************)
 (* GENERIC FUNCTOR *)
 (*******************)
 
-module Box (I:ITV) = struct
+module Box (I:Vardom_sig) = struct
 
 
   (************************************************************************)
@@ -32,7 +32,7 @@ module Box (I:ITV) = struct
   let is_integer abs var = I.to_annot (VarMap.find var abs) = Csp.Int
 
   let vars abs =
-    Env.fold (fun v x acc ->
+    Env.fold (fun v _x acc ->
         let typ = if is_integer abs v then Int else Real in
         (typ, v)::acc
       ) abs []
@@ -104,7 +104,7 @@ module Box (I:ITV) = struct
       ) a (VarMap.min_binding a)
 
   let is_small (a:t) : bool =
-    let (v,i) = max_range a in
+    let (_v,i) = max_range a in
     (I.float_size i) <= !Constant.precision
 
   let volume (a:t) : float =
@@ -168,54 +168,60 @@ module Box (I:ITV) = struct
         let r = find v a in
         BVar v, r
     | Cst (c,_) ->
-        let r = I.of_rat c in
+        let r = I.create (I.OF_RAT c) in
         BCst r, r
     | Unary (o,e1) ->
         let _,i1 as b1 = eval a e1 in
         let r = match o with
-          | NEG -> I.neg i1
+          | NEG -> I.unop I.NEG i1
+          | LNOT -> I.unop I.NOT i1
         in
         BUnary (o,b1), r
     | Binary (o,e1,e2) ->
        let _,i1 as b1 = eval a e1
        and _,i2 as b2 = eval a e2 in
        let r = match o with
-         | ADD -> I.add i1 i2
-         | SUB -> I.sub i1 i2
+         | ADD -> I.binop I.ADD i1 i2
+         | SUB -> I.binop I.SUB i1 i2
          | DIV -> debot (I.div i1 i2)
          | MUL ->
-            let r = I.mul i1 i2 in
+            let r = I.binop I.MUL i1 i2 in
             if e1=e2 then
               (* special case: squares are positive *)
-              I.abs r
+              I.unop I.ABS r
             else r
-         | POW -> I.pow i1 i2 in BBinary (o,b1,b2), r
+         | POW -> I.binop I.POW i1 i2
+         | LAND -> I.binop I.AND i1 i2
+         | LXOR -> I.binop I.XOR i1 i2
+         | LOR -> I.binop I.OR i1 i2
+
+       in BBinary (o,b1,b2), r
 
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
     match e1, e2, b with
-    | BCst c1, BCst c2, _ -> Nb (i1, i2)
-    | BCst c, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
-    | BCst c, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
-    | _, BCst c, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
+    | BCst _c1, BCst _c2, _ -> Nb (i1, i2)
+    | BCst _c, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
+    | BCst _c, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
+    | _, BCst _c, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
     | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
     | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
 
   (* u + v = r => u = r - v /\ v = r - u *)
   let refine_add u v r =
-    refine_bop I.filter_add_f I.filter_add_f u v r true
+    refine_bop (I.filter_binop_f I.ADD) (I.filter_binop_f I.ADD) u v r true
 
   (* u - v = r => u = r + v /\ v = u - r *)
   let refine_sub u v r =
-    refine_bop I.filter_sub_f I.filter_add_f u v r false
+    refine_bop (I.filter_binop_f I.SUB) (I.filter_binop_f I.ADD) u v r false
 
   (* u * v = r => (u = r/v \/ v=r=0) /\ (v = r/u \/ u=r=0) *)
   let refine_mul u v r =
-    refine_bop I.filter_mul_f I.filter_mul_f u v r true
+    refine_bop (I.filter_binop_f I.MUL) (I.filter_binop_f I.MUL) u v r true
 
   (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
   let refine_div u v r =
-    refine_bop I.filter_div_f I.filter_mul_f u v r false
+    refine_bop I.filter_div_f (I.filter_binop_f I.MUL) u v r false
 
   (* Second step of the HC4-revise algorithm.
      It propagates the intervals from the root of the expression tree `e` to the leaves.
@@ -236,7 +242,8 @@ module Box (I:ITV) = struct
     | BCst i -> ignore (debot (I.meet x i)); a
     | BUnary (o,(e1,i1)) ->
        let j = match o with
-         | NEG -> I.filter_neg i1 x
+         | NEG -> I.filter_unop I.NEG i1 x
+         | LNOT -> I.filter_unop I.NOT i1 x
         in refine a e1 (debot j)
     | BBinary (o,(e1,i1),(e2,i2)) ->
        let j = match o with
@@ -244,7 +251,10 @@ module Box (I:ITV) = struct
          | SUB -> refine_sub (e1,i1) (e2,i2) x
          | MUL -> refine_mul (e1,i1) (e2,i2) x
          | DIV -> refine_div (e1,i1) (e2,i2) x
-         | POW -> I.filter_pow i1 i2 x
+         | POW -> I.filter_binop I.POW i1 i2 x
+         | LAND -> I.filter_binop I.AND i1 i2 x
+         | LXOR -> I.filter_binop I.XOR i1 i2 x
+         | LOR -> I.filter_binop I.OR i1 i2 x
        in
        let j1,j2 = debot j in
        refine (refine a e1 j1) e2 j2
@@ -284,8 +294,8 @@ module Box (I:ITV) = struct
   let add_var (abs:t) (typ,var) : t =
     Env.add var
       (match typ with
-      | Int -> I.top_int
-      | Real -> I.top_real)
+      | Int -> I.create I.TOP_INT
+      | Real -> I.create I.TOP_REAL)
       abs
 
   let var_bounds (abs:t) var =
@@ -294,7 +304,7 @@ module Box (I:ITV) = struct
 
   let bound_vars (abs:t) =
     let b = Env.bindings abs in
-    let l = List.filter (fun (v, d) -> I.is_singleton d) b in
+    let l = List.filter (fun (_v, d) -> I.is_singleton d) b in
     List.map (fun (v, d) -> (v, I.to_rational_range d)) l
 
   let rem_var abs var : t =
@@ -312,10 +322,10 @@ module Box (I:ITV) = struct
     | Cst _ -> true
     | Unary (_, e1) -> is_applicable abs e1
     | Binary (_, e1, e2) -> (is_applicable abs e1) && (is_applicable abs e2)
-    | Funcall (name, args) -> false (* check if sound *)
+    | Funcall (_name, _args) -> false (* check if sound *)
 
   let lfilter (a:t) l : t =
-    let la = List.filter (fun (e1, op, e2) ->
+    let la = List.filter (fun (e1, _op, e2) ->
                            (is_applicable a e1) && (is_applicable a e2)) l in
     List.fold_left (fun a' e -> filter a' e) a la
 

@@ -57,7 +57,7 @@ struct
     try BoxVar (Box_rep.to_abstract_var repr.box_rep v)
     with Not_found -> OctVar (Oct_rep.to_abstract_var repr.oct_rep v)
 
-  let is_defined_over repr (e1,op,e2) is_inside =
+  let is_defined_over _repr (e1,op,e2) is_inside =
     List.for_all is_inside (get_vars_bexpr (Cmp (op,e1,e2)))
 
   let is_box_var repr v =
@@ -122,7 +122,7 @@ sig
   val print: R.t -> Format.formatter -> t -> unit
 end
 
-module Makes
+module Make
   (Box: Box_sig)
   (Octagon: Octagon_sig with module DBM.B=Box.B) =
 struct
