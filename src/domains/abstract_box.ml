@@ -140,14 +140,14 @@ module Box (I:ITV) = struct
   (************************************************************************)
 
   (* trees with nodes annotated with evaluation *)
-  type bexpr =
-    | BFuncall of string * bexpri list
-    | BUnary   of unop * bexpri
-    | BBinary  of binop * bexpri * bexpri
+  type bformula =
+    | BFuncall of string * bformulai list
+    | BUnary   of unop * bformulai
+    | BBinary  of binop * bformulai * bformulai
     | BVar     of var
     | BCst     of i
 
-  and bexpri = bexpr * i
+  and bformulai = bformula * i
 
   (* First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
      For example: given `x + 3` with `x in [1..3]`, then it annotates `+` with `[4..6]`.
@@ -157,7 +157,7 @@ module Box (I:ITV) = struct
      - We raise Bot_found in case the expression only evaluates to error values.
      - Otherwise, we return only the non-error values.
    *)
-  let rec eval (a:t) (e:expr) : bexpri =
+  let rec eval (a:t) (e:expr) : bformulai =
     match e with
     | Funcall(name,args) ->
        let bargs = List.map (eval a) args in
@@ -224,14 +224,14 @@ module Box (I:ITV) = struct
                   Therefore we can intersect `y` with `[4..6]` due to the equality.
      Note that we can call again `eval` to restrain further `+`, and then another round of `refine` will restrain `x` as well.
      We raise `Bot_found` in case of unsatisfiability. *)
-  let rec refine (a:t) (e:bexpr) (x:i) : t =
-    (*Format.printf "%a\n" print_bexpri (e, x);*)
+  let rec refine (a:t) (e:bformula) (x:i) : t =
+    (*Format.printf "%a\n" print_bformulai (e, x);*)
     match e with
     | BFuncall(name,args) ->
-       let bexpr,itv = List.split args in
+       let bformula,itv = List.split args in
        let res = I.filter_fun name itv x in
        List.fold_left2 (fun acc e1 e2 ->
-           refine acc e2 e1) a (debot res) bexpr
+           refine acc e2 e1) a (debot res) bformula
     | BVar v -> Env.add v (debot (I.meet x (find v a))) a
     | BCst i -> ignore (debot (I.meet x i)); a
     | BUnary (o,(e1,i1)) ->
@@ -256,7 +256,7 @@ module Box (I:ITV) = struct
   let test (a:t) (e1:expr) (o:cmpop) (e2:expr) : t bot =
     Tools.debug 2 "HC4 - eval\n%!";
     let (b1,i1), (b2,i2) = eval a e1, eval a e2 in
-    (*Format.printf "%a %a %a\n" print_bexpri (b1, i1) print_cmpop o print_bexpri (b2, i2);*)
+    (*Format.printf "%a %a %a\n" print_bformulai (b1, i1) print_cmpop o print_bformulai (b2, i2);*)
     let j1,j2 = match o with
       | LT  -> debot (I.filter_lt i1 i2)
       | LEQ -> debot (I.filter_leq i1 i2)
@@ -273,7 +273,7 @@ module Box (I:ITV) = struct
   let filter (a:t) (e1,binop,e2) : t =
     match test a e1 binop e2 with
     | Bot ->
-       Tools.debug 5 "\n%a\n\t%a\n" print_bexpr (Cmp(binop, e1, e2)) print a;
+       Tools.debug 5 "\n%a\n\t%a\n" print_bformula (Cmp(binop, e1, e2)) print a;
        raise Bot_found
     | Nb e -> e
 

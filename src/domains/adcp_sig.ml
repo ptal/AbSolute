@@ -77,7 +77,7 @@ module type AbstractCP = sig
   val to_bexpr : t -> (Csp.expr * Csp.cmpop * Csp.expr) list
 
   (** checks if a constraint is suited for this abstract domain *)
-  val is_representable : Csp.bexpr -> answer
+  val is_representable : Csp.bformula -> answer
 
   (** printing *)
   val print : Format.formatter -> t -> unit

@@ -62,7 +62,7 @@ open Csp
 
 %type <annot> typ
 %type <dom> init
-%type <bexpr> bexpr
+%type <bformula> bformula
 %type <Csp.prog> file
 
 /* entry point */
@@ -103,7 +103,7 @@ objective:
  | {zero}
 
 constraints:
- | TOK_CONSTR TOK_LBRACE bexprs TOK_RBRACE {$3}
+ | TOK_CONSTR TOK_LBRACE bformulas TOK_RBRACE {$3}
 
 solutions:
  | TOK_SOL TOK_LBRACE instances TOK_RBRACE {Some $3}
@@ -151,9 +151,9 @@ decls:
   | typ TOK_id TOK_ASSIGN init {[($1, $2, $4)]}
   | {[]}
 
-bexprs:
-  | bexpr TOK_SEMICOLON bexprs {$1::$3}
-  | bexpr {[$1]}
+bformulas:
+  | bformula TOK_SEMICOLON bformulas {$1::$3}
+  | bformula {[$1]}
   | {[]}
 
 typ:
@@ -181,12 +181,12 @@ const:
   | TOK_const {$1}
   | TOK_MINUS TOK_const {(Bound_rat.neg $2)}
 
-bexpr:
-  | expr cmp expr                       {Cmp ($2, $1, $3)}
-  | bexpr TOK_OR bexpr                  {Or ($1,$3)}
-  | bexpr TOK_AND bexpr                 {And ($1,$3)}
-  | TOK_NOT bexpr                       {Not ($2)}
-  | TOK_LPAREN bexpr TOK_RPAREN         { $2 }
+bformula:
+  | expr cmp expr                          {Cmp ($2, $1, $3)}
+  | bformula TOK_OR bformula               {Or ($1,$3)}
+  | bformula TOK_AND bformula              {And ($1,$3)}
+  | TOK_NOT bformula                       {Not ($2)}
+  | TOK_LPAREN bformula TOK_RPAREN         { $2 }
 
 
 expr:

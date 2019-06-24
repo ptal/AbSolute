@@ -28,7 +28,7 @@ module Make (Abs : AbstractCP) = struct
   let print_debug_const tab cstrs csts =
     if !Constant.debug >= 5 then Format.printf "#constraints = %d@." (List.length cstrs)
   (*Format.printf "%sconstraints:\n" tab;
-      List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bexpr c) cstrs;
+      List.iter (fun (c, j) -> Format.printf "%s%s%a\n" tab tab Csp.print_bformula c) cstrs;
       Format.printf "%sconstants:\n" tab;
       List.iter (fun v -> Format.printf "%s%s%a\n" tab tab Csp.print_csts v) csts*)
 
@@ -103,7 +103,7 @@ module Make (Abs : AbstractCP) = struct
          | h::tl ->
 	          try
               let (c, _) = h in
-	            let neg = Csp.neg_bexpr c |> filter abs in
+	            let neg = Csp.neg_bformula c |> filter abs in
 	            let s = prune abs neg in
               let u = Abs.meet abs neg in
 	            let s',u' = List.fold_left (fun (sures,unsures) elm ->

@@ -23,11 +23,11 @@ let get_csts csp =
 
 
 let get_vars_cstrs cstrs =
-  List.map (fun c -> (c, get_vars_set_bexpr c)) cstrs
+  List.map (fun c -> (c, get_vars_set_bformula c)) cstrs
 
 let replace_cst_cstrs (id, cst) cstrs =
   List.map (fun (c, vars) -> if Variables.mem id vars then
-                               (replace_cst_bexpr (id, cst) c, Variables.remove id vars)
+                               (replace_cst_bformula (id, cst) c, Variables.remove id vars)
                              else (c, vars)
   ) cstrs
 
@@ -80,7 +80,7 @@ let filter_cstrs ctr_vars consts =
       if Variables.cardinal v = 1 then
         match c with
         | Cmp (EQ, e1, e2) ->
-           ((* Format.printf "%a@." print_bexpr c; *)
+           ((* Format.printf "%a@." print_bformula c; *)
             let (e, cst, negc) = rewrite_ctr (EQ, e1, e2) in
             (* Format.printf "%a ===== (%s) %s@." print_expr e (Bound_rat.to_string cst) (Bound_rat.to_string negc); *)
             match e with
@@ -145,15 +145,15 @@ let rec replace_view_expr ((id, e) as view) expr =
   | Funcall (f, l) -> Funcall (f, List.map (replace_view_expr view) l)
   | _ as expr -> expr
 
-let rec replace_view_bexpr view = function
+let rec replace_view_bformula view = function
   | Cmp (op, e1, e2) -> Cmp(op, replace_view_expr view e1, replace_view_expr view e2)
-  | And (b1, b2) -> And (replace_view_bexpr view b1, replace_view_bexpr view b2)
-  | Or (b1, b2) -> Or (replace_view_bexpr view b1, replace_view_bexpr view b2)
-  | Not b -> Not (replace_view_bexpr view b)
+  | And (b1, b2) -> And (replace_view_bformula view b1, replace_view_bformula view b2)
+  | Or (b1, b2) -> Or (replace_view_bformula view b1, replace_view_bformula view b2)
+  | Not b -> Not (replace_view_bformula view b)
 
 let rep_view_ctr ((id, e) as view) ctrs =
   List.map (fun (c, vars) -> if Variables.mem id vars then
-                               (replace_view_bexpr view c,
+                               (replace_view_bformula view c,
                                 Variables.union (Variables.remove id vars)
                                   (Variables.of_list (get_vars_expr e)))
                              else (c, vars)
@@ -170,7 +170,7 @@ let rep_in_view view views =
   List.fold_left (fun (id, e) v -> (id, replace_view_expr v e)) view views
 
 let replace_view_ctr ctr views =
-  let replaced = List.fold_left (fun c v -> replace_view_bexpr v c) ctr views in
+  let replaced = List.fold_left (fun c v -> replace_view_bformula v c) ctr views in
   match replaced with
   | Cmp (_, e1', e2') -> e1',e2'
   | _ -> assert false
@@ -272,7 +272,7 @@ let rec preprocess csp =
   Format.printf "\n---------- Views ----------\n";
   List.iter (Format.printf "%a@." print_view) views;
   Format.printf "\n---------- Constraints ----------\n";
-  List.iter (Format.printf "%a@." print_bexpr) all_ctrs;
+  List.iter (Format.printf "%a@." print_bformula) all_ctrs;
   Format.printf "\n--------------------\n"; *)
 
   if nb_eq = nb_eq' then prob

@@ -31,16 +31,16 @@ type 'var gexpr =
   | Cst     of i * annot
 
 (* boolean expressions *)
-type 'var gbexpr =
+type 'var formula =
   | Cmp of cmpop * 'var gexpr * 'var gexpr
-  | And of 'var gbexpr * 'var gbexpr
-  | Or  of 'var gbexpr * 'var gbexpr
-  | Not of 'var gbexpr
+  | And of 'var formula * 'var formula
+  | Or  of 'var formula * 'var formula
+  | Not of 'var formula
 
 type 'var gbconstraint = ('var gexpr * cmpop * 'var gexpr)
 
 type expr = var gexpr
-type bexpr = var gbexpr
+type bformula = var formula
 type bconstraint = var gbconstraint
 
 type dom = Finite of i * i   (* [a;b] *)
@@ -56,12 +56,12 @@ type assign = (annot * var * dom)
 type decls =  assign list
 
 (* statements *)
-type constrs = bexpr list
+type constrs = bformula list
 
 (* jacobian *)
 type jacob = (var * expr) list
 
-type ctrs = (bexpr * jacob) list
+type ctrs = (bformula * jacob) list
 
 (* constants *)
 type csts = (var * (i*i)) list
@@ -174,7 +174,7 @@ let print_gexpr print_var fmt e =
   in
   aux fmt e
 
-let print_gbexpr print_var fmt e =
+let print_formula print_var fmt e =
   let rec aux fmt = function
   | Cmp (c,e1,e2) ->
     Format.fprintf fmt "%a %a %a"
@@ -189,7 +189,7 @@ let print_gbexpr print_var fmt e =
   aux fmt e
 
 let print_gconstraint print_var fmt (e1,op,e2) =
-  Format.fprintf fmt "%a" (print_gbexpr print_var) (Cmp (op,e1,e2))
+  Format.fprintf fmt "%a" (print_formula print_var) (Cmp (op,e1,e2))
 
 let print_gconstraints print_var constraints =
   List.iter (Format.printf "%a\n" (print_gconstraint print_var)) constraints
@@ -200,7 +200,7 @@ let string_of_gconstraint print_var c = begin
 end
 
 let print_expr = print_gexpr print_var
-let print_bexpr = print_gbexpr print_var
+let print_bformula = print_formula print_var
 let print_bconstraint = print_gconstraint print_var
 let print_bconstraints = print_gconstraints print_var
 let string_of_bconstraint = string_of_gconstraint print_var
@@ -208,7 +208,7 @@ let string_of_bconstraint = string_of_gconstraint print_var
 let print_constraints fmt constraints =
   List.iter
     (fun c ->
-      Format.fprintf fmt "%a\n" print_bexpr c
+      Format.fprintf fmt "%a\n" print_bformula c
     ) constraints
 
 let print_jacob fmt (v, e) =
@@ -216,7 +216,7 @@ let print_jacob fmt (v, e) =
 
 let rec print_jacobian fmt = function
   | [] -> ()
-  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bexpr c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
+  | (c, j)::tl -> Format.fprintf fmt "%a;\n" print_bformula c; (* List.iter (print_jacob fmt) j; Format.fprintf fmt "\n";*) print_jacobian fmt tl
 
 let print_view fmt (v, e) =
   Format.fprintf fmt "%a = %a" print_var v print_expr e
@@ -413,11 +413,11 @@ let rec simplify_fp expr =
   else
     e
 
-let rec simplify_bexpr = function
+let rec simplify_bformula = function
   | Cmp (op,e1,e2) -> Cmp (op, simplify_fp e1, simplify_fp e2)
-  | And (b1,b2) -> And (simplify_bexpr b1, simplify_bexpr b2)
-  | Or (b1,b2) -> Or (simplify_bexpr b1, simplify_bexpr b2)
-  | Not b -> Not (simplify_bexpr b)
+  | And (b1,b2) -> And (simplify_bformula b1, simplify_bformula b2)
+  | Or (b1,b2) -> Or (simplify_bformula b1, simplify_bformula b2)
+  | Not b -> Not (simplify_bformula b)
 
 let left_hand_side (op, e1, e2) =
   match e1, e2 with
@@ -462,8 +462,8 @@ let rec derivate expr var =
     )
   | Funcall _ -> zero (* TODO IMPLEMENTATION *)
 
-let rec derivative bexpr var =
-  match bexpr with
+let rec derivative bformula var =
+  match bformula with
   | Cmp (op,e1,e2) -> Cmp (op, derivate e1 var, derivate e2 var)
   | And (b1,b2) -> And (derivative b1 var, derivative b2 var)
   | Or (b1,b2) -> Or (derivative b1 var, derivative b2 var)
@@ -477,7 +477,7 @@ let ctr_jacobian c vars =
   List.fold_left (
     fun l (_, v, _) ->
       let expr = if is_arith c then
-          let new_c = simplify_bexpr (derivative c v) in
+          let new_c = simplify_bformula (derivative c v) in
           let (op, e) = left_hand new_c in
           e
         else zero
@@ -510,14 +510,14 @@ let add_int_var csp name inf sup = add_var csp name inf sup Int
 let add_constr csp c =
   let jac = List.map (
     fun (_, v, _) ->
-    let new_c = simplify_bexpr (derivative c v) in
+    let new_c = simplify_bformula (derivative c v) in
     let (_, expr) = left_hand new_c in
     (v, expr)
   ) csp.init in
   {csp with constraints = c::csp.constraints; jacobian = (c, jac)::csp.jacobian}
 
 (* converts a domain representation to a couple of constraints *)
-let domain_to_constraints : assign -> bexpr =
+let domain_to_constraints : assign -> bformula =
   let of_singleton v f = Cmp (EQ, Var v, Cst (f,Real)) in
   fun (_,v,d) ->
   match d with
@@ -570,10 +570,10 @@ let neg = function
   | LT  -> GEQ
 
 (** constraint negation *)
-let rec neg_bexpr = function
+let rec neg_bformula = function
   | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
-  | And (b1,b2) -> Or (neg_bexpr b1, neg_bexpr b2)
-  | Or (b1,b2) -> And (neg_bexpr b1, neg_bexpr b2)
+  | And (b1,b2) -> Or (neg_bformula b1, neg_bformula b2)
+  | Or (b1,b2) -> And (neg_bformula b1, neg_bformula b2)
   | Not b -> b
 
 let neg_bconstraint (e1,op,e2) = (e1,neg op,e2)
@@ -590,11 +590,11 @@ let rec replace_cst_expr (id, cst) expr =
   | Funcall (v, e) -> Funcall (v, List.map(replace_cst_expr (id, cst))e)
   | _ as e -> e
 
-let rec replace_cst_bexpr cst = function
+let rec replace_cst_bformula cst = function
   | Cmp (op, e1, e2) -> Cmp (op, replace_cst_expr cst e1, replace_cst_expr cst e2)
-  | And (b1, b2) -> And (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
-  | Or (b1, b2) -> Or (replace_cst_bexpr cst b1, replace_cst_bexpr cst b2)
-  | Not b -> Not (replace_cst_bexpr cst b)
+  | And (b1, b2) -> And (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
+  | Or (b1, b2) -> Or (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
+  | Not b -> Not (replace_cst_bformula cst b)
 
 module Variables = Set.Make(struct type t=var let compare=compare end)
 
@@ -607,27 +607,27 @@ let rec get_vars_expr = function
 
 let get_vars_set_expr expr = Variables.of_list (get_vars_expr expr)
 
-let rec get_vars_bexpr = function
+let rec get_vars_bformula = function
   | Cmp (_, e1, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
-  | And (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
-  | Or (b1, b2) -> List.append (get_vars_bexpr b1) (get_vars_bexpr b2)
-  | Not b -> get_vars_bexpr b
+  | And (b1, b2) -> List.append (get_vars_bformula b1) (get_vars_bformula b2)
+  | Or (b1, b2) -> List.append (get_vars_bformula b1) (get_vars_bformula b2)
+  | Not b -> get_vars_bformula b
 
-let get_vars_set_bexpr bexpr = Variables.of_list (get_vars_bexpr bexpr)
+let get_vars_set_bformula bformula = Variables.of_list (get_vars_bformula bformula)
 
-let vars_of_bconstraint (e1,op,e2) = get_vars_bexpr (Cmp (op,e1,e2))
+let vars_of_bconstraint (e1,op,e2) = get_vars_bformula (Cmp (op,e1,e2))
 
 (* True if the constraint is fully defined over the set of variables `vars`. *)
 let is_defined_over vars (e1,op,e2) =
-  List.for_all (fun v -> List.mem v vars) (get_vars_bexpr (Cmp (op,e1,e2)))
+  List.for_all (fun v -> List.mem v vars) (get_vars_bformula (Cmp (op,e1,e2)))
 
 let get_vars_jacob jacob =
-  List.map (fun (c, j) -> (c, get_vars_set_bexpr c, j)) jacob
+  List.map (fun (c, j) -> (c, get_vars_set_bformula c, j)) jacob
 
 let replace_cst_jacob (id, cst) jacob =
   List.map (fun (c, vars, j) ->
     if Variables.mem id vars then
-      (replace_cst_bexpr (id, cst) c, Variables.remove id vars, j)
+      (replace_cst_bformula (id, cst) c, Variables.remove id vars, j)
     else (c, vars, j)
   ) jacob
 

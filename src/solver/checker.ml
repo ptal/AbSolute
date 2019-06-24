@@ -23,7 +23,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
   let err_constr (instance:Csp.instance) cstr e1 cmp e2 =
     Format.eprintf "the instance %a do not satisfy the constraint %a\n"
                    print_instance instance
-                   print_bexpr cstr;
+                   print_bformula cstr;
     Format.eprintf "it evaluates to %a %a %a\n"
                    Bound_rat.pp_print e1
                    print_cmpop cmp

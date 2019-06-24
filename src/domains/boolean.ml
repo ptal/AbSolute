@@ -16,14 +16,14 @@ module Make (Abs:Adcp_sig.AbstractCP) = struct
         | (Some a1),(Some a2) -> Abs.join a1 a2
         | None, (Some x) | (Some x), None -> x
         | _ -> raise Bot.Bot_found)
-    | Not b -> filter value (neg_bexpr b)
+    | Not b -> filter value (neg_bformula b)
     | Cmp (binop,e1,e2) -> Abs.filter value (e1,binop,e2)
 
   (** checks if an abstract element satisfies a constraint, i.e all of the concrete
       instances abstracted by the element satisfy the constraint *)
-  let sat_cons (a:Abs.t) (constr:Csp.bexpr) : bool =
+  let sat_cons (a:Abs.t) (constr:Csp.bformula) : bool =
     let open Csp in
-    try Abs.is_empty (filter a (neg_bexpr constr))
+    try Abs.is_empty (filter a (neg_bformula constr))
     with Bot.Bot_found -> true
 
   let check_csts (a:Abs.t) (constrs:Csp.ctrs) (const:Csp.csts) =

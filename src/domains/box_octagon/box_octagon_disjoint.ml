@@ -58,7 +58,7 @@ struct
     with Not_found -> OctVar (Oct_rep.to_abstract_var repr.oct_rep v)
 
   let is_defined_over repr (e1,op,e2) is_inside =
-    List.for_all is_inside (get_vars_bexpr (Cmp (op,e1,e2)))
+    List.for_all is_inside (get_vars_bformula (Cmp (op,e1,e2)))
 
   let is_box_var repr v =
     match to_abstract_var repr v with
