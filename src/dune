@@ -14,7 +14,7 @@
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))
   (c_names ml_float)
-  (modules (:standard \ absolute check boolean_sat))
+  (modules (:standard \ absolute check boolean_sat boolean_rep))
 )
 
 (executable
