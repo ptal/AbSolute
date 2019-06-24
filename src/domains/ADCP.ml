@@ -372,6 +372,8 @@ module PolyCP = struct
          Adcp_sig.No
     | Csp.And(e1, e2) -> Adcp_sig.and_ans (is_representable e1) (is_representable e2)
     | Csp.Or(e1, e2) -> Adcp_sig.No
+    | Csp.Equiv(e1, e2) -> Adcp_sig.No
+    | Csp.Imply(e1, e2) -> Adcp_sig.No
     | Csp.Not(e) -> Adcp_sig.not_ans (is_representable e)
 
   let split poly jacobian =

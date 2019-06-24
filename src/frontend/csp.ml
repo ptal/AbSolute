@@ -18,8 +18,7 @@ type unop = NEG
 type binop = ADD | SUB | MUL | DIV | POW
 
 (* arithmetic comparison operators *)
-type cmpop =
-  | EQ | LEQ | GEQ | NEQ | GT | LT
+type cmpop = EQ | LEQ | GEQ | NEQ | GT | LT
 
 (* Expressions are parametrized by a variable identifier.
    In the logical specification, it is a string representing the textual name of the variable.
@@ -36,6 +35,8 @@ type 'var gexpr =
 (* boolean expressions *)
 type 'var formula =
   | Cmp of cmpop * 'var gexpr * 'var gexpr
+  | Equiv of 'var formula * 'var formula
+  | Imply of 'var formula * 'var formula
   | And of 'var formula * 'var formula
   | Or  of 'var formula * 'var formula
   | Not of 'var formula
@@ -182,6 +183,12 @@ let print_formula print_var fmt e =
   | Cmp (c,e1,e2) ->
     Format.fprintf fmt "%a %a %a"
       (print_gexpr print_var) e1 print_cmpop c (print_gexpr print_var) e2
+  | Equiv (b1,b2) ->
+    Format.fprintf fmt "%a <=> %a"
+      aux b1 aux b2
+  | Imply (b1,b2) ->
+    Format.fprintf fmt "%a => %a"
+      aux b1 aux b2
   | And (b1,b2) ->
     Format.fprintf fmt "%a && %a"
       aux b1 aux b2
@@ -254,7 +261,9 @@ let rec is_linear = function
 (* checks if a constraints is linear *)
 let rec is_cons_linear = function
   | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
-  | And (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
+  | Equiv (b1,b2)
+  | Imply (b1,b2)
+  | And (b1,b2)
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
 
@@ -418,6 +427,8 @@ let rec simplify_fp expr =
 
 let rec simplify_bformula = function
   | Cmp (op,e1,e2) -> Cmp (op, simplify_fp e1, simplify_fp e2)
+  | Equiv (b1,b2) -> Equiv (simplify_bformula b1, simplify_bformula b2)
+  | Imply (b1,b2) -> Imply (simplify_bformula b1, simplify_bformula b2)
   | And (b1,b2) -> And (simplify_bformula b1, simplify_bformula b2)
   | Or (b1,b2) -> Or (simplify_bformula b1, simplify_bformula b2)
   | Not b -> Not (simplify_bformula b)
@@ -430,7 +441,8 @@ let left_hand_side (op, e1, e2) =
 
 let rec left_hand = function
   | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
-  | And (b1,b2) | Or (b1,b2) -> left_hand b1
+  | Equiv (b1,b2) | Imply (b1,b2) | And (b1,b2) | Or (b1,b2) ->
+      left_hand b1
   | Not b -> left_hand b
 
 
@@ -468,6 +480,8 @@ let rec derivate expr var =
 let rec derivative bformula var =
   match bformula with
   | Cmp (op,e1,e2) -> Cmp (op, derivate e1 var, derivate e2 var)
+  | Equiv (b1,b2) -> Equiv (derivative b1 var, derivative b2 var)
+  | Imply (b1,b2) -> Imply (derivative b1 var, derivative b2 var)
   | And (b1,b2) -> And (derivative b1 var, derivative b2 var)
   | Or (b1,b2) -> Or (derivative b1 var, derivative b2 var)
   | Not b -> Not (derivative b var)
@@ -545,6 +559,8 @@ let rec iter_constr f_expr f_constr = function
      f_constr constr;
      iter_expr f_expr e1;
      iter_expr f_expr e2
+  | (Equiv (b1,b2) as constr)
+  | (Imply (b1,b2) as constr)
   | (And (b1,b2) as constr)
   | (Or  (b1,b2) as constr) ->
      f_constr constr;
@@ -559,8 +575,10 @@ let rec map_constr f = function
   | Cmp (op,e1,e2) ->
      let op',e1',e2' = f (op,e1,e2) in
      Cmp(op',e1',e2')
-  | And (b1,b2) -> Or (map_constr f b1, map_constr f b2)
-  | Or (b1,b2) -> And (map_constr f b1, map_constr f b2)
+  | Equiv (b1,b2) -> Equiv (map_constr f b1, map_constr f b2)
+  | Imply (b1,b2) -> Imply (map_constr f b1, map_constr f b2)
+  | And (b1,b2) -> And (map_constr f b1, map_constr f b2)
+  | Or (b1,b2) -> Or (map_constr f b1, map_constr f b2)
   | Not b -> Not (map_constr f b)
 
 (** comparison operator negation *)
@@ -575,6 +593,9 @@ let neg = function
 (** constraint negation *)
 let rec neg_bformula = function
   | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
+  (* Trivial negation for equiv and imply in order to keep the structure of the formula (we do not rewrite the formula into AND and OR here). *)
+  | Equiv (b1,b2) -> Not (Equiv (b1, b2))
+  | Imply (b1,b2) -> Not (Imply (b1, b2))
   | And (b1,b2) -> Or (neg_bformula b1, neg_bformula b2)
   | Or (b1,b2) -> And (neg_bformula b1, neg_bformula b2)
   | Not b -> b
@@ -595,6 +616,8 @@ let rec replace_cst_expr (id, cst) expr =
 
 let rec replace_cst_bformula cst = function
   | Cmp (op, e1, e2) -> Cmp (op, replace_cst_expr cst e1, replace_cst_expr cst e2)
+  | Equiv (b1, b2) -> Equiv (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
+  | Imply (b1, b2) -> Imply (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
   | And (b1, b2) -> And (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
   | Or (b1, b2) -> Or (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
   | Not b -> Not (replace_cst_bformula cst b)
@@ -612,7 +635,9 @@ let get_vars_set_expr expr = Variables.of_list (get_vars_expr expr)
 
 let rec get_vars_bformula = function
   | Cmp (_, e1, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
-  | And (b1, b2) -> List.append (get_vars_bformula b1) (get_vars_bformula b2)
+  | Equiv (b1, b2)
+  | Imply (b1, b2)
+  | And (b1, b2)
   | Or (b1, b2) -> List.append (get_vars_bformula b1) (get_vars_bformula b2)
   | Not b -> get_vars_bformula b
 
@@ -649,9 +674,11 @@ let rec replace_var_in_expr : (var -> expr) -> expr -> expr = fun f e ->
   | Binary (op, e1, e2) -> Binary (op, replace_var_in_expr f e1, replace_var_in_expr f e2)
   | Funcall (fname, args) -> Funcall (fname, (List.map (replace_var_in_expr f) args))
 
-(* Traverse the formula `f` and raise `Wrong_modelling` if we meet a disjunctive or negation in the formula. *)
+(* Traverse the formula `f` and raise `Wrong_modelling` if we meet a formula that has something else then conjunctions or predicates. *)
 let rec mapfold_conjunction f = function
   | Cmp (op, e1, e2) -> f (e1, op, e2)
   | And (f1, f2) -> (mapfold_conjunction f f1)@(mapfold_conjunction f f2)
+  | Equiv (f1, f2) -> raise (Wrong_modelling "unsupported equivalence")
+  | Imply (f1, f2) -> raise (Wrong_modelling "unsupported implication")
   | Or (f1, f2) -> raise (Wrong_modelling "unsupported disjunction")
   | Not f1 -> raise (Wrong_modelling "unsupported negation")

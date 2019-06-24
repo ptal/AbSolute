@@ -92,6 +92,8 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
            if print then err_constr instance cstr e1' op e2';
          res
       | Or(c1,c2)  -> aux c1 || aux c2
+      | Equiv(c1,c2)  -> (aux c1) = (aux c2)
+      | Imply(c1,c2)  -> not (aux c1) || aux c2
       | And(c1,c2) -> aux c1 && aux c2
       | Not c      -> not (aux c)
     in aux cstr

@@ -147,6 +147,8 @@ let rec replace_view_expr ((id, e) as view) expr =
 
 let rec replace_view_bformula view = function
   | Cmp (op, e1, e2) -> Cmp(op, replace_view_expr view e1, replace_view_expr view e2)
+  | Equiv (b1, b2) -> Equiv (replace_view_bformula view b1, replace_view_bformula view b2)
+  | Imply (b1, b2) -> Imply (replace_view_bformula view b1, replace_view_bformula view b2)
   | And (b1, b2) -> And (replace_view_bformula view b1, replace_view_bformula view b2)
   | Or (b1, b2) -> Or (replace_view_bformula view b1, replace_view_bformula view b2)
   | Not b -> Not (replace_view_bformula view b)

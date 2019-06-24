@@ -9,6 +9,8 @@ module Make (Abs:Adcp_sig.AbstractCP) = struct
     let open Csp in
     match c with
     | And (b1,b2) -> filter (filter value b2) b1
+    | Equiv (b1,b2) -> raise (Csp.Wrong_modelling "unsupported <=> in `boolean.filter`.")
+    | Imply (b1,b2) -> raise (Csp.Wrong_modelling "unsupported => in `boolean.filter`.")
     | Or (b1,b2) ->
        let a1 = try Some(filter value b1) with Bot.Bot_found -> None
        and a2 = try Some(filter value b2) with Bot.Bot_found -> None in
