@@ -1,5 +1,8 @@
 open Tools
 
+(** This exception is raised when a constraint is passed to an abstract domain that cannot represent this constraint. *)
+exception Wrong_modelling of string
+
 (* variables are identified by a string *)
 type var = string
 
@@ -645,3 +648,10 @@ let rec replace_var_in_expr : (var -> expr) -> expr -> expr = fun f e ->
   | Unary (op, e) -> Unary (op, replace_var_in_expr f e)
   | Binary (op, e1, e2) -> Binary (op, replace_var_in_expr f e1, replace_var_in_expr f e2)
   | Funcall (fname, args) -> Funcall (fname, (List.map (replace_var_in_expr f) args))
+
+(* Traverse the formula `f` and raise `Wrong_modelling` if we meet a disjunctive or negation in the formula. *)
+let rec mapfold_conjunction f = function
+  | Cmp (op, e1, e2) -> f (e1, op, e2)
+  | And (f1, f2) -> (mapfold_conjunction f f1)@(mapfold_conjunction f f2)
+  | Or (f1, f2) -> raise (Wrong_modelling "unsupported disjunction")
+  | Not f1 -> raise (Wrong_modelling "unsupported negation")

@@ -21,13 +21,13 @@ sig
   (** Create octagonal constraints from an initial constraint.
     If the list is empty, it is not possible to rewrite the constraint.
     Multiple elements mean the constraint has been decomposed into several octagonal constraints. *)
-  val rewrite: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
 
   (** Relax the constraint into an octagonal version, if possible.
       The list returned is empty if the constraint cannot be relaxed or is already octagonal.
       For continuous bound, it rewrites strict inequalities `<`,`>` into the inequality `<=`,`>=`.
       For discrete bound, it always returns the empty list. *)
-  val relax: t -> bconstraint -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
 
   (** Negate the constraint.
       It might be a relaxation approximation of the negation for continuous domain. *)

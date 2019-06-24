@@ -35,8 +35,8 @@ sig
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bconstraint -> rconstraint list
-  val relax: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -108,6 +108,8 @@ struct
   let map_to_dim r f x d = f ((dim_of_var r x)*2) (B.of_rat_up d)
   let map2_to_dim r f x y d = f ((dim_of_var r x)*2) ((dim_of_var r y)*2) (B.of_rat_up d)
 
+  (* Try creating an octagonal constraint from a normalized form.
+     The constraint should be processed by `generic_rewrite` first. *)
   let try_create r = function
     | Var x, LEQ, Cst (d, _) -> Some (map_to_dim r x_leq_d x d)
     | Unary (NEG, Var x), LEQ, Cst (d, _) -> Some (map_to_dim r minus_x_leq_d x d)
@@ -120,20 +122,27 @@ struct
   let unwrap_all constraints =
     if List.for_all Tools.is_some constraints then
       List.map Tools.unwrap constraints
-    else
-      []
+    else []
 
-  let rewrite r c =
+  let rewrite_atom repr c =
     generic_rewrite c |>
-    List.map (fun c -> try_create r (reformulate c)) |>
+    List.map (fun c -> try_create repr (reformulate c)) |>
     unwrap_all
 
-  let relax r c =
+  let rewrite repr formula =
+    try mapfold_conjunction (rewrite_atom repr) formula
+    with Wrong_modelling _ -> []
+
+  let relax_atom repr c =
     List.flatten (List.map (fun c ->
       match c with
-      | e1, LT, e2 -> rewrite r (e1, LEQ, e2)
+      | e1, LT, e2 -> rewrite_atom repr (e1, LEQ, e2)
       | c -> []
     ) (generic_rewrite c))
+
+  let relax repr formula =
+    try mapfold_conjunction (relax_atom repr) formula
+    with Wrong_modelling _ -> []
 
   let negate c =
     if is_rotated c.v then

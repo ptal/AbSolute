@@ -24,7 +24,8 @@ struct
       let (dom,idx) = (extend dom ()) in
       (dom, R.extend repr (v, idx)) in
     let domain, repr = List.fold_left extend (empty,R.empty) vars in
-    let constraints = List.flatten (List.map (R.rewrite repr) rcpsp.constraints) in
+    let bconstraints = List.map (fun (e1,op,e2) -> Csp.Cmp (op, e1, e2)) rcpsp.constraints in
+    let constraints = List.flatten (List.map (R.rewrite repr) bconstraints) in
     let reified_cons = List.flatten (List.map (fun (b,c) -> R.rewrite_reified repr b c) rcpsp.reified_bconstraints) in
     repr, List.fold_left weak_incremental_closure domain (constraints@reified_cons)
 end
@@ -41,7 +42,8 @@ struct
       (dom, R.extend repr (v, idx)) in
     let domain, repr = List.fold_left (extend (R.OctKind ())) (empty,R.empty) rcpsp.octagonal_vars in
     let domain, repr = List.fold_left (extend (R.BoxKind ())) (domain, repr) rcpsp.box_vars in
-    let constraints = List.flatten (List.map (R.rewrite repr) rcpsp.constraints) in
+    let bconstraints = List.map (fun (e1,op,e2) -> Csp.Cmp (op, e1, e2)) rcpsp.constraints in
+    let constraints = List.flatten (List.map (R.rewrite repr) bconstraints) in
     let reified_cons = List.flatten (List.map (fun (b,c) -> R.rewrite_reified repr b c) rcpsp.reified_bconstraints) in
     repr, List.fold_left weak_incremental_closure domain (constraints@reified_cons)
 end

@@ -2,11 +2,8 @@
     It differs from `Adcp_sig` because we suppose here that the constraints are encapsulated in the abstract element. *)
 
 
-(* This exception is raised when a constraint is passed to an abstract domain that cannot represent this constraint. *)
-exception Wrong_modelling of string
-
 (** Every abstract domain has a different variable and constraint representation according to their internal implementation.
-    We ask every abstract domain to provide a representation module in order to connect the logic specification (`Csp.bconstraint`) and the representation of the abstract domain.
+    We ask every abstract domain to provide a representation module in order to connect the logic specification (`Csp.bformula`) and the representation of the abstract domain.
     This module can also rewrite a logic constraint into a more suited representation of the abstract domain. *)
 module type Representation_sig =
 sig
@@ -31,10 +28,10 @@ sig
   val to_abstract_var: t -> Csp.var -> var_id
 
   (** Rewrite a logic constraint into an abstract constraint. *)
-  val rewrite: t -> Csp.bconstraint -> rconstraint list
+  val rewrite: t -> Csp.bformula -> rconstraint list
 
   (** Same as `rewrite` but the obtained constraints can over-approximate the set of initial constraints (the set of solutions might be greater with the obtained constraints). *)
-  val relax: t -> Csp.bconstraint -> rconstraint list
+  val relax: t -> Csp.bformula -> rconstraint list
 
   (** Negate the constraint.
       The negated constraint can be an over-approximation of the initial constraint. *)

@@ -22,10 +22,10 @@ sig
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
   (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
   val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
-  val relax: t -> bconstraint -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 

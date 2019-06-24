@@ -14,8 +14,8 @@ sig
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bconstraint -> rconstraint list
-  val relax: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -53,8 +53,12 @@ struct
     | Cst(v, a) -> Cst(v, a) in
     aux e
 
-  let rewrite repr (e1,op,e2) = [(rewrite_expr repr e1, op, rewrite_expr repr e2)]
+  let rewrite repr f =
+    let rewrite_one (e1, op, e2) = [(rewrite_expr repr e1, op, rewrite_expr repr e2)] in
+    try mapfold_conjunction rewrite_one f
+    with Wrong_modelling _ -> []
 
   let relax = rewrite
+
   let negate (e1,op,e2) = (e1,neg op,e2)
 end

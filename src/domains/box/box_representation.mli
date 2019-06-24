@@ -20,10 +20,10 @@ sig
   val to_abstract_var: t -> var -> var_id
 
   (** Simple rewriting: substitute the variable names by their respective indices. *)
-  val rewrite: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
 
   (** Currently the same than `rewrite`. *)
-  val relax: t -> bconstraint -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
 
   (** Negate the constraint. *)
   val negate: rconstraint -> rconstraint

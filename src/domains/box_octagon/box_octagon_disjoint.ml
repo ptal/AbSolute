@@ -23,10 +23,10 @@ sig
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
   (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
   val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
-  val relax: t -> bconstraint -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -57,8 +57,8 @@ struct
     try BoxVar (Box_rep.to_abstract_var repr.box_rep v)
     with Not_found -> OctVar (Oct_rep.to_abstract_var repr.oct_rep v)
 
-  let is_defined_over repr (e1,op,e2) is_inside =
-    List.for_all is_inside (get_vars_bformula (Cmp (op,e1,e2)))
+  let is_defined_over repr c is_inside =
+    List.for_all is_inside (get_vars_bformula c)
 
   let is_box_var repr v =
     match to_abstract_var repr v with
@@ -80,8 +80,8 @@ struct
 
   (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
   let rewrite_reified repr b conjunction =
-    let try_rewrite all c =
-      let rewritten_c = Oct_rep.rewrite repr.oct_rep c in
+    let try_rewrite all ((e1, op, e2) as c) =
+      let rewritten_c = Oct_rep.rewrite repr.oct_rep (Cmp (op, e1, e2)) in
       if (List.length rewritten_c)=0 then
         raise (Wrong_modelling ("The abstract domain `Box_octagon_disjoint` expects octagonal reified constraints, but `" ^
                (string_of_bconstraint c) ^ "` could not be rewritten as an octagonal constraint."))
@@ -96,8 +96,7 @@ struct
   let negate = function
     | BoxConstraint c -> BoxConstraint (Box_rep.negate c)
     | OctConstraint c -> OctConstraint (Oct_rep.negate c)
-    | ReifiedConstraint(b, conjunction) -> failwith "Negation of reified constraints is not yet supported."
-
+    | ReifiedConstraint(b, conjunction) -> raise (Wrong_modelling "Negation of reified constraints is not yet supported.")
 end
 
 module type Box_octagon_disjoint_sig =

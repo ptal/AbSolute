@@ -32,7 +32,7 @@ struct
         let annot = if Domain.B.is_continuous then Real else Int in
         let ub = Cst (Domain.B.to_rat ub, annot) in
         let x = Domain.R.to_logic_var repr x in
-        let optimization_constraint = Domain.R.rewrite repr (Var x, op, ub) in
+        let optimization_constraint = Domain.R.rewrite repr (Cmp (op, Var x, ub)) in
         List.fold_left Domain.weak_incremental_closure domain optimization_constraint
 
   let bab op this timeout x =

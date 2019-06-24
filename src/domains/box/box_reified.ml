@@ -1,5 +1,4 @@
 open Csp
-open Abstract_domain
 open Box_dom
 open Box_representation
 open Pengine
@@ -29,9 +28,9 @@ sig
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bconstraint -> rconstraint list
+  val rewrite: t -> bformula -> rconstraint list
   val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
-  val relax: t -> bconstraint -> rconstraint list
+  val relax: t -> bformula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -48,7 +47,8 @@ struct
   let to_abstract_var = R.to_abstract_var
   let rewrite repr c = List.map (fun c -> BoxConstraint c) (R.rewrite repr c)
   let rewrite_reified repr b constraints =
-    let constraints = List.flatten (List.map (R.rewrite repr) constraints) in
+    let bconstraints = List.map (fun (e1,op,e2) -> Cmp (op, e1, e2)) constraints in
+    let constraints = List.flatten (List.map (R.rewrite repr) bconstraints) in
     let b = R.to_abstract_var repr b in
     [ReifiedConstraint (b, List.map (fun c -> BoxConstraint c) constraints)]
   let relax = rewrite
