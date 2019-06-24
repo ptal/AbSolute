@@ -6,7 +6,7 @@ type var = string
 (* constants are rationals (the domain of the variable *)
 type i = Bound_rat.t
 
-type annot = Int | Real
+type annot = Int | Real | Bitvect of int
 
 (* unary arithmetic operators *)
 type unop = NEG | LNOT
@@ -15,8 +15,7 @@ type unop = NEG | LNOT
 type binop = ADD | SUB | MUL | DIV | POW | LXOR | LAND | LOR
 
 (* arithmetic comparison operators *)
-type cmpop =
-  | EQ | LEQ | GEQ | NEQ | GT | LT
+type cmpop = EQ | LEQ | GEQ | NEQ | GT | LT
 
 (* Expressions are parametrized by a variable identifier.
    In the logical specification, it is a string representing the textual name of the variable.
@@ -48,6 +47,7 @@ type dom = Finite of i * i   (* [a;b] *)
          | Inf    of i       (* [a; +oo] *)
          | Set    of i list  (* {x1; x2; ...; xn} *)
          | Top               (* [-oo; +oo] *)
+         | Complete of int   (* depth of the complete BDD *)
 
 (* assign *)
 type assign = (annot * var * dom)
@@ -123,6 +123,7 @@ let print_cmpop fmt = function
 let print_typ fmt = function
   | Int  ->  Format.fprintf fmt "int"
   | Real ->  Format.fprintf fmt "real"
+  | Bitvect i -> Format.fprintf fmt "bitvect-%d" i
 
 let print_var fmt s = Format.fprintf fmt "%s" s
 
@@ -138,6 +139,7 @@ let print_dom fmt = function
      in
      Format.fprintf fmt "{%a}" print_set l
   | Top -> Format.fprintf fmt "[-oo; +oo]"
+  | Complete d -> Format.fprintf fmt "size %s" (string_of_int d)
 
 let print_assign fmt assignations =
   Format.fprintf fmt "Variables:\n";

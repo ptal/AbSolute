@@ -295,7 +295,8 @@ module Box (I:Vardom_sig) = struct
     Env.add var
       (match typ with
       | Int -> I.create I.TOP_INT
-      | Real -> I.create I.TOP_REAL)
+      | Real -> I.create I.TOP_REAL
+      | Bitvect i -> I.create (I.COMPLETE i))
       abs
 
   let var_bounds (abs:t) var =

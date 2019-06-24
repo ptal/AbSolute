@@ -5,20 +5,22 @@
 
 
 (* keyword table *)
-let kwd_table = Hashtbl.create 10
+let kwd_table = Hashtbl.create 11
 let _ =
   List.iter (fun (a,b) -> Hashtbl.add kwd_table a b)
     [
       "info",           TOK_ANNOT;
       "draw",           TOK_DRAW;
       "init",           TOK_INIT;
-      "objective", 	    TOK_OBJ;
+      "objective",	TOK_OBJ;
       "constraints",    TOK_CONSTR;
       "constants",      TOK_CST;
       "solutions",      TOK_SOL;
       "none",           TOK_NONE;
       "int",            TOK_INT;
       "real",           TOK_REAL;
+      "bitvect",       	TOK_BITVECT;
+      "size",		TOK_SIZE;
       "oo",             TOK_INF;
       "-oo",            TOK_MINF
    ]
@@ -77,6 +79,10 @@ rule token = parse
 | "="    { TOK_ASSIGN }
 | "&&"   { TOK_AND }
 | "||"   { TOK_OR }
+| "LXOR" { TOK_LXOR }
+| "LAND" { TOK_LAND }
+| "LOR"  { TOK_LOR }
+| "LNOT" { TOK_LNOT }
 | "|"    { TOK_PIPE }
 | "!"    { TOK_NOT }
 | ":"    { TOK_COLON }

@@ -107,6 +107,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
       match typ with
       | Int  -> ceil value = value
       | Real -> true
+      | Bitvect -> ceil value = value && value >= 0.
     in
     let check_dom dom value =
       match dom with

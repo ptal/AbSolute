@@ -7,6 +7,8 @@ open Csp
 /* Keywords */
 %token TOK_INT           /* int */
 %token TOK_REAL          /* real */
+%token TOK_BITVECT       /* bit-vectors */
+%token TOK_SIZE          /* size */
 %token TOK_CST           /* constants */
 %token TOK_INIT          /* init */
 %token TOK_OBJ           /* objective */
@@ -34,6 +36,10 @@ open Csp
 %token TOK_MULTIPLY      /* * */
 %token TOK_DIVIDE        /* / */
 %token TOK_POW           /* ^ */
+%token TOK_LAND          /* land */
+%token TOK_LXOR          /* lxor */
+%token TOK_LOR           /* lor */
+%token TOK_LNOT          /* lnot */
 %token TOK_LESS          /* < */
 %token TOK_GREATER       /* > */
 %token TOK_LESS_EQUAL    /* <= */
@@ -51,8 +57,8 @@ open Csp
 %token TOK_EOF
 
 /* priorities */
-%left TOK_OR TOK_AND
-%nonassoc TOK_NOT
+%left TOK_OR TOK_AND TOK_LXOR TOK_LAND TOK_LOR
+%nonassoc TOK_NOT TOK_LNOT
 %left TOK_PLUS TOK_MINUS
 %left TOK_MULTIPLY  TOK_DIVIDE
 %nonassoc unary_minus
@@ -159,6 +165,7 @@ bexprs:
 typ:
   | TOK_INT       {Int}
   | TOK_REAL      {Real}
+  | TOK_BITVECT TOK_SIZE rational  {Bitvect(Bound_rat.to_int_up $2)}
 
 init:
   | TOK_LBRACKET TOK_MINF TOK_SEMICOLON TOK_INF TOK_RBRACKET                   {Top}
@@ -194,6 +201,7 @@ expr:
   | TOK_LPAREN expr TOK_RPAREN          { $2 }
   | binop_expr                          { $1 }
   | TOK_MINUS expr %prec unary_minus    { Unary (NEG, $2) }
+  | TOK_LNOT expr  %prec unary_minus    { Unary (LNOT,$2) }
   | leaf                                { $1 }
 
 args:
@@ -206,16 +214,19 @@ leaf:
 
 binop_expr:
   | expr TOK_POW expr  {Binary (POW,$1,$3)}
+  | expr TOK_LAND expr {Binary(LAND,$1,$3)}
   | binop_expr2        {$1}
 
 binop_expr2:
   | expr TOK_DIVIDE   expr  {Binary(DIV,$1,$3)}
   | expr TOK_MULTIPLY expr  {Binary(MUL,$1,$3)}
+  | expr TOK_LXOR expr      {Binary(LXOR,$1,$3)}
   | binop_expr3             {$1}
 
 binop_expr3:
   | expr TOK_PLUS  expr {Binary(ADD,$1,$3)}
   | expr TOK_MINUS expr {Binary(SUB,$1,$3)}
+  | expr TOK_LOR expr   {Binary(LOR,$1,$3)}
 
 cmp:
   | TOK_LESS                    { LT }
