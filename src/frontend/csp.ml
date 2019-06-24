@@ -34,6 +34,7 @@ type 'var gexpr =
 
 (* boolean expressions *)
 type 'var formula =
+  | BVar of 'var
   | Cmp of cmpop * 'var gexpr * 'var gexpr
   | Equiv of 'var formula * 'var formula
   | Imply of 'var formula * 'var formula
@@ -183,6 +184,7 @@ let print_formula print_var fmt e =
   | Cmp (c,e1,e2) ->
     Format.fprintf fmt "%a %a %a"
       (print_gexpr print_var) e1 print_cmpop c (print_gexpr print_var) e2
+  | BVar v -> Format.fprintf fmt "%a" print_var v
   | Equiv (b1,b2) ->
     Format.fprintf fmt "%a <=> %a"
       aux b1 aux b2
@@ -261,6 +263,7 @@ let rec is_linear = function
 (* checks if a constraints is linear *)
 let rec is_cons_linear = function
   | Cmp (_,e1,e2) -> is_linear e1 && is_linear e2
+  | BVar _ -> true
   | Equiv (b1,b2)
   | Imply (b1,b2)
   | And (b1,b2)
@@ -427,6 +430,7 @@ let rec simplify_fp expr =
 
 let rec simplify_bformula = function
   | Cmp (op,e1,e2) -> Cmp (op, simplify_fp e1, simplify_fp e2)
+  | BVar v -> BVar v
   | Equiv (b1,b2) -> Equiv (simplify_bformula b1, simplify_bformula b2)
   | Imply (b1,b2) -> Imply (simplify_bformula b1, simplify_bformula b2)
   | And (b1,b2) -> And (simplify_bformula b1, simplify_bformula b2)
@@ -441,6 +445,7 @@ let left_hand_side (op, e1, e2) =
 
 let rec left_hand = function
   | Cmp (op,e1,e2) -> left_hand_side (op, e1, e2)
+  | BVar v -> failwith "`left_hand` on a boolean variable."
   | Equiv (b1,b2) | Imply (b1,b2) | And (b1,b2) | Or (b1,b2) ->
       left_hand b1
   | Not b -> left_hand b
@@ -480,6 +485,7 @@ let rec derivate expr var =
 let rec derivative bformula var =
   match bformula with
   | Cmp (op,e1,e2) -> Cmp (op, derivate e1 var, derivate e2 var)
+  | BVar v -> failwith "`derivative` of a boolean variable is unsupported."
   | Equiv (b1,b2) -> Equiv (derivative b1 var, derivative b2 var)
   | Imply (b1,b2) -> Imply (derivative b1 var, derivative b2 var)
   | And (b1,b2) -> And (derivative b1 var, derivative b2 var)
@@ -559,6 +565,7 @@ let rec iter_constr f_expr f_constr = function
      f_constr constr;
      iter_expr f_expr e1;
      iter_expr f_expr e2
+  | BVar _ -> ()
   | (Equiv (b1,b2) as constr)
   | (Imply (b1,b2) as constr)
   | (And (b1,b2) as constr)
@@ -575,6 +582,7 @@ let rec map_constr f = function
   | Cmp (op,e1,e2) ->
      let op',e1',e2' = f (op,e1,e2) in
      Cmp(op',e1',e2')
+  | BVar v -> failwith "map_constr not applicable on Boolean variables."
   | Equiv (b1,b2) -> Equiv (map_constr f b1, map_constr f b2)
   | Imply (b1,b2) -> Imply (map_constr f b1, map_constr f b2)
   | And (b1,b2) -> And (map_constr f b1, map_constr f b2)
@@ -594,6 +602,7 @@ let neg = function
 let rec neg_bformula = function
   | Cmp (op,e1,e2) -> Cmp(neg op,e1,e2)
   (* Trivial negation for equiv and imply in order to keep the structure of the formula (we do not rewrite the formula into AND and OR here). *)
+  | BVar v -> Not (BVar v)
   | Equiv (b1,b2) -> Not (Equiv (b1, b2))
   | Imply (b1,b2) -> Not (Imply (b1, b2))
   | And (b1,b2) -> Or (neg_bformula b1, neg_bformula b2)
@@ -616,6 +625,7 @@ let rec replace_cst_expr (id, cst) expr =
 
 let rec replace_cst_bformula cst = function
   | Cmp (op, e1, e2) -> Cmp (op, replace_cst_expr cst e1, replace_cst_expr cst e2)
+  | BVar v -> BVar v
   | Equiv (b1, b2) -> Equiv (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
   | Imply (b1, b2) -> Imply (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
   | And (b1, b2) -> And (replace_cst_bformula cst b1, replace_cst_bformula cst b2)
@@ -635,6 +645,7 @@ let get_vars_set_expr expr = Variables.of_list (get_vars_expr expr)
 
 let rec get_vars_bformula = function
   | Cmp (_, e1, e2) -> List.append (get_vars_expr e1) (get_vars_expr e2)
+  | BVar v -> [v]
   | Equiv (b1, b2)
   | Imply (b1, b2)
   | And (b1, b2)
@@ -678,6 +689,7 @@ let rec replace_var_in_expr : (var -> expr) -> expr -> expr = fun f e ->
 let rec mapfold_conjunction f = function
   | Cmp (op, e1, e2) -> f (e1, op, e2)
   | And (f1, f2) -> (mapfold_conjunction f f1)@(mapfold_conjunction f f2)
+  | BVar v -> raise (Wrong_modelling "unsupported boolean variable")
   | Equiv (f1, f2) -> raise (Wrong_modelling "unsupported equivalence")
   | Imply (f1, f2) -> raise (Wrong_modelling "unsupported implication")
   | Or (f1, f2) -> raise (Wrong_modelling "unsupported disjunction")

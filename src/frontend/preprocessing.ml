@@ -146,6 +146,7 @@ let rec replace_view_expr ((id, e) as view) expr =
   | _ as expr -> expr
 
 let rec replace_view_bformula view = function
+  | BVar _ -> failwith "`replace_view_bformula` unsupported with Boolean variable."
   | Cmp (op, e1, e2) -> Cmp(op, replace_view_expr view e1, replace_view_expr view e2)
   | Equiv (b1, b2) -> Equiv (replace_view_bformula view b1, replace_view_bformula view b2)
   | Imply (b1, b2) -> Imply (replace_view_bformula view b1, replace_view_bformula view b2)

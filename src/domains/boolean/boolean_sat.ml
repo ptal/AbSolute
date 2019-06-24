@@ -15,8 +15,22 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-(* let formula_to_cnf formula =
-  let formula = eliminate_implication formula in *)
+let eliminate_imply_and_equiv formula =
+  let rec aux = function
+  | Cmp (op,e1,e2) as c -> c
+  | Equiv (b1,b2) ->
+      let b1 = aux b1 in
+      let b2 = aux b2 in
+      And (Or (b1, Not b2), Or (Not b1, b2))
+  | Imply (b1,b2) -> Or (Not (aux b1), aux b2)
+  | And (b1,b2) -> And (aux b1, aux b2)
+  | Or (b1,b2) -> Or (aux b1, aux b2)
+  | Not b -> Not (aux b)
+
+let formula_to_cnf formula =
+  let formula = eliminate_imply_and_equiv formula in
+  let formula = move_NOT_inwards formula in
+  distribute_or formula
 
 module Boolean_rep =
 struct
