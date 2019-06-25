@@ -1,9 +1,12 @@
+open Csp
+open Libsatml
+open Types
 
 module type Boolean_rep_sig =
 sig
   type t
   type var_kind = unit
-  type var_id = var
+  type var_id = Solver.var
   type rconstraint = (Lit.t Vec.t) list
   val empty: t
   val extend: t -> (Csp.var * var_id) -> t
@@ -18,7 +21,7 @@ end
    NOTE: It duplicates constraints if they occur in `<=>`. *)
 let eliminate_imply_and_equiv formula =
   let rec aux = function
-    | Cmp _ as c
+    | Cmp _ as c -> c
     | BVar _ as c -> c
     | Equiv (f1,f2) ->
         let f1 = aux f1 in
@@ -44,7 +47,8 @@ let move_not_inwards formula =
       | Equiv _ | Imply _ -> failwith "`move_not_inwards` must be called after `eliminate_imply_and_equiv`."
     else
       match formula with
-      | Cmp _as c | BVar _ as c -> c
+      | Cmp _ as c -> c
+      | BVar _ as c -> c
       | And (f1,f2) -> And (aux false f1, aux false f2)
       | Or (f1,f2) -> Or (aux false f1, aux false f2)
       | Not f -> aux true f
@@ -53,11 +57,11 @@ let move_not_inwards formula =
 
 (* Distribute `Or` over `And`: a \/ (b /\ c) --> (a \/ b) /\ (a \/ c). *)
 let distribute_or formula =
-  let rec one_round = function
-    | Cmp _ as c, false
+  let rec aux = function
+    | Cmp _ as c -> c, false
     | BVar _ as c -> c, false
     | Or (f1, And (f2, f3)) -> And(Or(f1,f2), Or(f1,f3)), true
-    | Or (And(f1,f2), f3) -> aux Or(f3, And(f1,f2))
+    | Or (And(f1,f2), f3) -> aux (Or(f3, And(f1,f2)))
     | And (f1,f2) ->
         let (f1, t1) = aux f1 in
         let (f2, t2) = aux f2 in
@@ -66,12 +70,12 @@ let distribute_or formula =
         let (f1, t1) = aux f1 in
         let (f2, t2) = aux f2 in
         Or (f1, f2), (t1 || t2)
-    | Not f -> Not (aux f)
+    | Not f -> let (f1, t1) = aux f in Not f1, t1
     | Equiv _ | Imply _ -> failwith "`distribute_or` must be called after `eliminate_imply_and_equiv`." in
-  let rec aux (has_changed, formula) =
-    if has_changed then aux (one_round formula)
+  let rec iter_aux (formula, has_changed) =
+    if has_changed then iter_aux (aux formula)
     else formula in
-  aux (true, formula)
+  iter_aux (formula, true)
 
 (* Naive conversion of a Boolean formula to a conjunctive normal form (CNF). *)
 let formula_to_cnf formula =
@@ -79,10 +83,22 @@ let formula_to_cnf formula =
   let formula = move_not_inwards formula in
   distribute_or formula
 
+(* Given a formula in CNF, maps to each of its clauses.
+   NOTE: this function assumes the formula is CNF. *)
+let map_clauses f formula =
+  let rec aux formula =
+    match formula with
+    | And(f1, f2) -> (aux f1)@(aux f2)
+    | Or _
+    | BVar _
+    | Not BVar _ -> [formula]
+    | _ -> failwith "`map_clauses` assumes the formula is in CNF." in
+  aux formula
+
 module Boolean_rep =
 struct
   type var_kind = unit
-  type var_id = var
+  type var_id = Solver.var
   type rconstraint = (Lit.t Vec.t) list
 
   module Env = Tools.VarMap
@@ -104,10 +120,22 @@ struct
   let to_logic_var repr idx = REnv.find idx repr.renv
   let to_abstract_var repr v = Env.find v repr.env
 
-  let rewrite repr formula =
-    let cnf = formula_to_cnf formula in
+  let rewrite_clause repr clause =
+    let rec aux = function
+      | Cmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports boolean variables (`BVar`).")
+      | BVar v -> [Lit.lit (to_abstract_var repr v) false]
+      | Not (BVar v) -> [Lit.lit (to_abstract_var repr v) true]
+      | Or (f1, f2) -> (aux f1)@(aux f2)
+      | _ -> failwith "`rewrite_clause` is called on something else than a clause." in
+    let clauses = aux clause in
+    Vec.fromList clauses (List.length clauses)
 
+  let rewrite repr formula =
+    let cnf = formula_to_cnf formula in
+    map_clauses (rewrite_clause repr) cnf
 
   let relax = rewrite
-  let negate = function
+
+  (* NOTE: We might want to extend the signature to constraint -> constraint list, so we can rewrite negation of clauses. *)
+  let negate _ = raise (Wrong_modelling "Negation of a clause is not a clause.")
 end

@@ -1,10 +1,11 @@
+open Csp
 
 module type Boolean_rep_sig =
 sig
   type t
   type var_kind = unit
-  type var_id = Satml.var
-  type rconstraint = (Satml.Lit.t Vec.t) list
+  type var_id = Libsatml.Solver.var
+  type rconstraint = (Libsatml.Types.Lit.t Libsatml.Vec.t) list
 
   val empty: t
 
