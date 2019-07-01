@@ -40,7 +40,7 @@ struct
         value := r
       end
     | BVar v -> value := R.Store.get store v
-    | BCst _ -> () (* Constant are valuated once and for all when creating the AST. *)
+    | BCst v -> value := v
     | BUnary (o,e1) ->
       begin
         eval store e1;
