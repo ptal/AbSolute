@@ -192,13 +192,13 @@ let bench_minizinc bench mzn_instance =
 
 (* Decomposed MiniZinc model: model generated from the Rcpsp_model structure where data is written as constraints.
    This model does not contain global constraint. *)
-let mzn_of_bconstraint c = "constraint " ^ string_of_bconstraint c ^ ";\n"
+let mzn_of_bconstraint c = "constraint " ^ string_of_constraint c ^ ";\n"
 
 let mzn_of_reified (b, conjunction) =
   let (first, tail) = (List.hd conjunction, List.tl conjunction) in
   "constraint " ^ b ^
-  " <-> (" ^ (string_of_bconstraint first) ^
-  (List.fold_left (fun a c -> a ^ " /\\ " ^ (string_of_bconstraint c)) "" tail) ^
+  " <-> (" ^ (string_of_constraint first) ^
+  (List.fold_left (fun a c -> a ^ " /\\ " ^ (string_of_constraint c)) "" tail) ^
   ");\n"
 
 let make_mzn_model model mzn_annot =

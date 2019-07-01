@@ -25,25 +25,21 @@ type cmpop =
    in Box). *)
 
 (* numeric expressions *)
-type 'var gexpr =
-  | Funcall of string * ('var gexpr) list
-  | Unary   of unop * 'var gexpr
-  | Binary  of binop * 'var gexpr * 'var gexpr
-  | Var     of 'var
+type expr =
+  | Funcall of string * expr list
+  | Unary   of unop * expr
+  | Binary  of binop * expr * expr
+  | Var     of var
   | Cst     of i * annot
 
 (* boolean expressions *)
-type 'var gbexpr =
-  | Cmp of cmpop * 'var gexpr * 'var gexpr
-  | And of 'var gbexpr * 'var gbexpr
-  | Or  of 'var gbexpr * 'var gbexpr
-  | Not of 'var gbexpr
+type bexpr =
+  | Cmp of cmpop * expr * expr
+  | And of bexpr * bexpr
+  | Or  of bexpr * bexpr
+  | Not of bexpr
 
-type 'var gbconstraint = ('var gexpr * cmpop * 'var gexpr)
-
-type expr = var gexpr
-type bexpr = var gbexpr
-type bconstraint = var gbconstraint
+type bconstraint = (expr * cmpop * expr)
 
 type dom = Finite of i * i   (* [a;b] *)
          | Minf   of i       (* [-oo; a] *)
@@ -159,23 +155,6 @@ let rec print_all_csts fmt = function
   | a::[] -> Format.fprintf fmt "%a" print_csts a
   | a::tl -> Format.fprintf fmt "%a " print_csts a; print_all_csts fmt tl
 
-let print_gexpr print_var fmt e =
-  let rec aux fmt = function
-    | Funcall(name,args) ->
-       let print_args fmt =
-         Format.pp_print_list ~pp_sep:pp_sep_comma aux fmt
-       in
-       Format.fprintf fmt "%s(%a)" name print_args args
-    | Unary (NEG, e) ->
-       Format.fprintf fmt "(- %a)" aux e
-    | Binary (b, e1 , e2) ->
-       Format.fprintf fmt "(%a %a %a)" aux e1 print_binop b aux e2
-    | Var v -> Format.fprintf fmt "%a" print_var v
-    | Cst (c,Int) -> Format.fprintf fmt "%d" (Bound_rat.to_int_up c)
-    | Cst (c,_) -> Format.fprintf fmt "%a" Bound_rat.pp_print c
-  in
-  aux fmt e
-
 (***************************************************************)
 (* Prettier printing that does not print redundant parenthesis *)
 
@@ -196,7 +175,7 @@ let must_parenthesis_right (father:expr) (e:expr) =
 (* This function prints an expression without redundant parenthesis
    and using continuation passing style to avoid a stack overflow
    error over very large constraints *)
-let print_gexpr_cps print_var fmt t =
+let print_expr fmt t =
   let rec loop parenflag (k:unit->unit) fmt t =
     match t with
     | Funcall("sqr",[x]) -> loop false k fmt (Binary(POW,x,Cst(Bound_rat.two,Int)))
@@ -231,51 +210,30 @@ let print_gexpr_cps print_var fmt t =
   in
   loop false (fun () -> ()) fmt t
 
-let print_gbexpr print_var fmt e =
-  let rec aux fmt = function
-    | Cmp (c,e1,e2) ->
-       Format.fprintf fmt "%a %a %a"
-         (print_gexpr print_var) e1 print_cmpop c (print_gexpr print_var) e2
-    | And (b1,b2) ->
-       Format.fprintf fmt "%a && %a"
-         aux b1 aux b2
-    | Or  (b1,b2) ->
-       Format.fprintf fmt "%a || %a"
-         aux b1 aux b2
-    | Not b -> Format.fprintf fmt "not %a" aux b in
-  aux fmt e
-
-(* Same as print gbexpr but using CPS *)
-let print_gbexpr_cps print_var fmt e =
+let print_bexpr fmt e =
   let rec aux fmt = function
     | Cmp (c,e1,e2) -> Format.fprintf fmt "%a %a %a"
-         (print_gexpr_cps print_var) e1 print_cmpop c (print_gexpr_cps print_var) e2
+        print_expr e1 print_cmpop c print_expr e2
     | And (b1,b2) -> Format.fprintf fmt "%a && %a"
-         aux b1 aux b2
-    | Or  (b1,b2) -> Format.fprintf fmt "%a || %a"
-         aux b1 aux b2
+        aux b1 aux b2
+    | Or (b1,b2) -> Format.fprintf fmt "%a || %a"
+        aux b1 aux b2
     | Not b -> Format.fprintf fmt "not %a" aux b in
   aux fmt e
 
-let print_gconstraint print_var fmt (e1,op,e2) =
-  Format.fprintf fmt "%a" (print_gbexpr print_var) (Cmp (op,e1,e2))
+let print_constraint fmt (e1,op,e2) =
+  Format.fprintf fmt "%a" print_bexpr (Cmp (op,e1,e2))
 
-let print_gconstraints print_var constraints =
-  List.iter (Format.printf "%a\n" (print_gconstraint print_var)) constraints
+let print_constraints constraints =
+  List.iter (Format.printf "%a\n" print_constraint) constraints
 
-let string_of_gconstraint print_var c = begin
-    print_gconstraint print_var Format.str_formatter c;
+let string_of_constraint c = begin
+    print_constraint Format.str_formatter c;
     Format.flush_str_formatter ()
   end
 
-let print_expr = print_gexpr print_var
-let print_bexpr = print_gbexpr print_var
-let print_bconstraint = print_gconstraint print_var
-let print_bconstraints = print_gconstraints print_var
-let string_of_bconstraint = string_of_gconstraint print_var
-
 let print_constraints =
-  Format.pp_print_list ~pp_sep:pp_sep_newline (print_gbexpr_cps print_var)
+  Format.pp_print_list ~pp_sep:pp_sep_newline print_bexpr
 
 let print_jacob fmt (v, e) =
   Format.fprintf fmt "\t(%a, %a)" print_var v print_expr e

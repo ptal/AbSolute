@@ -1,11 +1,11 @@
 open Csp
 open Octagon
 open Box_dom
-open Abstract_domain
-open Box_representation
 
-module type Box_oct_rep_sig = functor (Oct_rep: Representation_sig) ->
+module type Box_oct_rep_sig =
 sig
+  module Box_rep: Box_representation.Box_rep_sig
+  module Oct_rep: Octagon_representation.Octagon_rep_sig
   type t = {
     box_rep: Box_rep.t;
     oct_rep: Oct_rep.t;
@@ -29,12 +29,16 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Box_oct_rep: Box_oct_rep_sig
+module type Box_oct_rep_functor =
+  functor(Box_rep: Box_representation.Box_rep_sig)(Oct_rep: Octagon_representation.Octagon_rep_sig) -> Box_oct_rep_sig
+  with module Box_rep=Box_rep and module Oct_rep=Oct_rep
+
+module Box_oct_rep: Box_oct_rep_functor
 
 module type Box_octagon_disjoint_sig =
 sig
   module B : Bound_sig.BOUND
-  module R : Representation_sig
+  module R : Box_oct_rep_sig
   type t
   type bound = B.t
   val empty: t
@@ -56,4 +60,4 @@ end
 
 module Make
   (BOX: Box_functor)
-  (Octagon: Octagon_sig) : Box_octagon_disjoint_sig with module R = Box_oct_rep(Octagon.R)
+  (Octagon: Octagon_sig) : Box_octagon_disjoint_sig

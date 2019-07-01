@@ -3,17 +3,16 @@ open Box_dom
 open Box_representation
 open Csp
 
-type rbox_constraint =
-  | BoxConstraint of box_constraint
-  | ReifiedConstraint of box_reified_constraint
-and box_reified_constraint = box_var * rbox_constraint list
-
 module type Reified_box_rep_sig =
 sig
+  module BaseRep : Box_rep_sig
   type t
-  type var_kind = unit
-  type var_id = box_var
-  type rconstraint = rbox_constraint
+  type var_kind = BaseRep.var_kind
+  type var_id = BaseRep.var_id
+  type rconstraint =
+  | BaseConstraint of BaseRep.rconstraint
+  | ReifiedConstraint of reified_constraint
+  and reified_constraint = BaseRep.var_id * rconstraint list
 
   val empty: t
   val extend: t -> (Csp.var * var_id) -> t
@@ -26,21 +25,22 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Reified_box_rep: Reified_box_rep_sig
+module Reified_box_rep(BaseRep: Box_rep_sig) : Reified_box_rep_sig
+  with module BaseRep=BaseRep
 
 module type Box_reified_sig =
 sig
   type t
-  module I: Vardom_sig.Vardom_sig
-  module B = I.B
-  module R = Reified_box_rep
+  module R: Reified_box_rep_sig
+  module Vardom: Vardom_sig.Vardom_sig
+  module B = Vardom.B
   type bound = B.t
-  type itv = I.t
+  type vardom = Vardom.t
 
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
-  val project: t -> R.var_id -> (I.B.t * I.B.t)
-  val project_itv: t -> R.var_id -> itv
+  val project: t -> R.var_id -> (Vardom.B.t * Vardom.B.t)
+  val project_vardom: t -> R.var_id -> vardom
   val lazy_copy: t -> int -> t list
   val copy: t -> t
   val closure: t -> t
