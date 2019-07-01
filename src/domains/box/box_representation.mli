@@ -1,15 +1,25 @@
 open Csp
 
 type box_var = int
-type box_constraint = box_var gbconstraint
-type box_expr = box_var gexpr
 
-module type Box_rep_sig =
+module type Box_rep_functor = functor (Vardom: Vardom_sig) ->
 sig
   type t
   type var_kind = unit
   type var_id = box_var
-  type rconstraint = box_constraint
+
+  (** We annotate each node of this expression with its interval evaluation.
+    This is useful for the HC4 algorithm.
+    The `Vardom.t ref` field is never backtracked, it is only useful to propagate inside on node of the search tree. *)
+  type rexpr = node * Vardom.t ref
+  and node =
+    | BFuncall of string * node list
+    | BUnary   of unop * node
+    | BBinary  of binop * node * node
+    | BVar     of var_id
+    | BCst     of Vardom.t
+
+  type rconstraint = rexpr * cmpop * rexpr
 
   val empty: t
 
@@ -29,4 +39,4 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Box_rep: Box_rep_sig
+module Box_rep: Box_rep_functor

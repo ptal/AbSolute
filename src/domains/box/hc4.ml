@@ -4,28 +4,17 @@ open Bot
 open Box_representation
 open Kleene
 
-module type Box_closure_sig = functor (S: Var_store_sig) ->
+module type Box_closure_sig = functor (S: Var_store_sig)(R: Representation_sig) ->
 sig
   module Store : Var_store_sig
-  val incremental_closure: Store.t -> box_constraint -> Store.t * bool
-  val entailment: Store.t -> box_constraint -> Kleene.t
+  val incremental_closure: Store.t -> R.rconstraint -> Store.t * bool
+  val entailment: Store.t -> R.rconstraint -> Kleene.t
 end with module Store=S
 
 module Make(Store: Var_store_sig) =
 struct
   module Store = Store
   module I = Store.I
-
-  (* The type `Csp.expr` is an AST representing the syntax of an expression.
-     In `node`, we annotate each node of this expression with its interval evaluation.
-     Note: the function `eval` below transforms `Csp.expr` into `node`. *)
-  type node_kind =
-    | BFuncall of string * node list
-    | BUnary   of unop * node
-    | BBinary  of binop * node * node
-    | BVar     of Store.key
-    | BCst     of I.t
-  and node = node_kind * I.t
 
   (* I. Evaluation part
 

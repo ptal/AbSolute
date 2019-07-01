@@ -1,15 +1,21 @@
 open Csp
+open Vardom_sig
 
 type box_var = int
-type box_constraint = box_var gbconstraint
-type box_expr = box_var gexpr
 
-module type Box_rep_sig =
+module type Box_rep_functor = functor (Vardom: Vardom_sig) ->
 sig
   type t
   type var_kind = unit
   type var_id = box_var
-  type rconstraint = box_constraint
+  type rexpr = node * Vardom.t ref
+  and node =
+    | BFuncall of string * node list
+    | BUnary   of unop * node
+    | BBinary  of binop * node * node
+    | BVar     of var_id
+    | BCst     of Vardom.t
+  type rconstraint = rexpr * cmpop * rexpr
   val empty: t
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
@@ -19,7 +25,7 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Box_rep =
+module Box_rep = functor (Vardom: Vardom_sig) ->
 struct
   type var_kind = unit
   type var_id = box_var
@@ -44,13 +50,15 @@ struct
   let to_logic_var repr idx = REnv.find idx repr.renv
   let to_abstract_var repr v = Env.find v repr.env
 
-  let rewrite_expr repr e : var_id gexpr =
-    let rec aux = function
-    | Funcall(x, exprs) -> Funcall(x, List.map aux exprs)
-    | Unary(NEG, e) -> Unary(NEG, aux e)
-    | Binary(op, e1, e2) -> Binary (op, aux e1, aux e2)
-    | Var(x) -> Var(to_abstract_var repr x)
-    | Cst(v, a) -> Cst(v, a) in
+  let rewrite_expr repr e : rexpr =
+    let rec aux e =
+      let e = match e with
+        | Funcall(x, exprs) -> BFuncall(x, List.map aux exprs)
+        | Unary(NEG, e) -> BUnary(NEG, aux e)
+        | Binary(op, e1, e2) -> BBinary (op, aux e1, aux e2)
+        | Var(x) -> BVar(to_abstract_var repr x)
+        | Cst(v, a) -> BCst(Vardom.create (Vardom.OF_RAT c), a) in
+        (e, ref Vardom.create Vardom.TOP)
     aux e
 
   let rewrite repr (e1,op,e2) = [(rewrite_expr repr e1, op, rewrite_expr repr e2)]
