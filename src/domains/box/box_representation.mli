@@ -17,8 +17,11 @@ sig
 
   (** We annotate each node of this expression with its interval evaluation.
     This is useful for the HC4 algorithm.
-    The `Vardom.t ref` field is never backtracked, it is only useful to propagate inside on node of the search tree. *)
-  type rexpr = node * Vardom.t ref
+    The `value` field is never backtracked, it is only useful to propagate inside on node of the search tree. *)
+  type rexpr = {
+    node: node;
+    mutable value: Vardom.t
+  }
   and node =
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr

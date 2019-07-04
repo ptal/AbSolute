@@ -12,7 +12,10 @@ sig
   type var_id = Store.key
   type var_dom = Store.cell
 
-  type rexpr = node * Vardom.t ref
+  type rexpr = {
+    node: node;
+    mutable value: Vardom.t
+  }
   and node =
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
@@ -46,7 +49,10 @@ struct
   type var_id = Store.key
   type var_dom = Store.cell
 
-  type rexpr = node * Vardom.t ref
+  type rexpr = {
+    node: node;
+    mutable value: Vardom.t
+  }
   and node =
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
@@ -76,7 +82,7 @@ struct
   let to_logic_var repr idx = REnv.find idx repr.renv
   let to_abstract_var repr v = Env.find v repr.env
 
-  let make_expr e = (e, ref (Vardom.create Vardom.TOP))
+  let make_expr e = { node=e; value=Vardom.create Vardom.TOP }
 
   let rewrite_expr repr e : rexpr =
     let rec aux e : rexpr =
@@ -96,7 +102,7 @@ struct
 
   let to_logic_expr repr expr =
     let rec aux expr =
-      match (fst expr) with
+      match expr.node with
       | BCst v -> Cst (fst (Vardom.to_rational_range v), Vardom.to_annot v)
       | BVar x -> Var(to_logic_var repr x)
       | BUnary (op, e) -> Unary(op, aux e)
@@ -108,7 +114,7 @@ struct
     (to_logic_expr repr e1, op, to_logic_expr repr e2)
 
   let rec vars_of_expr expr =
-    match (fst expr) with
+    match expr.node with
     | BCst _ -> []
     | BVar v -> [v]
     | BUnary (_, e) -> vars_of_expr e

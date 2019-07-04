@@ -17,35 +17,35 @@ struct
   module Store = R.Store
   module V = Store.V
 
-  let expr_val (_, v) = !v
+  let expr_val expr = R.(expr.value)
   let exprs_val exprs = List.map expr_val exprs
 
   (* I. Evaluation part
 
      First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
      For example: given `x + 3` with `x in [1..3]`, it annotates `+` with `[4..6]`.
-     It stores this new valued expression tree (`node`) into the `Vardom.t ref` field of `rexpr`.
+     It stores this new valued expression tree (`node`) into `rexpr.value`.
 
      This function is also useful for testing transfer functions errors (e.g. division by zero).
      - We raise Bot_found in case the expression only evaluates to error values.
      - Otherwise, we return only the non-error values.
    *)
-  let rec eval store (node, value) =
+  let rec eval store expr =
     let open R in
-    match node with
+    match expr.node with
     | BFuncall(name, args) ->
       begin
         List.iter (eval store) args;
         let r = debot (V.eval_fun name (exprs_val args)) in
-        value := r
+        expr.value <- r
       end
-    | BVar v -> value := R.Store.get store v
-    | BCst v -> value := v
+    | BVar v -> expr.value <- R.Store.get store v
+    | BCst v -> expr.value <- v
     | BUnary (o,e1) ->
       begin
         eval store e1;
         match o with
-        | NEG -> value := V.unop V.NEG (expr_val e1)
+        | NEG -> expr.value <- V.unop V.NEG (expr_val e1)
       end
     | BBinary (o,e1,e2) ->
       begin
@@ -63,7 +63,7 @@ struct
             V.unop V.ABS r
           else r
         | POW -> V.binop V.POW v1 v2 in
-        value := v
+        expr.value <- v
       end
 
   (* II. Refine part
@@ -76,19 +76,19 @@ struct
      Note that we can call again `eval` to restrain further `+`, and then another round of `refine` will restrain `x` as well.
      We raise `Bot_found` in case of unsatisfiability.
 
-     NOTE: This step is functional: it does not modify the `Vardom.t ref` field.
+     NOTE: This step is functional: it does not modify the `rexpr.value` field.
    *)
 
   (* refines binary operator to handle constants *)
-  let refine_bop f1 f2 (e1,i1) (e2,i2) x (b:bool) =
+  let refine_bop f1 f2 e1 e2 x (b:bool) =
     let open R in
-    match e1, e2, b with
-    | BCst _, BCst _, _ -> Nb (i1, i2)
-    | BCst _, _, true -> merge_bot2 (Nb i1) (f2 i2 i1 x)
-    | BCst _, _, false -> merge_bot2 (Nb i1) (f2 i2 x i1)
-    | _, BCst _, _ -> merge_bot2 (f1 i1 i2 x) (Nb i2)
-    | _, _, true -> merge_bot2 (f1 i1 i2 x) (f2 i2 i1 x)
-    | _, _, false -> merge_bot2 (f1 i1 i2 x) (f2 i2 x i1)
+    match e1.node, e2.node, b with
+    | BCst _, BCst _, _ -> Nb (e1.value, e2.value)
+    | BCst _, _, true -> merge_bot2 (Nb e1.value) (f2 e2.value e1.value x)
+    | BCst _, _, false -> merge_bot2 (Nb e1.value) (f2 e2.value x e1.value)
+    | _, BCst _, _ -> merge_bot2 (f1 e1.value e2.value x) (Nb e2.value)
+    | _, _, true -> merge_bot2 (f1 e1.value e2.value x) (f2 e2.value e1.value x)
+    | _, _, false -> merge_bot2 (f1 e1.value e2.value x) (f2 e2.value x e1.value)
 
   (* u + v = r => u = r - v /\ v = r - u *)
   let refine_add u v r =
@@ -110,26 +110,24 @@ struct
     let open R in
     match expr with
     | BFuncall(name,args) ->
-       let nodes_kind, values = List.split args in
-       let res = V.filter_fun name (List.map (!) values) root in
-       List.fold_left2 refine store (debot res) nodes_kind
+       let res = V.filter_fun name (List.map (fun e -> R.(e.value)) args) root in
+       List.fold_left2 (fun acc res e -> refine acc res e.node) store (debot res) args
     | BVar v -> R.Store.set store v root
     | BCst i -> ignore (debot (V.meet root i)); store
-    | BUnary (o,(e1,v1)) ->
+    | BUnary (op,e) ->
+       let j = match op with
+         | NEG -> V.filter_unop V.NEG e.value root
+       in refine store (debot j) e.node
+    | BBinary (o,e1,e2) ->
        let j = match o with
-         | NEG -> V.filter_unop V.NEG !v1 root
-       in refine store (debot j) e1
-    | BBinary (o,(e1,v1),(e2,v2)) ->
-       let v1, v2 = !v1, !v2 in
-       let j = match o with
-         | ADD -> refine_add (e1,v1) (e2,v2) root
-         | SUB -> refine_sub (e1,v1) (e2,v2) root
-         | MUL -> refine_mul (e1,v1) (e2,v2) root
-         | DIV -> refine_div (e1,v1) (e2,v2) root
-         | POW -> V.filter_binop V.POW v1 v2 root
+         | ADD -> refine_add e1 e2 root
+         | SUB -> refine_sub e1 e2 root
+         | MUL -> refine_mul e1 e2 root
+         | DIV -> refine_div e1 e2 root
+         | POW -> V.filter_binop V.POW e1.value e2.value root
        in
        let j1,j2 = debot j in
-       refine (refine store j1 e1) j2 e2
+       refine (refine store j1 e1.node) j2 e2.node
 
   (* III. HC4-revise algorithm (combining eval and refine).
 
@@ -147,8 +145,8 @@ struct
       | NEQ -> debot (V.filter_neq i1 i2)
       | EQ  -> debot (V.filter_eq i1 i2)
     in
-    let refined_store = if V.equal j1 i1 then store else refine store j1 (fst e1) in
-    if j2 = i2 then refined_store else refine refined_store j2 (fst e2)
+    let refined_store = if V.equal j1 i1 then store else refine store j1 R.(e1.node) in
+    if j2 = i2 then refined_store else refine refined_store j2 R.(e2.node)
 
   let hc4_eval_revise store (e1,op,e2) =
   begin
