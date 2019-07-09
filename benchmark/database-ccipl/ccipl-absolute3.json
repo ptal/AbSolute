@@ -15,7 +15,7 @@
   "solvers_kind": [
     <AbSolute: {
       "domains": [
-        { "name": "Octagon", "strategies": ["Max_min_Bisect", "Min_max_Bisect"] }
+        { "name": "Octagon", "strategies": ["Max_min_Bisect", "Min_max_Bisect", "Anti_first_fail_LB", "Anti_first_fail_Bisect"] }
       ]
     }>
   ],

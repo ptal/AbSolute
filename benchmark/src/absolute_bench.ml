@@ -133,6 +133,8 @@ let make_octagon_strategy : string -> (module Octagon_split.Octagon_split_sig) =
 | "Min_max_LB" -> (module Octagon_split.Min_max_LB)
 | "Max_min_Bisect" -> (module Octagon_split.Max_min_Bisect)
 | "Min_max_Bisect" -> (module Octagon_split.Min_max_Bisect)
+| "Anti_first_fail_LB" -> (module Octagon_split.Anti_first_fail_LB)
+| "Anti_first_fail_Bisect" -> (module Octagon_split.Anti_first_fail_Bisect)
 | s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Octagon. Please look into `make_octagon_strategy` for a list of the supported strategies.")
 
 let make_box_strategy : string -> (module Box_split.Box_split_sig) = function
