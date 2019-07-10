@@ -104,9 +104,14 @@ struct
     try
       let rcpsp = Rcpsp_model.create_rcpsp (read_rcpsp problem_path) in
       let timeout = timeout_of_bench bench in
-      let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
-      let solver = BAB.init repr domain in
-      let (best, stats) = BAB.minimize solver timeout (makespan_id repr rcpsp) in
+      let (repr, best, stats) =
+        try
+          let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
+          let solver = BAB.init repr domain in
+          let (best, stats) = BAB.minimize solver timeout (makespan_id repr rcpsp) in
+          (repr, best, stats)
+        with Bot.Bot_found -> (* Bot.Bot_found can happen at initialization time with `weak_incremental_closure`. *)
+          (Rcpsp_domain.R.empty, None, State.init_global_stats ()) in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
       let measure = Measurement.init stats problem_path in
       let measure = Measurement.update_time bench stats measure in

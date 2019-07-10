@@ -28,13 +28,13 @@ struct
     (* `reactor.(v)` contains the set of constraints that contains the variable `v`. *)
     reactor: (task_id list) Parray.t;
 
-    (* Contains all the constraint that must be propagated in order to reach a fix point.
+    (* Contains all the constraint that must be propagated in order to reach a fixpoint.
        We also have the companion `inside_queue.(i)` that is true if the constraint `i` is inside the queue.
        This field is local to a node, so it is not backtracked nor copied. *)
     scheduler: task_id CCDeque.t;
     inside_queue: CCBV.t;
 
-    (* Cache the events that happened until the function `delta` is called. *)
+    (* Cache the events that happened since the last call to the function `delta`. *)
     delta: CCBV.t;
   }
 
