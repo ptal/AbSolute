@@ -34,6 +34,7 @@ module StatCounter = Map.Make(NameSet)
 
 let compute_one_problem instance_name (instances_set:instances_set) =
   let by_strategy solver_name (strat:strategy) =
+    Printf.printf "%s %s not found %s\n" solver_name strat.name instance_name;
     let instance = Hashtbl.find strat.all instance_name in
     match instance.time with
     | Some _ -> [solver_name ^ "-" ^ strat.name]

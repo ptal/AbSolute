@@ -82,6 +82,9 @@ let solver_output_to_entries (solver: solver_config) output =
   let name = solver.Bench_desc_j.name in
   if name = "choco" then
     choco_solver_output_to_entries lines
+  (* In this case it is unsatisfiable at top-level, which means that Chuffed does not output any stat, not even time. *)
+  else if name = "chuffed" && List.length lines = 2 then
+    clean_up_entries [("solveTime","0.01")] lines
   else
     mzn_solver_output_to_entries lines
 
