@@ -32,42 +32,49 @@ let compute_set (strat1 : strategy) (strat2 : strategy) =
 module NameSet = Set.Make(String)
 module StatCounter = Map.Make(NameSet)
 
-let compute_one_problem instance_name (instances_set:instances_set) =
+let strat_view solver_name strat_name = solver_name ^ "-" ^ strat_name
+let solver_view solver_name _ = solver_name
+
+let compute_one_problem instance_name (instances_set:instances_set) view =
   let by_strategy solver_name (strat:strategy) =
-    Printf.printf "%s %s not found %s\n" solver_name strat.name instance_name;
     let instance = Hashtbl.find strat.all instance_name in
     match instance.time with
-    | Some _ -> [solver_name ^ "-" ^ strat.name]
+    | Some _ -> [view solver_name strat.name]
     | None -> [] in
   let by_solver (solver:solver) =
     List.flatten (List.map (by_strategy solver.name) solver.strategies) in
   let all_strats = List.flatten (List.map by_solver instances_set.solvers) in
   NameSet.of_list all_strats
 
-(* For a specific set of instances, we compute the distribution of the problems among strategies.
-   For example, if inclusions({strat1,strat2}) = 2, it means that strat1 and strat2 are the only strategies that solve these 2 problems. *)
-let compute_inclusions instances_set =
+let compute_inclusions instances_set view =
   let inc_counter name _ counter =
-    let strat_set = compute_one_problem name instances_set in
-    StatCounter.update strat_set (
+    let name_set = compute_one_problem name instances_set view in
+    StatCounter.update name_set (
       fun value -> match value with
         | Some x -> Some (x + 1)
         | None -> Some (1)) counter in
   Hashtbl.fold inc_counter instances_set.optimum StatCounter.empty
 
+(* For a specific set of instances, we compute the distribution of the problems among strategies.
+   For example, if inclusions({strat1,strat2}) = 2, it means that strat1 and strat2 are the only strategies that solve these 2 problems. *)
+let compute_inclusions_per_strat instances_set = compute_inclusions instances_set strat_view
+let compute_inclusions_per_solver instances_set = compute_inclusions instances_set solver_view
+
 let count_strats (instances_set:instances_set) =
   let by_solver acc (solver:solver) = acc + List.length solver.strategies in
   List.fold_left by_solver 0 instances_set.solvers
 
-let print_inclusion_stats problem_name instances_set =
-  let num_strats = count_strats instances_set in
-  let stats = compute_inclusions instances_set in
+let count_solvers (instances_set:instances_set) = List.length instances_set.solvers
+
+let print_inclusion_stats problem_name compute_stats count_names (instances_set:instances_set) =
+  let max_names = count_names instances_set in
+  let stats = compute_stats instances_set in
   let all = StatCounter.bindings stats in
   Printf.printf "\n%s - %s\n" problem_name instances_set.name;
   List.iter (fun (names, count) ->
     if NameSet.is_empty names then
       Printf.printf "none: %d\n" count
-    else if NameSet.cardinal names = num_strats then
+    else if NameSet.cardinal names = max_names then
       Printf.printf "all: %d\n" count
     else
     begin
@@ -77,5 +84,6 @@ let print_inclusion_stats problem_name instances_set =
 
 let print_inclusion_stats_of_database database =
   let by_problem problem =
-    List.iter (print_inclusion_stats problem.name) problem.instances_set in
+    List.iter (print_inclusion_stats problem.name
+      compute_inclusions_per_solver count_solvers) problem.instances_set in
   List.iter by_problem database
