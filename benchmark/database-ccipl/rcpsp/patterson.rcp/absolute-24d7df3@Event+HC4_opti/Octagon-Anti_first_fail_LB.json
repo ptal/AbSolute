@@ -1,0 +1,23 @@
+{
+  "problem_set_path":
+    "/home/LS2N/talbot-p-1/AbSolute/benchmark/data/rcpsp/patterson.rcp/",
+  "timeout": 600,
+  "solver_instance": [
+    "AbSoluteKind",
+    {
+      "version": "24d7df3@Event+HC4_opti",
+      "domain": "Octagon",
+      "strategy": "Anti_first_fail_LB"
+    }
+  ],
+  "csv": {
+    "fields": [
+      "ProblemName",
+      "Nodes",
+      "Solutions",
+      "Fails",
+      [ "Time", "Sec" ],
+      "Optimum"
+    ]
+  }
+}
