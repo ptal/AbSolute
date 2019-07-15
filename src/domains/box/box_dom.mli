@@ -1,13 +1,12 @@
-open Var_store
 open Box_representation
 
 module type Box_sig =
 sig
   type t
-  module I: Vardom_sig.Vardom_sig
-  module R = Box_rep
-  type itv = I.t
-  type bound = I.B.t
+  module Vardom: Vardom_sig.Vardom_sig
+  module R : Box_rep_sig with module Vardom = Vardom
+  type vardom = Vardom.t
+  type bound = Vardom.B.t
 
   (** Creates an empty box. *)
   val empty: t
@@ -16,10 +15,10 @@ sig
   val extend: t -> R.var_kind -> (t * R.var_id)
 
   (** Projection of a variable according to its location in the box. *)
-  val project: t -> R.var_id -> (I.B.t * I.B.t)
+  val project: t -> R.var_id -> (Vardom.B.t * Vardom.B.t)
 
-  (** `project_itv box v` projects the interval of the variable `v`. *)
-  val project_itv: t -> R.var_id -> itv
+  (** `project_vardom box v` projects the interval of the variable `v`. *)
+  val project_vardom: t -> R.var_id -> vardom
 
   (** See `Abstract_domain.lazy_copy`. *)
   val lazy_copy: t -> int -> t list
@@ -60,13 +59,11 @@ sig
   val delta: t -> R.var_id list
 end
 
-module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
+module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module Vardom.B = B
 
 module Make
   (B: Bound_sig.BOUND)
   (VARDOM: Vardom_sig.Vardom_functor)
-  (STORE: Var_store_functor)
-  (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) : Box_sig
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor

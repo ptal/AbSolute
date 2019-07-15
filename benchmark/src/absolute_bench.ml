@@ -106,9 +106,14 @@ struct
     try
       let rcpsp = Rcpsp_model.create_rcpsp (read_rcpsp problem_path) in
       let timeout = timeout_of_bench bench in
-      let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
-      let solver = BAB.init repr domain in
-      let (best, stats) = BAB.minimize solver timeout (makespan_id repr rcpsp) in
+      let (repr, best, stats) =
+        try
+          let repr, domain = Rcpsp_domain.init_rcpsp rcpsp in
+          let solver = BAB.init repr domain in
+          let (best, stats) = BAB.minimize solver timeout (makespan_id repr rcpsp) in
+          (repr, best, stats)
+        with Bot.Bot_found -> (* Bot.Bot_found can happen at initialization time with `weak_incremental_closure`. *)
+          (Rcpsp_domain.R.empty, None, State.init_global_stats ()) in
       let stats = {stats with elapsed=Mtime_clock.count stats.start} in
       let measure = Measurement.init stats problem_path in
       let measure = Measurement.update_time bench stats measure in
@@ -131,8 +136,12 @@ let make_octagon_strategy : string -> (module Octagon_split.Octagon_split_sig) =
 | "MSLF" -> (module Octagon_split.MSLF)
 | "MSLF_all" -> (module Octagon_split.MSLF_all)
 | "MSLF_simple" -> (module Octagon_split.MSLF_simple)
-| "Max_min_LB" -> (module Octagon_split.Min_max_LB)
-| "Min_max_LB" -> (module Octagon_split.Max_min_LB)
+| "Max_min_LB" -> (module Octagon_split.Max_min_LB)
+| "Min_max_LB" -> (module Octagon_split.Min_max_LB)
+| "Max_min_Bisect" -> (module Octagon_split.Max_min_Bisect)
+| "Min_max_Bisect" -> (module Octagon_split.Min_max_Bisect)
+| "Anti_first_fail_LB" -> (module Octagon_split.Anti_first_fail_LB)
+| "Anti_first_fail_Bisect" -> (module Octagon_split.Anti_first_fail_Bisect)
 | s -> eprintf_and_exit ("The AbSolute strategy `" ^ s ^ "` is unknown for Octagon. Please look into `make_octagon_strategy` for a list of the supported strategies.")
 
 let make_box_strategy : string -> (module Box_split.Box_split_sig) = function

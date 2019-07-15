@@ -137,7 +137,9 @@ let _ =
   try
     let (database : database) = read_database "benchmark/database-ccipl/" in
     let (database : database) = process_database database in
-    print_string (to_json_database database)
+    (* print_inclusion_stats_of_database database *)
+    print_database database
+    (* print_string (to_json_database database) *)
   with e ->
   begin
     Printexc.print_backtrace stdout;

@@ -7,13 +7,13 @@ sig
   type t
   type var_kind = unit
   type var_id = Solver.var
-  type rconstraint = (Lit.t Vec.t) list
+  type rconstraint = Lit.lit Vec.t
   val empty: t
   val extend: t -> (Csp.var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bformula -> rconstraint list
-  val relax: t -> bformula -> rconstraint list
+  val rewrite: t -> formula -> rconstraint list
+  val relax: t -> formula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -22,7 +22,7 @@ end
 let eliminate_imply_and_equiv formula =
   let rec aux = function
     | Cmp _ as c -> c
-    | BVar _ as c -> c
+    | FVar _ as c -> c
     | Equiv (f1,f2) ->
         let f1 = aux f1 in
         let f2 = aux f2 in
@@ -40,7 +40,7 @@ let move_not_inwards formula =
     if neg then
       match formula with
       | Cmp (op, e1, e2) -> Cmp (Csp.neg op,e1,e2)
-      | BVar f -> Not (BVar f)
+      | FVar f -> Not (FVar f)
       | And (f1,f2) -> Or (aux true f1, aux true f2)
       | Or (f1,f2) -> And (aux true f1, aux true f2)
       | Not f -> aux false f
@@ -48,7 +48,7 @@ let move_not_inwards formula =
     else
       match formula with
       | Cmp _ as c -> c
-      | BVar _ as c -> c
+      | FVar _ as c -> c
       | And (f1,f2) -> And (aux false f1, aux false f2)
       | Or (f1,f2) -> Or (aux false f1, aux false f2)
       | Not f -> aux true f
@@ -59,7 +59,7 @@ let move_not_inwards formula =
 let distribute_or formula =
   let rec aux = function
     | Cmp _ as c -> c, false
-    | BVar _ as c -> c, false
+    | FVar _ as c -> c, false
     | Or (f1, And (f2, f3)) -> And(Or(f1,f2), Or(f1,f3)), true
     | Or (And(f1,f2), f3) -> aux (Or(f3, And(f1,f2)))
     | And (f1,f2) ->
@@ -90,8 +90,8 @@ let map_clauses f formula =
     match formula with
     | And(f1, f2) -> (aux f1)@(aux f2)
     | Or _
-    | BVar _
-    | Not BVar _ -> [formula]
+    | FVar _
+    | Not FVar _ -> [f formula]
     | _ -> failwith "`map_clauses` assumes the formula is in CNF." in
   aux formula
 
@@ -99,7 +99,7 @@ module Boolean_rep =
 struct
   type var_kind = unit
   type var_id = Solver.var
-  type rconstraint = (Lit.t Vec.t) list
+  type rconstraint = Lit.lit Vec.t
 
   module Env = Tools.VarMap
   module REnv = Mapext.Make(struct
@@ -122,9 +122,9 @@ struct
 
   let rewrite_clause repr clause =
     let rec aux = function
-      | Cmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports boolean variables (`BVar`).")
-      | BVar v -> [Lit.lit (to_abstract_var repr v) false]
-      | Not (BVar v) -> [Lit.lit (to_abstract_var repr v) true]
+      | Cmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports boolean variables (`FVar`).")
+      | FVar v -> [Lit.lit (to_abstract_var repr v) false]
+      | Not (FVar v) -> [Lit.lit (to_abstract_var repr v) true]
       | Or (f1, f2) -> (aux f1)@(aux f2)
       | _ -> failwith "`rewrite_clause` is called on something else than a clause." in
     let clauses = aux clause in

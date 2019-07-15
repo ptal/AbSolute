@@ -365,7 +365,7 @@ module PolyCP = struct
 
   let rec is_representable c =
     match c with
-    | Csp.BVar _ -> Adcp_sig.No
+    | Csp.FVar _ -> Adcp_sig.No
     | Csp.Cmp(_, _, _) as c ->
        if (Csp.is_cons_linear c) then
          Adcp_sig.Yes

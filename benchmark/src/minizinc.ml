@@ -76,12 +76,18 @@ let mzn_solver_output_to_entries lines =
 let choco_solver_output_to_entries lines =
   eprintf_and_exit "Choco solver is not yet supported."
 
+let top_level_error lines =
+  List.exists (fun l -> (String.trim l) = "% Top level failure!") lines
+
 let solver_output_to_entries (solver: solver_config) output =
   let data = file_to_string output in
   let lines = String.split_on_char '\n' data in
   let name = solver.Bench_desc_j.name in
   if name = "choco" then
     choco_solver_output_to_entries lines
+  (* In this case it is unsatisfiable at top-level, which means that Chuffed does not output any stat, not even time. *)
+  else if name = "chuffed" && top_level_error lines then
+    clean_up_entries [("solveTime","0.01")] lines
   else
     mzn_solver_output_to_entries lines
 
@@ -192,13 +198,13 @@ let bench_minizinc bench mzn_instance =
 
 (* Decomposed MiniZinc model: model generated from the Rcpsp_model structure where data is written as constraints.
    This model does not contain global constraint. *)
-let mzn_of_bconstraint c = "constraint " ^ string_of_bconstraint c ^ ";\n"
+let mzn_of_bconstraint c = "constraint " ^ string_of_constraint c ^ ";\n"
 
 let mzn_of_reified (b, conjunction) =
   let (first, tail) = (List.hd conjunction, List.tl conjunction) in
   "constraint " ^ b ^
-  " <-> (" ^ (string_of_bconstraint first) ^
-  (List.fold_left (fun a c -> a ^ " /\\ " ^ (string_of_bconstraint c)) "" tail) ^
+  " <-> (" ^ (string_of_constraint first) ^
+  (List.fold_left (fun a c -> a ^ " /\\ " ^ (string_of_constraint c)) "" tail) ^
   ");\n"
 
 let make_mzn_model model mzn_annot =

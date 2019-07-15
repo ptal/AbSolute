@@ -160,8 +160,8 @@ struct
       let (lb, ub) = Itv_view.dbm_to_itv v (B.to_rat lb, B.to_rat ub) in
       R.sub_up ub lb
 
-  (* This function computes the three first maximal values of the canonical variables. *)
-  let max_of_canonical_box dbm =
+  (* This function computes the three first minimal values of the canonical variables. *)
+  let min_of_canonical_box dbm =
     Fold_intervals_canonical.fold (fun ((min1,min2,min3) as mini) v ->
       let width = size dbm v in
       if R.equal width R.zero then
@@ -211,7 +211,7 @@ struct
     List.fold_left max_of canonical_min rotated_min
 
   let select dbm =
-    let (min1, min2, min3) = max_of_canonical_box dbm in
+    let (min1, min2, min3) = min_of_canonical_box dbm in
     if (snd min1) == null_itv then None
     else
       let min_rotated = min_of_rotated_boxes dbm (min1, min2, min3) in
@@ -384,10 +384,12 @@ module Min_max_LB = Make(Min_max)(Assign_LB)
 module Max_min_LB = Make(Max_min)(Assign_LB)
 module Max_min_UB = Make(Max_min)(Assign_UB)
 module Max_min_Bisect = Make(Max_min)(Bisect_middle)
+module Min_max_Bisect = Make(Min_max)(Bisect_middle)
 module Max_min_Bisect_reverse = Make(Max_min)(Right_to_left(Bisect_middle))
 module Anti_first_fail_LB_canonical = Make(Anti_first_fail(Fold_intervals_canonical))(Assign_LB)
 module Anti_first_fail_UB_canonical = Make(Anti_first_fail(Fold_intervals_canonical))(Assign_UB)
 module Anti_first_fail_LB = Make(Anti_first_fail(Fold_intervals))(Assign_LB)
+module Anti_first_fail_Bisect = Make(Anti_first_fail(Fold_intervals))(Bisect_middle)
 module Anti_first_fail_UB = Make(Anti_first_fail(Fold_intervals))(Assign_UB)
 module MSLF_simple = Make(Min_LB(Fold_intervals_canonical))(Assign_LB)
 module MSLF = Make(Min_LB_AFF_IO(Fold_intervals_canonical))(Assign_LB)

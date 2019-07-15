@@ -91,7 +91,7 @@ module Make(Abs : Adcp_sig.AbstractCP) = struct
          if not res then
            if print then err_constr instance cstr e1' op e2';
          res
-      | BVar v -> if Bound_rat.equal (VarMap.find_fail v instance) Bound_rat.zero then false else true
+      | FVar v -> if Bound_rat.equal (VarMap.find_fail v instance) Bound_rat.zero then false else true
       | Or(c1,c2)  -> aux c1 || aux c2
       | Equiv(c1,c2)  -> (aux c1) = (aux c2)
       | Imply(c1,c2)  -> not (aux c1) || aux c2

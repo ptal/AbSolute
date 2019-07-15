@@ -63,11 +63,13 @@ module Min_max_LB : Octagon_split_sig
 module Max_min_LB : Octagon_split_sig
 module Max_min_UB : Octagon_split_sig
 module Max_min_Bisect : Octagon_split_sig
+module Min_max_Bisect : Octagon_split_sig
 module Max_min_Bisect_reverse : Octagon_split_sig
 module First_fail_LB_canonical : Octagon_split_sig
 module Anti_first_fail_LB_canonical : Octagon_split_sig
 module Anti_first_fail_UB_canonical : Octagon_split_sig
 module Anti_first_fail_LB : Octagon_split_sig
+module Anti_first_fail_Bisect : Octagon_split_sig
 module Anti_first_fail_UB : Octagon_split_sig
 module MSLF_simple : Octagon_split_sig
 module MSLF : Octagon_split_sig

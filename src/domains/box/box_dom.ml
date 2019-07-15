@@ -1,4 +1,3 @@
-open Var_store
 open Box_representation
 open Pengine
 open Kleene
@@ -6,15 +5,15 @@ open Kleene
 module type Box_sig =
 sig
   type t
-  module I: Vardom_sig.Vardom_sig
-  module R = Box_rep
-  type itv = I.t
-  type bound = I.B.t
+  module Vardom : Vardom_sig.Vardom_sig
+  module R : Box_rep_sig with module Vardom = Vardom
+  type vardom = Vardom.t
+  type bound = Vardom.B.t
 
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
-  val project: t -> R.var_id -> (I.B.t * I.B.t)
-  val project_itv: t -> R.var_id -> itv
+  val project: t -> R.var_id -> (Vardom.B.t * Vardom.B.t)
+  val project_vardom: t -> R.var_id -> vardom
   val lazy_copy: t -> int -> t list
   val copy: t -> t
   val closure: t -> t
@@ -27,24 +26,22 @@ sig
   val delta: t -> R.var_id list
 end
 
-module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module I.B = B
+module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module Vardom.B = B
 
 module Make
   (B: Bound_sig.BOUND)
   (VARDOM: Vardom_sig.Vardom_functor)
-  (STORE: Var_store_functor)
-  (CLOSURE: Hc4.Box_closure_sig)
   (SPLIT: Box_split.Box_split_sig) =
 struct
   module Vardom = VARDOM(B)
-  module Store = STORE(Vardom)
-  module Closure = CLOSURE(Store)
-  module Split = SPLIT(Store)
-  module I = Store.I
-  module B = I.B
-  module R = Box_rep
-  type itv = I.t
-  type bound = I.B.t
+  module R = Box_rep(Vardom)
+  module Store = R.Store
+  module Closure = Hc4.Make(R)
+  module Split = SPLIT(R)
+  module V = Vardom
+  module B = V.B
+  type vardom = V.t
+  type bound = V.B.t
 
   (* We use `Parray` for most arrays because the structures must be backtrackable.
      Note that for `constraints` and `reactor` these structures should be static during the resolution.
@@ -75,9 +72,9 @@ struct
     let engine = Pengine.extend_event box.engine in
     ({ box with store; engine }, idx)
 
-  let project_itv box v = Store.get box.store v
+  let project_vardom box v = Store.get box.store v
 
-  let project box v = I.to_range (project_itv box v)
+  let project box v = V.to_range (project_vardom box v)
 
   let lazy_copy box n = List.map (fun s -> { box with store=s }) (Store.lazy_copy box.store n)
   let copy box = { box with store=Store.copy box.store }
@@ -86,8 +83,8 @@ struct
     let range (l,h) =
       if B.equal l h then B.one
       else B.add_up (B.sub_up h l) B.one in
-    let size itv = range (I.to_range itv) in
-    let vol = B.to_float_up (Store.fold (fun acc _ itv -> B.mul_up (size itv) acc) B.one box.store) in
+    let size vardom = range (V.to_range vardom) in
+    let vol = B.to_float_up (Store.fold (fun acc _ vardom -> B.mul_up (size vardom) acc) B.one box.store) in
     if classify_float vol = FP_infinite || classify_float vol = FP_nan then
       infinity
     else
@@ -119,23 +116,28 @@ struct
       let c_idx = Parray.length box.constraints in
       let constraints = Tools.extend_parray box.constraints c in
       let engine = Pengine.extend_task box.engine in
-      let vars = List.sort_uniq compare (Csp.vars_of_bconstraint c) in
+      let vars = List.sort_uniq compare (R.vars_of_constraint c) in
       let engine = Pengine.subscribe engine c_idx vars in
       { box with constraints; engine; }
 
   (* Entailed constraints are automatically deactivated by Pengine.fixpoint. *)
   let state_decomposition box =
-    if Pengine.num_active_tasks box.engine = 0 then
-      True
-    else
-      Unknown
+    if Pengine.num_active_tasks box.engine = 0 then True
+    else Unknown
+
+  let print_store fmt repr store =
+    let print_entry idx vardom =
+      Format.fprintf fmt "%s=%a \n" (R.to_logic_var repr idx) V.print vardom in
+    Store.iter print_entry store
 
   let print repr fmt box =
+  let print_constraint c =
+    let logic_constraint = R.to_logic_constraint repr c in
+    Format.fprintf fmt "%a\n" Csp.print_constraint logic_constraint in
   begin
-    Store.print fmt repr box.store;
+    print_store fmt repr box.store;
     Format.fprintf fmt "\n";
-    let print_var fmt v = Csp.print_var fmt (R.to_logic_var repr v) in
-    Parray.iter (Format.fprintf fmt "%a\n" (Csp.print_gconstraint print_var)) box.constraints;
+    Parray.iter print_constraint box.constraints;
   end
 
   let split box =
@@ -150,4 +152,4 @@ struct
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->
-  Make(B)(Itv.Itv)(Var_store.Make)(Hc4.Make)(SPLIT)
+  Make(B)(Itv.Itv)(SPLIT)

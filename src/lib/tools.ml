@@ -43,14 +43,26 @@ let matrix_print_indent fmt mat =
     Format.fprintf fmt "\n"
   done
 
-(** Rational human understandable printing *)
-let pp_print_rat fmt (m:Bound_rat.t) =
-  let up = Bound_rat.to_float_up m in
-  let down = Bound_rat.to_float_down m in
-  if up = down then
-    Format.pp_print_float fmt up
-  else
-    Bound_rat.pp_print fmt m
+(** Allocation of some of the most used printing utilities *)
+let pp_sep_newline = fun fmt () -> Format.fprintf fmt "\n"
+let pp_sep_semicolon = fun fmt () -> Format.fprintf fmt ";"
+let pp_sep_comma = fun fmt () -> Format.fprintf fmt ","
+let pp_sep_space = fun fmt () -> Format.fprintf fmt " "
+let pp_sep_semicolon_space = fun fmt () -> Format.fprintf fmt "; "
+let pp_sep_comma_space = fun fmt () -> Format.fprintf fmt ", "
+
+
+(** Float printing utility *)
+let pp_print_float fmt (f:float) =
+  let i = int_of_float f in
+  if (float i) = f then Format.pp_print_int fmt i
+  else Format.pp_print_float fmt f
+
+(** Mpqf human understandable printing *)
+let pp_print_mpqf fmt (m:Mpqf.t) =
+  let f = Mpqf.to_float m in
+  if Mpqf.of_float f = m then pp_print_float fmt f
+  else Mpqf.print fmt m
 
 (** debug utility that indents according to the debug level *)
 let debug level fmt =
@@ -112,4 +124,3 @@ let empty_parray () = Parray.init 0 (fun _ -> failwith "unreachable")
 let extend_parray pa a =
   let n = Parray.length pa in
   Parray.init (n+1) (fun i -> if i < n then Parray.get pa i else a)
-

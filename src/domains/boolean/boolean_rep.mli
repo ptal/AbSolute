@@ -5,7 +5,7 @@ sig
   type t
   type var_kind = unit
   type var_id = Libsatml.Solver.var
-  type rconstraint = (Libsatml.Types.Lit.t Libsatml.Vec.t) list
+  type rconstraint = Libsatml.Types.Lit.lit Libsatml.Vec.t
 
   val empty: t
 
@@ -23,3 +23,5 @@ sig
   (** Negate the constraint. *)
   val negate: rconstraint -> rconstraint
 end
+
+module Boolean_rep: Boolean_rep_sig

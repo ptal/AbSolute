@@ -9,7 +9,7 @@ module Make (Abs:Adcp_sig.AbstractCP) = struct
     let open Csp in
     match c with
     | And (b1,b2) -> filter (filter value b2) b1
-    | BVar v -> raise (Csp.Wrong_modelling "unsupported boolean variable `boolean.filter`.")
+    | FVar v -> raise (Csp.Wrong_modelling "unsupported boolean variable `boolean.filter`.")
     | Equiv (b1,b2) -> raise (Csp.Wrong_modelling "unsupported <=> in `boolean.filter`.")
     | Imply (b1,b2) -> raise (Csp.Wrong_modelling "unsupported => in `boolean.filter`.")
     | Or (b1,b2) ->

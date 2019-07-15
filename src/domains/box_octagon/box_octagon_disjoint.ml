@@ -1,12 +1,12 @@
 open Box_dom
 open Octagon
 open Csp
-open Abstract_domain
-open Box_representation
 open Kleene
 
-module type Box_oct_rep_sig = functor (Oct_rep: Representation_sig) ->
+module type Box_oct_rep_sig =
 sig
+  module Box_rep: Box_representation.Box_rep_sig
+  module Oct_rep: Octagon_representation.Octagon_rep_sig
   type t = {
     box_rep: Box_rep.t;
     oct_rep: Oct_rep.t;
@@ -30,8 +30,14 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Box_oct_rep(Oct_rep: Representation_sig) =
+module type Box_oct_rep_functor =
+  functor(Box_rep: Box_representation.Box_rep_sig)(Oct_rep: Octagon_representation.Octagon_rep_sig) -> Box_oct_rep_sig
+  with module Box_rep=Box_rep and module Oct_rep=Oct_rep
+
+module Box_oct_rep(Box_rep: Box_representation.Box_rep_sig)(Oct_rep: Octagon_representation.Octagon_rep_sig) =
 struct
+  module Box_rep=Box_rep
+  module Oct_rep=Oct_rep
   type t = {
     box_rep: Box_rep.t;
     oct_rep: Oct_rep.t;
@@ -84,7 +90,7 @@ struct
       let rewritten_c = Oct_rep.rewrite repr.oct_rep (Cmp (op, e1, e2)) in
       if (List.length rewritten_c)=0 then
         raise (Wrong_modelling ("The abstract domain `Box_octagon_disjoint` expects octagonal reified constraints, but `" ^
-               (string_of_bconstraint c) ^ "` could not be rewritten as an octagonal constraint."))
+               (string_of_constraint c) ^ "` could not be rewritten as an octagonal constraint."))
       else
         all@rewritten_c in
     let constraints = List.fold_left try_rewrite [] conjunction in
@@ -102,7 +108,7 @@ end
 module type Box_octagon_disjoint_sig =
 sig
   module B : Bound_sig.BOUND
-  module R : Representation_sig
+  module R : Box_oct_rep_sig
   type t
   type bound = B.t
   val empty: t
@@ -110,9 +116,6 @@ sig
   val project: t -> R.var_id -> (B.t * B.t)
   val lazy_copy: t -> int -> t list
   val copy: t -> t
-
-  (** This closure filters the box and octagon with regards to the (reified) constraints in `box_oct`.
-      Besides reducing the domain of the variables, the entailed constraints are removed from `box_oct`. *)
   val closure: t -> t
   val weak_incremental_closure: t -> R.rconstraint -> t
   val entailment: t -> R.rconstraint -> Kleene.t
@@ -127,9 +130,10 @@ module Make
   (Octagon: Octagon_sig) =
 struct
   module B = Octagon.B
-  module Box=BOX(B)
+  module Box = BOX(B)
+  module BoxR = Box.R
   type bound = B.t
-  module R = Box_oct_rep(Octagon.R)
+  module R = Box_oct_rep(Box.R)(Octagon.R)
 
   type t = {
     box : Box.t;
@@ -183,12 +187,15 @@ struct
     | Unknown, None ->
         { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
 
+  let constant_one = BoxR.(make_expr (BCst (Vardom.create Vardom.ONE)))
+  let constant_zero = BoxR.(make_expr (BCst (Vardom.create Vardom.ZERO)))
+
   (* Propagate the reified constraints.
      Entailed reified constraints are removed from `box_oct`. *)
   let propagate_reified_octagonal box_oct (b, conjunction) =
-    let itv = Box.project_itv box_oct.box b in
-    if Box.I.is_singleton itv then
-      let (value,_) = Box.I.to_range itv in
+    let vardom = Box.project_vardom box_oct.box b in
+    if Box.Vardom.is_singleton vardom then
+      let (value,_) = Box.Vardom.to_range vardom in
       if B.equal B.one value then
         { box_oct with octagon=List.fold_left Octagon.weak_incremental_closure box_oct.octagon conjunction }
       else if B.equal B.zero value then
@@ -197,9 +204,9 @@ struct
     else
       match fst (entailment_of_reified box_oct conjunction) with
       | False ->
-       { box_oct with box=(Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_zero)) }
+       { box_oct with box=(Box.weak_incremental_closure box_oct.box (BoxR.(make_expr (BVar b)), EQ, constant_zero)) }
       | True ->
-       { box_oct with box=(Box.weak_incremental_closure box_oct.box (Var b, EQ, constant_one)) }
+       { box_oct with box=(Box.weak_incremental_closure box_oct.box (BoxR.(make_expr (BVar b)), EQ, constant_one)) }
       | Unknown -> { box_oct with reified_octagonal=(b, conjunction)::box_oct.reified_octagonal }
 
   (** Filter all the reified octagonal constraints.
