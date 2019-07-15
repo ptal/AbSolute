@@ -85,5 +85,5 @@ let print_inclusion_stats problem_name compute_stats count_names (instances_set:
 let print_inclusion_stats_of_database database =
   let by_problem problem =
     List.iter (print_inclusion_stats problem.name
-      compute_inclusions_per_solver count_solvers) problem.instances_set in
+      compute_inclusions_per_strat count_strats) problem.instances_set in
   List.iter by_problem database
