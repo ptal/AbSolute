@@ -1,14 +1,15 @@
-open Satml
+open Libsatml
+open Solver
+open Boolean_rep
+open Abstract_domain
+open Kleene
 
 module type Boolean_sat_sig =
 sig
   type t
 
   module R = Boolean_rep
-
-  (** Boolean are representable on integers.
-      NOTE: We use `Bound_int` instead of introducing a new `Bound_bool`. *)
-  module B = Bound_int
+  module B = Bound_int
 
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
@@ -26,62 +27,74 @@ end
 
 module Boolean_sat =
 struct
-  (* Unfortunately, minisatml relies on a global variable.
+  (* Unfortunately, minisatml relies on global variables.
      We should update it later. *)
   type t = {
     (* The depth is necessary to backtrack the state of minisat, it corresponds to the decision level. *)
     depth: int;
+    (* A decision from `split` that is propagated in `closure`.
+       It is set to `Solver.dummy_lit` if it has already been propagated. *)
+    decision: Types.Lit.t;
   }
 
   module R = Boolean_rep
+  module B = Bound_int
 
-  (** Boolean are representable on integers.
-      NOTE: We use `Bound_int` instead of introducing a new `Bound_bool`. *)
-  module B = Bound_int
-
-  let empty = { depth=0 }
+  let empty = { depth=0; decision=dummy_lit }
 
   (* Minisatml does not use functional structure for automatic backtracking, so we trigger the backtracking manually.
      For safety, we guard all public functions of this module with `backtrack_state`.
      It avoids creating a new function such as `backtrack` only for this abstract domain.
      If later, we notice that such a function is useful for other domain, we might add it to `Abstract_domain`. *)
   let backtrack_state b =
-    if Solver.decisionLevel () <> b.depth then
-      Solver.cancelUntil b.depth
+    if decisionLevel () <> b.depth then
+      cancelUntil b.depth
 
   let extend b () =
     backtrack_state b;
-    (b, Solver.newVar ())
+    (b, newVar ())
 
   let project b v =
     backtrack_state b;
-    match Solver.value v with
+    let open Types.Lbool in
+    match value v with
     | LTrue -> (B.one, B.one)
     | LFalse -> (B.zero, B.zero)
     | LUndef -> (B.zero, B.one)
 
   let lazy_copy b n =
     backtrack_state b;
-    Solver.newDecisionLevel ();
-    let b = {depth=Solver.decisionLevel ()} in
+    newDecisionLevel ();
+    let b = {b with depth=decisionLevel ()} in
     List.init n (fun _ -> b)
 
   let copy b = failwith "`copy` is not supported on `Boolean_sat`."
 
   (* The learnt clause are stored in the watched literals array.
      Actually, there is no explicit "learnt clause database". *)
-  let learn_clause clause =
-    let clause = Clause.clause_new (Vec.get_data clause) (Vec.size clause) ~learnt:true in
+  let learn_clause learnt_clause =
+    let clause = Types.Clause.clause_new
+      (Vec.get_data learnt_clause)
+      (Vec.size learnt_clause) ~learnt:true in
     attachClause clause;
-    uncheckedEnqueue_clause (Vec.get clause 0) clause;
+    uncheckedEnqueue_clause (Vec.get learnt_clause 0) clause;
     varDecayActivity ()
 
-  (* This closure extracts the propagation and conflict resolution parts from `Solver.search` in minisatml. *)
+  let propagate_decision b =
+    if b.decision <> dummy_lit then begin
+      uncheckedEnqueue b.decision;
+      { b with decision=dummy_lit } end
+    else
+      b
+
+  (* This closure extracts the propagation and conflict resolution parts from `search` in minisatml. *)
   let closure b =
     backtrack_state b;
-    let conflict_clause = ref (Solver.propagate ()) in
+    let b = propagate_decision b in
+    let conflict_clause = ref (propagate ()) in
     (* In case of a conflict, we compute the backjump point and register the learnt clause. *)
-    if !conflict_clause <> Solver.dummy_clause then
+    if !conflict_clause <> dummy_clause then
+    begin
       if decisionLevel () = 0 then raise Bot.Bot_found;
       let learnt_clause = Vec.init 0 dummy_lit in
       let backtrack_level = ref 0 in
@@ -89,60 +102,51 @@ struct
       learn_clause learnt_clause;
       raise (Conflict !backtrack_level)
     end
-    else begin
-      (* No Conflict *)
-      let next = ref dummy_lit in
-      begin
-        try
-          while decisionLevel() < Vec.size env.assumptions do
-            (* Perform user provided assumption. *)
-            let p = Vec.get env.assumptions (decisionLevel ()) in
-            if value p = Lbool.LTrue then
-              (* Dummy decision level: *)
-              newDecisionLevel ()
-            else if value p = Lbool.LFalse then begin
-              analyzeFinal (Lit.tild p) env.conflict;
-              raise (Search Lbool.LFalse)
-            end else begin
-              next := p;
-              raise Break
-            end
-          done
-        with Break -> ()
-        end;
-        if !next = dummy_lit then begin
-          (* New variable decision: *)
-          env.decisions <- env.decisions + 1;
-          next := pickBranchLit env.polarity_mode env.random_var_freq;
-          if !next = dummy_lit then
-            (* Model found *)
-            raise (Search Lbool.LTrue)
-      end;
-      (* Increase decision level and enqueue next *)
-      assert (value !next = Lbool.LUndef);
-      newDecisionLevel ();
+    else b
 
-      uncheckedEnqueue !next;
-    end
-  done;
-  Lbool.LUndef
-with Search b -> b
-
-  let weak_incremental_closure = : t -> R.rconstraint -> t
+  let weak_incremental_closure b c =
     backtrack_state b;
+    if addClause c then b
+    else raise Bot.Bot_found
 
-  let entailment = : t -> R.rconstraint -> Kleene.t
+  exception Satisfiable
+  let entailment b c =
     backtrack_state b;
+    let undef = ref false in
+    try
+      Vec.iter (fun l ->
+        let open Types.Lbool in
+        match value l with
+        | LTrue -> raise Satisfiable
+        | LFalse -> ()
+        | LUndef -> undef := true) c;
+      if !undef then Unknown else False
+    with Satisfiable -> True
 
-  let split = : t -> t list
+  let split b =
     backtrack_state b;
+    (* New variable decision: *)
+    let next = splitOnLit () in
+    if next = dummy_lit then []
+    else
+      let branches = lazy_copy b 2 in
+      List.map2 (fun b d -> { b with decision=d })
+        branches [next; Types.Lit.tild next]
 
-  let volume = : t -> float
+  let volume b =
     backtrack_state b;
+    if not (okay ()) then 0.
+    else
+      let unassigned = nVars () - nAssigns () in
+      if unassigned = 0 then 1.
+      else (float_of_int unassigned) *. 2.
 
-  let state_decomposition = : t -> Kleene.t
+  let state_decomposition b =
     backtrack_state b;
+    if nAssigns () = nVars() then True
+    else Unknown
 
-  let print = : R.t -> Format.formatter -> t -> unit
+  let print _repr _fmt b =
     backtrack_state b;
+    ()
 end

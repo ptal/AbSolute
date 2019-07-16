@@ -134,11 +134,11 @@ struct
   let print_constraint c =
     let logic_constraint = R.to_logic_constraint repr c in
     Format.fprintf fmt "%a\n" Csp.print_constraint logic_constraint in
-  begin
-    print_store fmt repr box.store;
-    Format.fprintf fmt "\n";
-    Parray.iter print_constraint box.constraints;
-  end
+    begin
+      print_store fmt repr box.store;
+      Format.fprintf fmt "\n";
+      Parray.iter print_constraint box.constraints;
+    end
 
   let split box =
     let branches = Split.split box.store in
@@ -151,5 +151,5 @@ struct
   let delta box = Pengine.delta box.engine
 end
 
-module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor = functor (B: Bound_sig.BOUND) ->
-  Make(B)(Itv.Itv)(SPLIT)
+module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor =
+  functor (B: Bound_sig.BOUND) -> Make(B)(Itv.Itv)(SPLIT)

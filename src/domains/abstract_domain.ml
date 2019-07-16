@@ -38,6 +38,10 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
+(** Exception raised whenever a failure is encountered.
+    In addition to `Bot.Bot_found`, `Conflict n` forces the backtrack in the search tree to the level `n`. *)
+exception Conflict of int
+
 module type Abstract_domain =
 sig
   (** The module of the bound handled by this abstract domain. *)

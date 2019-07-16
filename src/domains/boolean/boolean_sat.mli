@@ -1,3 +1,8 @@
+(** This module encapsulates a CDCL SAT solver based on MiniSat, and implemented by Albin Coquereau in OCaml in a library called SatML.
+    WARNING: only one instance of this module can be used at once, this is because SatML relies on global variables. *)
+
+open Boolean_rep
+
 module type Boolean_sat_sig =
 sig
   type t
@@ -6,7 +11,7 @@ sig
 
   (** Boolean are representable on integers.
       NOTE: We use `Bound_int` instead of introducing a new `Bound_bool`. *)
-  module B = Bound_int
+  module B = Bound_int
 
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)
