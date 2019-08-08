@@ -2,135 +2,11 @@ open Apron
 open Csp
 open Apron_utils
 
-module type ADomain = sig
-  type t
-  val get_manager: t Manager.t
-end
-
-(* Translation functor for syntax.prog to apron values*)
-module SyntaxTranslator (D:ADomain) = struct
-  let man = D.get_manager
-
-  let top_itv = Coeff.i_of_scalar (Scalar.of_infty (-1)) (Scalar.of_infty 1)
-
-  let rec expr_to_apron a (e:expr) : Texpr1.expr =
-    let env = Abstract1.env a in
-    match e with
-    | Funcall (name,args) ->
-       (match name,args with
-        | "sqrt",[x] ->
-           let e1 = expr_to_apron a x in
-           Texpr1.Unop (Texpr1.Sqrt, e1, Texpr1.Real, Texpr1.Near)
-        (* for function not supported by apron, we return an approximation *)
-        | "cos",[_] | "sin",[_] -> Texpr1.Cst (Coeff.i_of_int (-1) 1)
-        | _ -> Texpr1.Cst top_itv
-       )
-    | Var v ->
-      let var = Var.of_string v in
-      if not (Environment.mem_var env var)
-      then failwith ("variable not found: "^v);
-      Texpr1.Var var
-    | Cst (c,_) -> Texpr1.Cst (Coeff.s_of_mpqf (Bound_rat.to_mpqf c))
-    | Unary (o,e1) ->
-      let r = match o with
-        | NEG  -> Texpr1.Neg
-      in
-      let e1 = expr_to_apron a e1 in
-      Texpr1.Unop (r, e1, Texpr1.Real, Texpr1.Near)
-    | Binary (o,e1,e2) ->
-       let r = match o with
-         | ADD -> Texpr1.Add
-         | SUB -> Texpr1.Sub
-         | DIV -> Texpr1.Div
-         | MUL -> Texpr1.Mul
-         | POW -> Texpr1.Pow
-       in
-       let e1 = expr_to_apron a e1
-       and e2 = expr_to_apron a e2 in
-       Texpr1.Binop (r, e1, e2, Texpr1.Real, Texpr1.Near)
-
-  let cmp_expr_to_tcons b env =
-    let cmp_to_apron (e1,op,e2) =
-      match op with
-      | EQ  -> e1, e2, Tcons1.EQ
-      | NEQ -> e1, e2, Tcons1.DISEQ
-      | GEQ -> e1, e2, Tcons1.SUPEQ
-      | GT  -> e1, e2, Tcons1.SUP
-      | LEQ -> e2, e1, Tcons1.SUPEQ
-      | LT  -> e2, e1, Tcons1.SUP
-    in
-    let e1,e2,op = cmp_to_apron b in
-    let e = Binary (SUB, e1, e2) in
-    let a = Abstract1.top man env in
-    let e = Texpr1.of_expr env (expr_to_apron a e) in
-    let res = Tcons1.make e op in
-    res
-
-  let apron_to_var abs =
-    let env = Abstract1.env abs in
-    let (iv, rv) = Environment.vars env in
-    let ivars = Array.map (fun v -> Var.to_string v) iv in
-    let rvars = Array.map (fun v -> Var.to_string v) rv in
-    (Array.to_list ivars, Array.to_list rvars)
-
-  let rec apron_to_expr texpr env =
-    match texpr with
-    | Texpr1.Cst c -> Cst (Bound_rat.of_mpqf (coeff_to_mpqf c), Real)
-    | Texpr1.Var v ->
-      let e = match (Environment.typ_of_var env v) with
-              | Environment.INT -> Var ((Var.to_string v)^"%")
-              | Environment.REAL -> Var (Var.to_string v)
-      in e
-    | Texpr1.Unop (Texpr1.Sqrt, e, _, _) ->
-       let e = apron_to_expr e env in
-       Funcall ("sqrt",[e])
-    | Texpr1.Unop (Texpr1.Neg, e, _, _) ->
-      let e = apron_to_expr e env in
-      Unary (NEG, e)
-    | Texpr1.Unop (Texpr1.Cast, _, _, _) -> failwith "cast should not occur"
-    | Texpr1.Binop (op, e1, e2, _, _) ->
-      let o = match op with
-        | Texpr1.Add -> ADD
-        | Texpr1.Sub -> SUB
-        | Texpr1.Mul -> MUL
-        | Texpr1.Div -> DIV
-        | Texpr1.Mod -> failwith "Mod not yet supported with AbSolute"
-        | _ -> failwith "operation not yet supported with AbSolute"
-      in
-      let e1 = apron_to_expr e1 env
-      and e2 = apron_to_expr e2 env in
-      Binary (o, e1, e2)
-
-  let apron_to_bexpr tcons env =
-    let apron_to_cmp op =
-      match op with
-      | Tcons1.EQ  -> EQ
-      | Tcons1.DISEQ -> NEQ
-      | Tcons1.SUPEQ -> GEQ
-      | Tcons1.SUP -> GT
-      | _ -> failwith "operation not yet supported with AbSolute"
-    in
-    let typ = apron_to_cmp (Tcons1.get_typ tcons) in
-    let exp = apron_to_expr (Texpr1.to_expr (Tcons1.get_texpr1 tcons)) env in
-    (exp, typ, zero)
-
-  let apron_to_bexpr abs =
-    let abscons = Abstract1.to_tcons_array man abs in
-    let earray = abscons.Tcons1.tcons0_array in
-    let tenv = abscons.Tcons1.array_env in
-    Array.map (fun t ->
-        apron_to_bexpr (Tcons1.{tcons0 = t; env = tenv}) tenv
-      ) earray
-    |> Array.to_list
-
-end
-
-
 (*****************************************************************)
 (* Some types and values that all the domains of apron can share *)
 (* These are generic and can be redefined in the actuals domains *)
 (*****************************************************************)
-module MAKE(AP:ADomain) = struct
+module MAKE(AP:Apron_representation.ADomain) = struct
 
   module A = Abstractext
 
@@ -138,9 +14,7 @@ module MAKE(AP:ADomain) = struct
 
   let man = AP.get_manager
 
-  module T = SyntaxTranslator(AP)
-
-  let to_bexpr = T.apron_to_bexpr
+  module R = Apron_representation.MAKE(AP)
 
   let empty = A.top man (Environment.make [||] [||])
 

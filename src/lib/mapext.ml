@@ -1,4 +1,4 @@
-(*  
+(*
   This file is derived from the map.ml file from the OCaml distribution.
   Changes are marked with the [AM] symbol.
   Based on rev. 10468 2010-05-25 13:29:43Z
@@ -377,7 +377,7 @@ module Make(Ord: OrderedType) = (struct
       Empty -> Empty,None,Empty
     | Node (l1,k1,d1,r1,h1) ->
         let c = Ord.compare k k1 in
-        if c < 0 then 
+        if c < 0 then
           let l2,d2,r2 = cut k l1 in (l2,d2,Node (r2,k1,d1,r1,h1))
         else if c > 0 then
           let l2,d2,r2 = cut k r1 in (Node (l1,k1,d1,l2,h1),d2,r2)
@@ -392,46 +392,46 @@ module Make(Ord: OrderedType) = (struct
       match m1 with
       | Empty -> if m2 = Empty then Empty else invalid_arg "Mapext.map2"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
+          match cut k m2 with
           | l2, Some d2, r2 ->
               Node (map2 f l1 l2, k, f k d1 d2, map2 f r1 r2, h1)
           | _, None, _ -> invalid_arg "Mapext.map2"
-            
+
     let rec iter2 f m1 m2 =
       match m1 with
       | Empty -> if m2 = Empty then () else invalid_arg "Mapext.iter2"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
+          match cut k m2 with
           | l2, Some d2, r2 -> iter2 f l1 l2; f k d1 d2; iter2 f r1 r2
           | _, None, _ -> invalid_arg "Mapext.iter2"
-            
+
     let rec fold2 f m1 m2 acc =
       match m1 with
       | Empty -> if m2 = Empty then acc else invalid_arg "Mapext.fold2"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
               fold2 f r1 r2 (f k d1 d2 (fold2 f l1 l2 acc))
           | _, None, _ -> invalid_arg "Mapext.fold2"
-            
+
     let rec for_all2 f m1 m2 =
       match m1 with
       | Empty -> if m2 = Empty then true else invalid_arg "Mapext.for_all2"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
               for_all2 f l1 l2 && f k d1 d2 && for_all2 f r1 r2
           | _, None, _ -> invalid_arg "Mapext.for_all2"
-            
+
     let rec exists2 f m1 m2 =
       match m1 with
       | Empty -> if m2 = Empty then false else invalid_arg "Mapext.exists2"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
               exists2 f l1 l2 || f k d1 d2 || exists2 f r1 r2
           | _, None, _ -> invalid_arg "Mapext.exists2"
-            
+
 
     (* as above, but ignore physically equal subtrees
        - for map, assumes: f k d d = d
@@ -446,59 +446,59 @@ module Make(Ord: OrderedType) = (struct
       match m1 with
       | Empty -> if m2 = Empty then Empty else invalid_arg "Mapext.map2z"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
+          match cut k m2 with
           | l2, Some d2, r2 ->
               let d = if d1 == d2 then d1 else f k d1 d2 in
               Node (map2z f l1 l2, k, d, map2z f r1 r2, h1)
           | _, None, _ -> invalid_arg "Mapext.map2z"
-            
+
     let rec iter2z f m1 m2 =
       if m1 == m2 then () else
       match m1 with
       | Empty -> if m2 = Empty then () else invalid_arg "Mapext.iter2z"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
               iter2z f l1 l2; (if d1 != d2 then f k d1 d2); iter2z f r1 r2
           | _, None, _ -> invalid_arg "Mapext.iter2z"
-            
+
     let rec fold2z f m1 m2 acc =
       if m1 == m2 then acc else
       match m1 with
       | Empty -> if m2 = Empty then acc else invalid_arg "Mapext.fold2z"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
               let acc = fold2z f l1 l2 acc in
               let acc = if d1 == d2 then acc else f k d1 d2 acc in
               fold2z f r1 r2 acc
           | _, None, _ -> invalid_arg "Mapext.fold2z"
-            
+
     let rec for_all2z f m1 m2 =
       (m1 == m2) ||
       (match m1 with
       | Empty -> if m2 = Empty then true else invalid_arg "Mapext.for_all2z"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
-              (for_all2z f l1 l2) && 
-              (d1 == d2 || f k d1 d2) && 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
+              (for_all2z f l1 l2) &&
+              (d1 == d2 || f k d1 d2) &&
               (for_all2z f r1 r2)
           | _, None, _ -> invalid_arg "Mapext.for_all2z"
-      )     
-            
+      )
+
     let rec exists2z f m1 m2 =
       (m1 != m2) &&
       (match m1 with
       | Empty -> if m2 = Empty then false else invalid_arg "Mapext.exists2z"
       | Node (l1,k,d1,r1,h1) ->
-          match cut k m2 with 
-          | l2, Some d2, r2 -> 
+          match cut k m2 with
+          | l2, Some d2, r2 ->
               (exists2z f l1 l2) ||
               (d1 != d2 && f k d1 d2) ||
               (exists2z f r1 r2)
           | _, None, _ -> invalid_arg "Mapext.exists2z"
-      )     
+      )
 
 
     (* as above, but allow maps with different keys *)
@@ -512,7 +512,7 @@ module Make(Ord: OrderedType) = (struct
           let d = match d2 with None -> f1 k d1 | Some d2 -> f k d1 d2 in
           let r = map2o f1 f2 f r1 r2 in
           join l k d r
-            
+
     let rec iter2o f1 f2 f m1 m2 =
       match m1 with
       | Empty -> iter f2 m2
@@ -521,21 +521,21 @@ module Make(Ord: OrderedType) = (struct
           iter2o f1 f2 f l1 l2;
           (match d2 with None -> f1 k d1 | Some d2 -> f k d1 d2);
           iter2o f1 f2 f r1 r2
-            
+
     let rec fold2o f1 f2 f m1 m2 acc =
       match m1 with
       | Empty -> fold f2 m2 acc
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           let acc = fold2o f1 f2 f l1 l2 acc in
-          let acc = match d2 with 
+          let acc = match d2 with
           | None -> f1 k d1 acc | Some d2 -> f k d1 d2 acc
           in
           fold2o f1 f2 f r1 r2 acc
-            
+
     let rec for_all2o f1 f2 f m1 m2 =
       match m1 with
-      | Empty -> for_all f2 m2 
+      | Empty -> for_all f2 m2
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           (for_all2o f1 f2 f l1 l2) &&
@@ -544,7 +544,7 @@ module Make(Ord: OrderedType) = (struct
 
     let rec exists2o f1 f2 f m1 m2 =
       match m1 with
-      | Empty -> exists f2 m2 
+      | Empty -> exists f2 m2
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           (exists2o f1 f2 f l1 l2) ||
@@ -561,13 +561,13 @@ module Make(Ord: OrderedType) = (struct
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           let l = map2zo f1 f2 f l1 l2 in
-          let d = match d2 with 
-          | None -> f1 k d1 
-          | Some d2 -> if d1 == d2 then d1 else f k d1 d2 
+          let d = match d2 with
+          | None -> f1 k d1
+          | Some d2 -> if d1 == d2 then d1 else f k d1 d2
           in
           let r = map2zo f1 f2 f r1 r2 in
           join l k d r
-            
+
     let rec iter2zo f1 f2 f m1 m2 =
       if m1 == m2 then () else
       match m1 with
@@ -575,11 +575,11 @@ module Make(Ord: OrderedType) = (struct
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           iter2zo f1 f2 f l1 l2;
-          (match d2 with 
-          | None -> f1 k d1 
+          (match d2 with
+          | None -> f1 k d1
           | Some d2 -> if d1 != d2 then f k d1 d2);
           iter2zo f1 f2 f r1 r2
-            
+
     let rec fold2zo f1 f2 f m1 m2 acc =
       if m1 == m2 then acc else
       match m1 with
@@ -587,16 +587,16 @@ module Make(Ord: OrderedType) = (struct
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           let acc = fold2zo f1 f2 f l1 l2 acc in
-          let acc = match d2 with 
-          | None -> f1 k d1 acc 
+          let acc = match d2 with
+          | None -> f1 k d1 acc
           | Some d2 -> if d1 == d2 then acc else f k d1 d2 acc
           in
           fold2zo f1 f2 f r1 r2 acc
-            
+
     let rec for_all2zo f1 f2 f m1 m2 =
       (m1 == m2) ||
       (match m1 with
-      | Empty -> for_all f2 m2 
+      | Empty -> for_all f2 m2
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           (for_all2zo f1 f2 f l1 l2) &&
@@ -607,7 +607,7 @@ module Make(Ord: OrderedType) = (struct
     let rec exists2zo f1 f2 f m1 m2 =
       (m1 != m2) &&
       (match m1 with
-      | Empty -> exists f2 m2 
+      | Empty -> exists f2 m2
       | Node (l1,k,d1,r1,h1) ->
           let l2, d2, r2 = cut k m2 in
           (exists2zo f1 f2 f l1 l2) ||
@@ -668,7 +668,7 @@ module Make(Ord: OrderedType) = (struct
     (* key set comparison *)
 
     let rec key_equal m1 m2 =
-      (m1 == m2) || 
+      (m1 == m2) ||
       (match m1 with
       | Empty -> m2 = Empty
       | Node (l1, k, _, r1, _) ->
@@ -678,7 +678,7 @@ module Make(Ord: OrderedType) = (struct
       )
 
     let rec key_subset m1 m2 =
-      (m1 == m2) || 
+      (m1 == m2) ||
       (match m1 with
       | Empty -> true
       | Node (l1, k, _, r1, _) ->
@@ -699,7 +699,7 @@ module Make(Ord: OrderedType) = (struct
           if c > 0 then aux r found else
           aux l (Some (kk, d))
       in
-      aux m None 
+      aux m None
 
     let find_greater k m =
       let rec aux m found = match m with
@@ -709,7 +709,7 @@ module Make(Ord: OrderedType) = (struct
           if c >= 0 then aux r found else
           aux l (Some (kk, d))
       in
-      aux m None 
+      aux m None
 
     let find_less_equal k m =
       let rec aux m found = match m with
@@ -720,7 +720,7 @@ module Make(Ord: OrderedType) = (struct
           if c < 0 then aux l found else
           aux r (Some (kk, d))
       in
-      aux m None 
+      aux m None
 
     let find_less k m =
       let rec aux m found = match m with
@@ -730,7 +730,7 @@ module Make(Ord: OrderedType) = (struct
           if c <= 0 then aux l found else
           aux r (Some (kk, d))
       in
-      aux m None 
+      aux m None
 
 
 end: S with type key = Ord.t)
