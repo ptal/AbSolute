@@ -113,7 +113,8 @@ module Make (Coeff : P.Ring) = struct
         = M.fold
 
     (**
-     * [norm sqrt vec] computes the L2 norm of the vector, using the given square root function [sqrt].
+     * [norm sqrt vec] computes the L2 norm of the vector,
+     * using the given square root function [sqrt].
      *)
     let norm : (Coeff.t -> Coeff.t) -> t -> Coeff.t
         = fun sqrt vec ->

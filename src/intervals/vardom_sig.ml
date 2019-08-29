@@ -1,7 +1,7 @@
 (** Generic signature for intervals. The interface is functional.*)
 
 open Bot
-   
+
 
 module type Vardom_sig = sig
 
@@ -21,7 +21,7 @@ module type Vardom_sig = sig
                   | COMPLETE of int (* complete BDD *)
   type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
   type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
-                                              
+
 
   (************************************************************************)
   (** {1 CONSTRUCTORS AND CONSTANTS} *)
@@ -29,7 +29,7 @@ module type Vardom_sig = sig
 
   (** default value for unconstrained variables *)
   (* Old stuff, now we use the function create
-val top_int: t
+  val top_int: t
   val top_real: t
   val top: t
 
@@ -43,7 +43,7 @@ val top_int: t
   val of_float: float -> t
 
   val zero: t
-  val one: t *) 
+  val one: t *)
 
   val create: var_kind -> t
 
@@ -164,7 +164,7 @@ val top_int: t
   val filter_fun: string -> t list -> t -> (t list) bot
 
   (** Only filters the first argument *)
-    (* Old stuff 
+    (* Old stuff
   val filter_add_f: t -> t -> t -> t bot
   val filter_sub_f: t -> t -> t -> t bot
   val filter_mul_f: t -> t -> t -> t bot

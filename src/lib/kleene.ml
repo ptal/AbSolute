@@ -21,6 +21,10 @@ let not_kleene = function
   | False -> True
   | Unknown -> Unknown
 
+let of_bool = function
+  | true -> True
+  | false -> False
+
 (* TODO: move from this module (to box-reified?)
    `conjunction` is the result of the entailment of a conjunction in a
    reified context.  It returns the entailment status of the

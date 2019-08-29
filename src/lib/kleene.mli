@@ -7,4 +7,5 @@ type t = False | True | Unknown
 val and_kleene : t -> t -> t
 val or_kleene  : t -> t -> t
 val not_kleene : t -> t
+val of_bool    : bool -> t
 val and_reified : t list -> t * int option
