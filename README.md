@@ -34,10 +34,10 @@ constraints{
 This model is saved into a file that can be fed into the AbSolute solver. You can checkout our Emacs mode for a more convenient use<sup id="a1">[1](#emacs)</sup>.
 We also have nice graphics showing how the problem was solved:
 
-<img src="https://github.com/mpelleau/AbSolute/blob/master/imgs/t2.png" width="400" height="400">
+<img src="https://github.com/ptal/AbSolute/blob/master/doc/images/t2.png" width="400" height="400">
 
-You can see other examples of problems in the [problems](https://github.com/mpelleau/AbSolute/tree/master/problems) directory.
-Please also consult our [documentation](https://github.com/mpelleau/AbSolute/blob/master/documentation.pdf) for more information.
+You can see other examples of problems in the [problems](https://github.com/ptal/AbSolute/tree/master/problems) directory.
+Please also consult our [documentation](https://github.com/ptal/AbSolute/blob/master/doc/documentation.pdf) for more information.
 
 ## Getting Started
 
