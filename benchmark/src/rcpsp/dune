@@ -1,5 +1,0 @@
-(library
- (name rcpsp)
- (modules :standard)
- (libraries libabsolute)
-)
