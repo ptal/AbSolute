@@ -1,7 +1,10 @@
-open Csp
-open Bot
+open Lang.Ast
+open Core
+open Core.Bot
+open Core.Kleene
+open Vardom.Vardom_sig
+open Lang.Rewritting
 open Box_representation
-open Kleene
 
 module type Box_closure_sig = functor (R: Box_rep_sig) ->
 sig
@@ -45,24 +48,24 @@ struct
       begin
         eval store e1;
         match o with
-        | NEG -> expr.value <- V.unop V.NEG (expr_val e1)
+        | NEG -> expr.value <- V.unop NEG (expr_val e1)
       end
-    | BBinary (o,e1,e2) ->
+    | BBinary (e1,o,e2) ->
       begin
         eval store e1;
         eval store e2;
         let v1 = expr_val e1 and v2 = expr_val e2 in
         let v = match o with
-        | ADD -> V.binop V.ADD v1 v2
-        | SUB -> V.binop V.SUB v1 v2
+        | ADD -> V.binop ADD v1 v2
+        | SUB -> V.binop SUB v1 v2
         | DIV -> debot (V.div v1 v2)
         | MUL ->
-          let r = V.binop V.MUL v1 v2 in
+          let r = V.binop MUL v1 v2 in
           if V.equal v1 v2 then
             (* special case: squares are positive *)
-            V.unop V.ABS r
+            V.unop ABS r
           else r
-        | POW -> V.binop V.POW v1 v2 in
+        | POW -> V.binop POW v1 v2 in
         expr.value <- v
       end
 
@@ -92,19 +95,19 @@ struct
 
   (* u + v = r => u = r - v /\ v = r - u *)
   let refine_add u v r =
-    refine_bop (V.filter_binop_f V.ADD) (V.filter_binop_f V.ADD) u v r true
+    refine_bop (V.filter_binop_f ADD) (V.filter_binop_f ADD) u v r true
 
   (* u - v = r => u = r + v /\ v = u - r *)
   let refine_sub u v r =
-    refine_bop (V.filter_binop_f V.SUB) (V.filter_binop_f V.ADD) u v r false
+    refine_bop (V.filter_binop_f SUB) (V.filter_binop_f ADD) u v r false
 
   (* u * v = r => (u = r/v \/ v=r=0) /\ (v = r/u \/ u=r=0) *)
   let refine_mul u v r =
-    refine_bop (V.filter_binop_f V.MUL) (V.filter_binop_f V.MUL) u v r true
+    refine_bop (V.filter_binop_f MUL) (V.filter_binop_f MUL) u v r true
 
   (* u / v = r => u = r * v /\ (v = u/r \/ u=r=0) *)
   let refine_div u v r =
-    refine_bop V.filter_div_f (V.filter_binop_f V.MUL) u v r false
+    refine_bop V.filter_div_f (V.filter_binop_f MUL) u v r false
 
   let rec refine store root expr =
     let open R in
@@ -116,15 +119,15 @@ struct
     | BCst i -> ignore (debot (V.meet root i)); store
     | BUnary (op,e) ->
        let j = match op with
-         | NEG -> V.filter_unop V.NEG e.value root
+         | NEG -> V.filter_unop NEG e.value root
        in refine store (debot j) e.node
-    | BBinary (o,e1,e2) ->
+    | BBinary (e1,o,e2) ->
        let j = match o with
          | ADD -> refine_add e1 e2 root
          | SUB -> refine_sub e1 e2 root
          | MUL -> refine_mul e1 e2 root
          | DIV -> refine_div e1 e2 root
-         | POW -> V.filter_binop V.POW e1.value e2.value root
+         | POW -> V.filter_binop POW e1.value e2.value root
        in
        let j1,j2 = debot j in
        refine (refine store j1 e1.node) j2 e2.node

@@ -1,2 +1,0 @@
-(ocamllex lexer modLexer)
-(ocamlyacc parser modParser)

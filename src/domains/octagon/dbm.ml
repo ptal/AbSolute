@@ -1,3 +1,6 @@
+open Core
+open Bounds
+
 type dbm_var = {
   l: int;
   c: int;

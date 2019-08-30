@@ -1,6 +1,9 @@
+open Fixpoint.Pengine
+open Core
+open Core.Kleene
+open Bounds
+open Vardom
 open Box_representation
-open Pengine
-open Kleene
 
 module type Box_sig =
 sig
@@ -57,11 +60,6 @@ struct
 
   (* Reexported functions from the parametrized modules. *)
   let entailment box = Closure.entailment box.store
-
-  (* This function helps to deal with unreachable state: normally a disentailed
-     constraint triggered a `Bot_found` exception. *)
-  let failure_disentailment () =
-    failwith "Found a constraint that is disentailed and Bot_found has not been raised."
 
   let empty = {
     store=Store.empty;
@@ -133,9 +131,10 @@ struct
     Store.iter print_entry store
 
   let print repr fmt box =
+    let open Lang.Pretty_print in
     let print_constraint c =
       let logic_constraint = R.to_logic_constraint repr c in
-      Format.fprintf fmt "%a\n" Csp.print_constraint logic_constraint
+      Format.fprintf fmt "%a\n" print_constraint logic_constraint
     in
     Format.fprintf fmt "%a\n" print_store (repr,box.store);
     Parray.iter print_constraint box.constraints

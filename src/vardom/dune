@@ -1,0 +1,10 @@
+(library
+  (name vardom)
+  (public_name absolute.vardom)
+  (libraries absolute.core absolute.bounds absolute.lang)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules_without_implementation vardom_sig)
+  (modules :standard)
+)

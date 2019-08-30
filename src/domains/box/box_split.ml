@@ -1,3 +1,4 @@
+open Lang
 open Box_representation
 
 module type Variable_order = functor (R: Box_rep_sig) ->
@@ -105,8 +106,8 @@ struct
   module V=R.Vardom
   let make_cst v = R.(make_expr (BCst (V.create (V.OF_BOUNDS(v, v)))))
   let distribute var_idx value =
-    R.[(make_expr (BVar var_idx), Csp.EQ, make_cst value);
-       (make_expr (BVar var_idx), Csp.NEQ, make_cst value)]
+    R.[(make_expr (BVar var_idx), Ast.EQ, make_cst value);
+       (make_expr (BVar var_idx), Ast.NEQ, make_cst value)]
 end
 
 module Bisect (R: Box_rep_sig) =
@@ -115,8 +116,8 @@ struct
   module V=R.Vardom
   let make_cst v = R.(make_expr (BCst (V.create (V.OF_BOUNDS(v, v)))))
   let distribute var_idx value =
-    R.[(make_expr (BVar var_idx), Csp.LEQ, make_cst value);
-       (make_expr (BVar var_idx), Csp.GT, make_cst value)]
+    R.[(make_expr (BVar var_idx), Ast.LEQ, make_cst value);
+       (make_expr (BVar var_idx), Ast.GT, make_cst value)]
 end
 
 module Make

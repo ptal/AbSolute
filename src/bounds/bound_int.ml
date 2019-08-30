@@ -1,3 +1,5 @@
+(** See `bound_sig.mli` for the interface of this module. *)
+
 (* We encode -infinity and infinity as `min_int` and `max_int`. *)
 type t = int
 

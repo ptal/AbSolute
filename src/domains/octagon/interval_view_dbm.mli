@@ -1,3 +1,4 @@
+open Bounds
 open Dbm
 
 (** An octagon is a n-dimensional geometrical shape represented by the intersection of n n-dimensional boxes.

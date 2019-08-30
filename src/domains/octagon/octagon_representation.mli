@@ -1,5 +1,7 @@
 (** This module provides functions to detect and rewrite arbitrary constraint into an equivalent and relaxed octagonal constraints, if possible. *)
-open Csp
+
+open Lang.Ast
+open Bounds
 open Dbm
 
 module type Octagon_rep_sig =
@@ -13,7 +15,7 @@ sig
   val empty: t
 
   (** Initialize the rewriter with the map between variable's name and DBM interval. *)
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
 
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id

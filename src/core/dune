@@ -1,0 +1,9 @@
+(library
+  (name core)
+  (public_name absolute.core)
+  (libraries gmp)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)

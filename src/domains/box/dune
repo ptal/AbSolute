@@ -1,0 +1,9 @@
+(library
+  (name box)
+  (public_name absolute.box)
+  (libraries absolute.core absolute.bounds absolute.vardom absolute.lang absolute.fixpoint absolute.domains)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)

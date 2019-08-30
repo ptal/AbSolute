@@ -1,6 +1,9 @@
+open Core
+open Core.Kleene
 open Dbm
 open Octagon_representation
-open Kleene
+
+module Octagon_representation = Octagon_representation
 
 module type Octagon_sig =
 sig

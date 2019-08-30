@@ -1,5 +1,8 @@
+open Core
 open Dbm
 open Octagon_representation
+
+module Octagon_representation = Octagon_representation
 
 module type Octagon_sig =
 sig

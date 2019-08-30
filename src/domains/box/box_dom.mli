@@ -1,3 +1,6 @@
+open Core
+open Bounds
+open Vardom
 open Box_representation
 
 module type Box_sig =

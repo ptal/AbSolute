@@ -1,7 +1,9 @@
 (** This module equips `Box_dom` with reified constraints. *)
+open Core
 open Box_dom
 open Box_representation
-open Csp
+open Lang.Ast
+open Vardom
 
 module type Reified_box_rep_sig =
 sig
@@ -15,7 +17,7 @@ sig
   and reified_constraint = BaseRep.var_id * rconstraint list
 
   val empty: t
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
   val rewrite: t -> bconstraint -> rconstraint list

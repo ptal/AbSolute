@@ -1,0 +1,94 @@
+open Core.Tools
+open Ast
+open Bounds
+
+let print_unop fmt = function
+  | NEG -> Format.fprintf fmt "-"
+
+let print_binop fmt = function
+  | ADD -> Format.fprintf fmt "+"
+  | SUB -> Format.fprintf fmt "-"
+  | MUL -> Format.fprintf fmt "*"
+  | DIV -> Format.fprintf fmt "/"
+  | POW -> Format.fprintf fmt "^"
+
+let print_cmpop fmt = function
+  | EQ  -> Format.fprintf fmt "="
+  | LEQ -> Format.fprintf fmt "<="
+  | GEQ -> Format.fprintf fmt ">="
+  | NEQ -> Format.fprintf fmt "<>"
+  | GT  ->  Format.fprintf fmt ">"
+  | LT  -> Format.fprintf fmt "<"
+
+let print_var fmt s = Format.fprintf fmt "%s" s
+
+let prior_level = function
+  | Funcall(_),Funcall(_) -> 0
+  | Funcall(_),_          -> 1
+  | Binary(_,POW,_),Binary(_,POW,_)  -> 0
+  | Binary(_,POW,_),Binary(_)  -> 0
+  | Binary(_,(MUL | DIV),_),Binary(_,(MUL | DIV),_) -> 0
+  | Binary(_,(MUL | DIV),_),_ -> 1
+  | _ -> 0
+
+let must_parenthesis_right (father:expr) (e:expr) =
+  match father,e with
+  | Binary(_,x,_),Binary(_,SUB,_) -> x<>SUB
+  | _ -> false
+
+let print_expr fmt t =
+  let rec loop parenflag (k:unit->unit) fmt t =
+    match t with
+    | Funcall("sqr",[x]) -> loop false k fmt (Binary(x,POW,Cst(Bound_rat.two,Int)))
+    | Funcall(("POWER"|"power"),[x;y]) -> loop false k fmt (Binary(x,POW,y))
+    | Funcall (name,args) ->
+       Format.fprintf fmt "%a(" print_var name;
+       Format.pp_print_list ~pp_sep:pp_sep_comma
+         (loop false (fun () -> Format.fprintf fmt ")"; k())) fmt args;
+    | Binary (t1,b,t2) as father ->
+       let right_prior = prior_level (father,t2) in
+       let k =
+         if parenflag then begin
+             Format.fprintf fmt "(";
+             (fun () -> Format.fprintf fmt ")";k())
+           end
+         else k
+       in
+       loop
+         (prior_level (father,t1) > 0)
+         (fun () ->
+           Format.fprintf fmt " %a " print_binop b;
+           loop
+             (right_prior > 0 || (right_prior=0 && must_parenthesis_right father t2)) k
+             fmt t2)
+         fmt t1
+    | Unary (u,e) ->
+       Format.fprintf fmt "(%a" print_unop u;
+       loop true (fun () -> Format.fprintf fmt ")"; k ()) fmt e
+    | Var v -> Format.fprintf fmt "%a" print_var v; k ()
+    | Cst (c,_) -> Format.fprintf fmt "%a" Bound_rat.pp_print c; k ()
+  in
+  loop false (fun () -> ()) fmt t
+
+let print_bexpr fmt e =
+  let rec aux fmt = function
+    | Cmp (e1,c,e2) -> Format.fprintf fmt "%a %a %a"
+        print_expr e1 print_cmpop c print_expr e2
+    | And (b1,b2) -> Format.fprintf fmt "%a && %a"
+        aux b1 aux b2
+    | Or (b1,b2) -> Format.fprintf fmt "%a || %a"
+        aux b1 aux b2
+    | Not b -> Format.fprintf fmt "not %a" aux b in
+  aux fmt e
+
+let print_constraint fmt c =
+  Format.fprintf fmt "%a" print_bexpr (Cmp c)
+
+let output_constraints constraints =
+  List.iter (Format.printf "%a\n" print_constraint) constraints
+
+let print_constraints = Format.pp_print_list ~pp_sep:pp_sep_newline print_bexpr
+
+let string_of_constraint c =
+  print_constraint Format.str_formatter c;
+  Format.flush_str_formatter ()

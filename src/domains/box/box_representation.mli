@@ -1,4 +1,5 @@
-open Csp
+open Lang.Ast
+open Vardom
 open Var_store
 
 module type Box_rep_sig =
@@ -25,7 +26,7 @@ sig
   and node =
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
-    | BBinary  of binop * rexpr * rexpr
+    | BBinary  of rexpr * binop * rexpr
     | BVar     of var_id
     | BCst     of Vardom.t
 
@@ -34,7 +35,7 @@ sig
   val empty: t
 
   (** Initialize the rewriter with the map between variable's name and store's index. *)
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
 
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
