@@ -5,6 +5,5 @@
   (flags :standard)
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))
-  (modules_without_implementation abstract_domain)
   (modules :standard)
 )
