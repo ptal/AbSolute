@@ -1,8 +1,0 @@
-init{
-  int x = [0;6];
-  int y = [0;10];
-}
-
-constraints{
-  x*x + y*y=100;
-}

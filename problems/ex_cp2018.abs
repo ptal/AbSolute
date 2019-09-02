@@ -1,8 +1,0 @@
-init{
-  real x = [1; 50];
-  real y = [-1.5 ;1];
-}
-
-constraints{
-  cos(ln(x)) > y;
-}
