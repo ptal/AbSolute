@@ -1,5 +1,5 @@
 url {
-  src: "https://github.com/ptal/AbSolute/zipball/v0.2.0"
+  src: "https://github.com/ptal/AbSolute/zipball/v0.3.0"
 }
 opam-version: "2.0"
 maintainer: "Pierre Talbot <pierre.talbot@univ-nantes.fr>"
