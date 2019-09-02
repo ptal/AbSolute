@@ -1,6 +1,6 @@
 (executable
  (name run_tests)
- (libraries alcotest libabsolute)
+ (libraries alcotest absolute absolute.box absolute.octagon absolute.lang absolute.bounds)
 )
 
 (alias

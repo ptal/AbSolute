@@ -1,24 +1,29 @@
-open Dbm
-open Csp
+open Bounds
+open Octagon
+open Octagon.Dbm
+open Lang.Ast
+open Lang.Rewritting
 
-module Rewriter = Octagonal_rewriting.Rewriter(Bound_int)
+module Rewriter = Octagon_representation.Octagon_rep(Bound_int)
 
 let x_i = (as_interval {l=0;c=1})
 let xy_i = (as_interval {l=2;c=0})
 
-let data = [("x", (as_interval {l=0;c=1}));
+let vars = [("x", (as_interval {l=0;c=1}));
             ("y", (as_interval {l=2;c=3}));
             ("xy", (as_interval {l=2;c=0}))]
 
 let ten = Cst (Bound_rat.of_int 10, Int)
 
+let init_rewriter vars = List.fold_left Rewriter.extend Rewriter.empty vars
+
 let test_init () =
-  let r = Rewriter.init data in
+  let r = init_rewriter vars in
   begin
-    Alcotest.(check bool) "init" true ((compare x_i (Rewriter.var_box_to_dbm r "x")) = 0);
-    Alcotest.(check bool) "init" true ((compare xy_i (Rewriter.var_box_to_dbm r "xy")) = 0);
-    Alcotest.(check bool) "init" true ((compare "x" (Rewriter.var_dbm_to_box r x_i)) = 0);
-    Alcotest.(check bool) "init" true ((compare "xy" (Rewriter.var_dbm_to_box r xy_i)) = 0);
+    Alcotest.(check bool) "init" true ((compare x_i (Rewriter.to_abstract_var r "x")) = 0);
+    Alcotest.(check bool) "init" true ((compare xy_i (Rewriter.to_abstract_var r "xy")) = 0);
+    Alcotest.(check bool) "init" true ((compare "x" (Rewriter.to_logic_var r x_i)) = 0);
+    Alcotest.(check bool) "init" true ((compare "xy" (Rewriter.to_logic_var r xy_i)) = 0);
   end
 
 let check_dbm_constraint' name expected obtained =
@@ -47,28 +52,28 @@ begin
 end
 
 let test_rewrite () =
-  let r = Rewriter.init data in
+  let r = init_rewriter vars in
   begin
     check_dbm_constraint "rewrite x <= 10" r (Var "x", LEQ, ten) [{v={l=1;c=0}; d=(Rewriter.B.of_int_up 20)}];
     check_dbm_constraint "rewrite x >= 10" r (Var "x", GEQ, ten) [{v={l=0;c=1}; d=(Rewriter.B.of_int_up (-20))}];
     check_dbm_constraint "rewrite x < 10" r (Var "x", LT, ten) [{v={l=1;c=0}; d=(Rewriter.B.of_int_up 18)}];
     check_dbm_constraint "rewrite x > 10" r (Var "x", GT, ten) [{v={l=0;c=1}; d=(Rewriter.B.of_int_up (-22))}];
-    check_dbm_constraint "rewrite x - y <= 10" r (Binary (SUB, Var "x", Var "y"), LEQ, ten) [{v={l=2;c=0}; d=(Rewriter.B.of_int_up 10)}];
-    check_dbm_constraint "rewrite x - y > 10" r (Binary (SUB, Var "x", Var "y"), GT, ten) [{v={l=3;c=1}; d=Rewriter.B.of_int_up (-11)}];
-    check_dbm_constraint "rewrite -x - y < 10" r (Binary (SUB, Unary (NEG, Var "x"), Var "y"), LT, ten) [{v={l=2;c=1}; d=Rewriter.B.of_int_up 9}];
-    check_dbm_constraint "rewrite -x + y <= 10" r (Binary (SUB, Unary (NEG, Var "x"), Unary (NEG, Var "y")), LEQ, ten) [{v={l=3;c=1}; d=Rewriter.B.of_int_up 10}];
-    check_dbm_constraint "rewrite x + y <= 10" r (Binary (SUB, Var "x", Unary (NEG, Var "y")), LEQ, ten) [{v={l=3;c=0}; d=Rewriter.B.of_int_up 10}];
+    check_dbm_constraint "rewrite x - y <= 10" r (Binary (Var "x", SUB, Var "y"), LEQ, ten) [{v={l=2;c=0}; d=(Rewriter.B.of_int_up 10)}];
+    check_dbm_constraint "rewrite x - y > 10" r (Binary (Var "x", SUB, Var "y"), GT, ten) [{v={l=3;c=1}; d=Rewriter.B.of_int_up (-11)}];
+    check_dbm_constraint "rewrite -x - y < 10" r (Binary (Unary (NEG, Var "x"), SUB, Var "y"), LT, ten) [{v={l=2;c=1}; d=Rewriter.B.of_int_up 9}];
+    check_dbm_constraint "rewrite -x + y <= 10" r (Binary (Unary (NEG, Var "x"), SUB, Unary (NEG, Var "y")), LEQ, ten) [{v={l=3;c=1}; d=Rewriter.B.of_int_up 10}];
+    check_dbm_constraint "rewrite x + y <= 10" r (Binary (Var "x", SUB, Unary (NEG, Var "y")), LEQ, ten) [{v={l=3;c=0}; d=Rewriter.B.of_int_up 10}];
   end
 
 let test_negate () =
-  let r = Rewriter.init data in
+  let r = init_rewriter vars in
   begin
     check_neg_dbm_constraint "x <= 10" r (Var "x", LEQ, ten) [{v={l=0;c=1}; d=(Rewriter.B.of_int_up (-22))}];
     check_neg_dbm_constraint "x >= 10" r (Var "x", GEQ, ten) [{v={l=1;c=0}; d=(Rewriter.B.of_int_up 18)}];
-    check_neg_dbm_constraint "x - y <= 10" r (Binary (SUB, Var "x", Var "y"), LEQ, ten) [{v={l=3;c=1}; d=(Rewriter.B.of_int_up (-11))}];
-    check_neg_dbm_constraint "-x - y < 10" r (Binary (SUB, Unary (NEG, Var "x"), Var "y"), LT, ten) [{v={l=3;c=0}; d=Rewriter.B.of_int_up (-10)}];
-    check_neg_dbm_constraint "-x + y <= 10" r (Binary (SUB, Unary (NEG, Var "x"), Unary (NEG, Var "y")), LEQ, ten) [{v={l=2;c=0}; d=Rewriter.B.of_int_up (-11)}];
-    check_neg_dbm_constraint "x + y <= 10" r (Binary (SUB, Var "x", Unary (NEG, Var "y")), LEQ, ten) [{v={l=2;c=1}; d=Rewriter.B.of_int_up (-11)}];
+    check_neg_dbm_constraint "x - y <= 10" r (Binary (Var "x", SUB, Var "y"), LEQ, ten) [{v={l=3;c=1}; d=(Rewriter.B.of_int_up (-11))}];
+    check_neg_dbm_constraint "-x - y < 10" r (Binary (Unary (NEG, Var "x"), SUB, Var "y"), LT, ten) [{v={l=3;c=0}; d=Rewriter.B.of_int_up (-10)}];
+    check_neg_dbm_constraint "-x + y <= 10" r (Binary (Unary (NEG, Var "x"), SUB, Unary (NEG, Var "y")), LEQ, ten) [{v={l=2;c=0}; d=Rewriter.B.of_int_up (-11)}];
+    check_neg_dbm_constraint "x + y <= 10" r (Binary (Var "x", SUB, Unary (NEG, Var "y")), LEQ, ten) [{v={l=2;c=1}; d=Rewriter.B.of_int_up (-11)}];
   end
 
 let tests = [

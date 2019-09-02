@@ -4,12 +4,15 @@ open Dbm
 open Octagon_representation
 
 module Octagon_representation = Octagon_representation
+module Dbm = Dbm
+module Octagon_split = Octagon_split
+module Closure = Closure
 
 module type Octagon_sig =
 sig
   module DBM : DBM_sig
   module B = DBM.B
-  module R : Octagon_rep_sig
+  module R : Octagon_rep_sig with module B=B
   type t
   val empty: t
   val extend: t -> R.var_kind -> (t * R.var_id)

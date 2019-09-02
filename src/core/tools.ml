@@ -82,6 +82,14 @@ let unwrap = function
 | Some x -> x
 | None -> failwith "unwrap an option containing `None`."
 
+(* val fold_map: ('a -> 'b -> ('a * 'c)) -> 'a -> 'b list -> ('a * 'c list) *)
+let fold_map f a l =
+  let f (a, l') x =
+    let (a, x') = f a x in
+    (a, x'::l') in
+  let (a, l') = List.fold_left f (a, []) l in
+  (a, List.rev l')
+
 (**********************)
 (** {3} Map instances *)
 (**********************)

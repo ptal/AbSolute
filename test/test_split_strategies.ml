@@ -1,15 +1,20 @@
 open Test_octagon
+open Bounds
+open Octagon
 
-module Rewriter = Octagonal_rewriting.Rewriter(Z)
+module OctagonZ = Test_octagon.OctagonZ
+module Rewriter = OctagonZ.R
 module Middle = Octagon_split.Middle(OctagonZ.DBM)
 module MinMax = Octagon_split.Min_max(OctagonZ.DBM)
 
+let init_rewriter vars = List.fold_left Rewriter.extend Rewriter.empty vars
+
 let test_middle () =
-  let octagon = OctagonZ.init 2 in
+  let octagon = octagon_empty2D in
   let constraints = octagon_2D in
   let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
   let octagon = OctagonZ.closure octagon in
-  let r = Rewriter.init Test_rewriter.data in
+  let r = init_rewriter Test_rewriter.vars in
   begin
     (* `x` is between [1..5] ([2..10] as DBM.project). Middle should be `6`. *)
     let middle = Middle.select (OctagonZ.unwrap octagon) Test_rewriter.x_i in

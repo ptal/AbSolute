@@ -29,13 +29,13 @@ sig
   (** See `Abstract_domain.copy`. *)
   val copy: t -> t
 
-    (** Closure of the store with regards to all constraints in the box.
-      A fixed point is reached when no constraint can be propagated anymore.
-      The entailed constraints are removed from the box.
-      Throw `Bot_found` one of the constraints is unsatisfiable. *)
+  (** Closure of the store with regards to all constraints in the box.
+    A fixed point is reached when no constraint can be propagated anymore.
+    The entailed constraints are removed from the box.
+    Throw `Bot_found` one of the constraints is unsatisfiable. *)
   val closure: t -> t
 
-  (** Propagated and add the constraint `c` into the box.
+  (** Propagate and add the constraint `c` into the box.
       Precondition: The variables in `c` must range over the current store. *)
   val weak_incremental_closure: t -> R.rconstraint -> t
 
