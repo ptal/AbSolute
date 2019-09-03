@@ -10,7 +10,7 @@ For adventurous users, we provide a [guide for contributing](contributing.html) 
 
 This project is available on [github](https://github.com/ptal/absolute/).
 
-## Highlight of the features
+## Highlight of AbSolute features
 
 An abstract domain encapsulates a solver for a specific constraint language.
 We summarize the supported abstract domains in the table below (`c1,c2` are constraints, `X,Y` variables and `a,b` constants).
@@ -28,3 +28,12 @@ In addition, each domain is equipped with numerous splitting strategies that can
 ## What to expect next?
 
 We currently work on integrating a SAT solver, integrating back some features from the initial version of [AbSolute](https://github.com/mpelleau/) such as support for linear programming through VPL and Apron library, and reduced product to combine domains.
+
+## AbSolute ecosystem
+
+We have several projects relevant to AbSolute that are worth checking out:
+
+* [kobe](https://github.com/ptal/kobe): Constraint benchmarking tools suite.
+It is described in more depth in the [benchmarking chapter](benchmarking.md).
+* [ptal.github.io](https://github.com/ptal/ptal.github.io): The repository hosting this book.
+* [solvers-opam](https://github.com/ptal/solvers-opam): The OPAM packages repository containing libraries and executables surrounding constraint solving.
