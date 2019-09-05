@@ -35,5 +35,6 @@ We have several projects relevant to AbSolute that are worth checking out:
 
 * [kobe](https://github.com/ptal/kobe): Constraint benchmarking tools suite.
 It is described in more depth in the [benchmarking chapter](benchmarking.md).
+* [minisatml](https://github.com/ptal/minisatml): SAT solver based on MiniSAT, note that this project is a library not directly executable.
 * [ptal.github.io](https://github.com/ptal/ptal.github.io): The repository hosting this book.
 * [solvers-opam](https://github.com/ptal/solvers-opam): The OPAM packages repository containing libraries and executables surrounding constraint solving.

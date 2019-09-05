@@ -16,6 +16,18 @@ make build
 make test
 ```
 
+You might also be interested by cloning the following repositories which all relevant to the AbSolute project:
+
+```sh
+git clone https://github.com/ptal/kobe
+git clone https://github.com/ptal/kobe-rcpsp
+git clone https://github.com/ptal/kobe-sat
+git clone https://github.com/ptal/kobe-database
+git clone https://github.com/ptal/minisatml
+git clone https://github.com/ptal/solvers-opam
+git clone https://github.com/ptal/ptal.github.io
+```
+
 ## Development flow
 
 You should first create a branch or a fork, add and test the new feature, and then create a pull request to merge it into the mainstream repository.
