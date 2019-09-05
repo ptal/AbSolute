@@ -1,3 +1,5 @@
+open Bounds
+
 module Make(B:Bound_sig.BOUND) =
 struct
   let epsilon = B.of_float_down 0.000000001

@@ -1,7 +1,11 @@
-open Csp
+open Core
+open Bounds
+open Lang
+open Lang.Ast
+open Vardom
 open Box_dom
 open Box_representation
-open Pengine
+open Fixpoint.Pengine
 
 let recursive_reified () = raise (Wrong_modelling "Reified constraint inside reified constraint is not implemented.")
 
@@ -17,12 +21,12 @@ sig
   and reified_constraint = BaseRep.var_id * rconstraint list
 
   val empty: t
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bformula -> rconstraint list
+  val rewrite: t -> formula -> rconstraint list
   val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
-  val relax: t -> bformula -> rconstraint list
+  val relax: t -> formula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -48,8 +52,8 @@ struct
   let rewrite repr c = List.map (fun c -> BaseConstraint c) (R.rewrite repr c)
 
   let rewrite_reified repr b constraints =
-    let bconstraints = List.map (fun (e1,op,e2) -> Cmp (op, e1, e2)) constraints in
-    let constraints = List.flatten (List.map (R.rewrite repr) bconstraints) in
+    let formulas = List.map (fun c -> Cmp c) constraints in
+    let constraints = List.flatten (List.map (R.rewrite repr) formulas) in
     let b = R.to_abstract_var repr b in
     [ReifiedConstraint (b, List.map (fun c -> BaseConstraint c) constraints)]
 
@@ -135,7 +139,7 @@ struct
         let engine = Pengine.subscribe engine c_idx vars in
         { box with reified_constraints; engine; }
 
-  let propagate_negation_conjunction box (b, conjunction) =
+  let propagate_negation_conjunction box conjunction =
     let open Kleene in
     match Kleene.and_reified (List.map (entailment box) conjunction) with
     | False,_ -> box, true
@@ -157,7 +161,7 @@ struct
       if B.equal B.one value then
         List.fold_left weak_incremental_closure box conjunction, true
       else if B.equal B.zero value then
-        propagate_negation_conjunction box (b, conjunction)
+        propagate_negation_conjunction box conjunction
       else failwith "Reified boolean should be equal to 0 or 1."
     else
       let open Kleene in
@@ -190,13 +194,13 @@ struct
 
   let rec print_reified_constraint repr fmt (b, conjunction) =
   begin
-    let print_var fmt v = Csp.print_var fmt (R.to_logic_var repr v) in
+    let print_var fmt v = Pretty_print.print_var fmt (R.to_logic_var repr v) in
     Format.fprintf fmt "%a <=> " print_var b;
     let rec aux = function
     | [] -> ()
     | (R.BaseConstraint c)::l ->
         let c = Box.R.to_logic_constraint repr c in
-        Format.fprintf fmt "%a " Csp.print_constraint c;
+        Format.fprintf fmt "%a " Pretty_print.print_constraint c;
         aux l
     | (R.ReifiedConstraint c)::l ->
         print_reified_constraint repr fmt c;

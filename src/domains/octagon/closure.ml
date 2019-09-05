@@ -1,3 +1,5 @@
+open Core
+open Bounds
 open Dbm
 
 module type Closure_sig =
@@ -171,7 +173,7 @@ module ClosureHoistZ = struct
 
   let is_consistent = ClosureZ.is_consistent
 
-  let tightening = ClosureZ.tightening
+  let _tightening = ClosureZ.tightening
 
   (* Strong closure as appearing in (Bagnara and al., 2009) using classical Floyd-Warshall algorithm followed by the strengthening procedure. *)
   let closure = ClosureZ.closure
@@ -241,7 +243,7 @@ module ClosureQ = struct
     |> is_consistent
     |> strengthening
 
-  let incremental_closure dbm oc = dbm
+  let incremental_closure dbm _ = dbm
 end
 
 module ClosureF = struct
@@ -262,5 +264,5 @@ module ClosureF = struct
     done;
     is_consistent !dbm
 
-  let incremental_closure dbm oc = dbm
+  let incremental_closure dbm _ = dbm
 end

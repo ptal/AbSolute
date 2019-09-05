@@ -32,6 +32,8 @@
    Elements such that j/2 > i/2 are retreived by coherence: (i,j) = (j^1,i^1)
 *)
 
+open Bounds
+
 (** A variable is represented by its position in the DBM (line, column). *)
 type dbm_var = {
   l: int;

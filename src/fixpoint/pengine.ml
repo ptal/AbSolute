@@ -1,3 +1,5 @@
+open Core
+
 module type Pengine_sig =
 sig
   type t

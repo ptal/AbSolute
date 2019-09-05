@@ -1,4 +1,7 @@
-open Csp
+open Core
+open Lang
+open Lang.Ast
+open Bounds
 open Dbm
 
 let rec normalize_expr e =
@@ -6,12 +9,12 @@ let rec normalize_expr e =
   match e with
   | Unary (NEG, Cst(c,a)) -> Cst (Bound_rat.neg c, a)
   | Unary (NEG, Unary (NEG, e)) -> normalize_expr e
-  | Unary (NEG, Binary (SUB, x, y)) -> normalize_expr (Binary (ADD, neg x, y))
-  | Unary (NEG, Binary (ADD, x, y)) -> normalize_expr (Binary (SUB, neg x, y))
+  | Unary (NEG, Binary (x, SUB, y)) -> normalize_expr (Binary (neg x, ADD, y))
+  | Unary (NEG, Binary (x, ADD, y)) -> normalize_expr (Binary (neg x, SUB, y))
   | Unary (op, x) -> Unary(op, normalize_expr x)
-  | Binary (SUB, x, Unary (NEG, y)) -> normalize_expr (Binary (ADD, x, y))
-  | Binary (ADD, x, Unary (NEG, y)) -> normalize_expr (Binary (SUB, x, y))
-  | Binary (op, x, y) -> Binary (op, normalize_expr x, normalize_expr y)
+  | Binary (x, SUB, Unary (NEG, y)) -> normalize_expr (Binary (x, ADD, y))
+  | Binary (x, ADD, Unary (NEG, y)) -> normalize_expr (Binary (x, SUB, y))
+  | Binary (x, op, y) -> Binary (normalize_expr x, op, normalize_expr y)
   | e -> e
 
 let normalize (e1, op, e2) = ((normalize_expr e1), op, (normalize_expr e2))
@@ -20,7 +23,7 @@ let rec generic_rewrite c =
   match normalize c with
   | e1, GEQ, e2 -> generic_rewrite (Unary (NEG, e1), LEQ, Unary (NEG, e2))
   | e1, GT, e2 -> generic_rewrite (Unary (NEG, e1), LT, Unary (NEG, e2))
-  | Var x, op, Var y -> generic_rewrite (Binary (SUB, Var x, Var y), op, Cst (Bound_rat.zero, Int))
+  | Var x, op, Var y -> generic_rewrite (Binary (Var x, SUB, Var y), op, Cst (Bound_rat.zero, Int))
   | e1, EQ, e2 -> (generic_rewrite (e1, LEQ, e2))@(generic_rewrite (e1, GEQ, e2))
   | c -> [c]
 
@@ -32,11 +35,11 @@ sig
   type var_id = dbm_interval
   type rconstraint = B.t dbm_constraint
   val empty: t
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bformula -> rconstraint list
-  val relax: t -> bformula -> rconstraint list
+  val rewrite: t -> formula -> rconstraint list
+  val relax: t -> formula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -113,10 +116,10 @@ struct
   let try_create r = function
     | Var x, LEQ, Cst (d, _) -> Some (map_to_dim r x_leq_d x d)
     | Unary (NEG, Var x), LEQ, Cst (d, _) -> Some (map_to_dim r minus_x_leq_d x d)
-    | Binary (ADD, Var x, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_plus_y_leq_d x y d)
-    | Binary (SUB, Var x, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_minus_y_leq_d x y d)
-    | Binary (ADD, Unary (NEG, Var x), Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_plus_y_leq_d x y d)
-    | Binary (SUB, Unary (NEG, Var x), Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_minus_y_leq_d x y d)
+    | Binary (Var x, ADD, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_plus_y_leq_d x y d)
+    | Binary (Var x, SUB, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_minus_y_leq_d x y d)
+    | Binary (Unary (NEG, Var x), ADD, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_plus_y_leq_d x y d)
+    | Binary (Unary (NEG, Var x), SUB, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_minus_y_leq_d x y d)
     | _ -> None
 
   let unwrap_all constraints =
@@ -130,18 +133,18 @@ struct
     unwrap_all
 
   let rewrite repr formula =
-    try mapfold_conjunction (rewrite_atom repr) formula
+    try Rewritting.mapfold_conjunction (rewrite_atom repr) formula
     with Wrong_modelling _ -> []
 
   let relax_atom repr c =
     List.flatten (List.map (fun c ->
       match c with
       | e1, LT, e2 -> rewrite_atom repr (e1, LEQ, e2)
-      | c -> []
+      | _ -> []
     ) (generic_rewrite c))
 
   let relax repr formula =
-    try mapfold_conjunction (relax_atom repr) formula
+    try Rewritting.mapfold_conjunction (relax_atom repr) formula
     with Wrong_modelling _ -> []
 
   let negate c =

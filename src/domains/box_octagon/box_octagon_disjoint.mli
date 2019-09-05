@@ -1,6 +1,9 @@
-open Csp
+open Core
+open Bounds
+open Lang.Ast
 open Octagon
-open Box_dom
+open Box
+open Box.Box_dom
 
 module type Box_oct_rep_sig =
 sig
@@ -19,13 +22,13 @@ sig
   | ReifiedConstraint of reified_octagonal
 
   val empty: t
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bformula -> rconstraint list
+  val rewrite: t -> formula -> rconstraint list
   (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
   val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
-  val relax: t -> bformula -> rconstraint list
+  val relax: t -> formula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 

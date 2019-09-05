@@ -1,7 +1,12 @@
-open Box_dom
+open Core
+open Core.Kleene
+open Bounds
+open Lang
+open Lang.Ast
+open Lang.Rewritting
 open Octagon
-open Csp
-open Kleene
+open Box
+open Box.Box_dom
 
 module type Box_oct_rep_sig =
 sig
@@ -20,13 +25,13 @@ sig
   | ReifiedConstraint of reified_octagonal
 
   val empty: t
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> bformula -> rconstraint list
+  val rewrite: t -> formula -> rconstraint list
   (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
   val rewrite_reified: t -> var -> bconstraint list -> rconstraint list
-  val relax: t -> bformula -> rconstraint list
+  val relax: t -> formula -> rconstraint list
   val negate: rconstraint -> rconstraint
 end
 
@@ -63,16 +68,16 @@ struct
     try BoxVar (Box_rep.to_abstract_var repr.box_rep v)
     with Not_found -> OctVar (Oct_rep.to_abstract_var repr.oct_rep v)
 
-  let is_defined_over repr c is_inside =
-    List.for_all is_inside (get_vars_bformula c)
+  let is_defined_over c is_inside =
+    List.for_all is_inside (get_vars_formula c)
 
   let is_box_var repr v =
     match to_abstract_var repr v with
     | BoxVar _ -> true
     | OctVar _ -> false
 
-  let is_defined_over_box repr c = is_defined_over repr c (is_box_var repr)
-  let is_defined_over_oct repr c = is_defined_over repr c (fun v -> not (is_box_var repr v))
+  let is_defined_over_box repr c = is_defined_over c (is_box_var repr)
+  let is_defined_over_oct repr c = is_defined_over c (fun v -> not (is_box_var repr v))
 
   let rewrite repr c =
     if is_defined_over_box repr c then
@@ -86,11 +91,11 @@ struct
 
   (* This is a temporary function. We should generalized Representation_sig to formula rather than only constraint. *)
   let rewrite_reified repr b conjunction =
-    let try_rewrite all ((e1, op, e2) as c) =
-      let rewritten_c = Oct_rep.rewrite repr.oct_rep (Cmp (op, e1, e2)) in
+    let try_rewrite all c =
+      let rewritten_c = Oct_rep.rewrite repr.oct_rep (Cmp c) in
       if (List.length rewritten_c)=0 then
         raise (Wrong_modelling ("The abstract domain `Box_octagon_disjoint` expects octagonal reified constraints, but `" ^
-               (string_of_constraint c) ^ "` could not be rewritten as an octagonal constraint."))
+               (Pretty_print.string_of_constraint c) ^ "` could not be rewritten as an octagonal constraint."))
       else
         all@rewritten_c in
     let constraints = List.fold_left try_rewrite [] conjunction in
@@ -102,7 +107,8 @@ struct
   let negate = function
     | BoxConstraint c -> BoxConstraint (Box_rep.negate c)
     | OctConstraint c -> OctConstraint (Oct_rep.negate c)
-    | ReifiedConstraint(b, conjunction) -> raise (Wrong_modelling "Negation of reified constraints is not yet supported.")
+    | ReifiedConstraint _ -> raise (Wrong_modelling "Negation of reified constraints is not yet supported.")
+
 end
 
 module type Box_octagon_disjoint_sig =
@@ -170,7 +176,7 @@ struct
   let entailment box_oct = function
     | R.BoxConstraint(c) -> Box.entailment box_oct.box c
     | R.OctConstraint(c) -> Octagon.entailment box_oct.octagon c
-    | R.ReifiedConstraint(b, c) -> failwith "entailment of reified constraint is not implemented."
+    | R.ReifiedConstraint _ -> failwith "entailment of reified constraint is not implemented."
 
   let entailment_of_reified box_oct conjunction =
     let entailed = List.map (Octagon.entailment box_oct.octagon) conjunction in
@@ -237,8 +243,6 @@ struct
     | R.BoxConstraint(c) -> { box_oct with box=Box.weak_incremental_closure box_oct.box c }
     | R.OctConstraint(c) -> { box_oct with octagon=Octagon.weak_incremental_closure box_oct.octagon c }
     | R.ReifiedConstraint(b, c) -> { box_oct with reified_octagonal=(b, c)::box_oct.reified_octagonal}
-
-  let incremental_closure_octagon box_oct c = closure (weak_incremental_closure box_oct c)
 
   let split box_oct =
     let branches = List.map (fun octagon -> { box_oct with octagon=octagon }) (Octagon.split box_oct.octagon) in

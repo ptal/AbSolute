@@ -9,3 +9,6 @@ out/*
 /_build/
 *.merlin
 *.install
+
+# Book
+/doc/book

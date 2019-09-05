@@ -1,4 +1,5 @@
-open Vardom_sig
+open Core
+open Vardom.Vardom_sig
 
 module type Var_store_sig =
 sig

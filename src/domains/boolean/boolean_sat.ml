@@ -1,4 +1,4 @@
-open Libsatml
+open Minisatml
 open Solver
 open Boolean_rep
 open Abstract_domain

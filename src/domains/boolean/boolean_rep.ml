@@ -1,6 +1,7 @@
-open Csp
+open Lang
+open Lang.Ast
 open Libsatml
-open Types
+open Libsatml.Types
 
 module type Boolean_rep_sig =
 sig
@@ -9,7 +10,7 @@ sig
   type var_id = Solver.var
   type rconstraint = Lit.lit Vec.t
   val empty: t
-  val extend: t -> (Csp.var * var_id) -> t
+  val extend: t -> (var * var_id) -> t
   val to_logic_var: t -> var_id -> var
   val to_abstract_var: t -> var -> var_id
   val rewrite: t -> formula -> rconstraint list

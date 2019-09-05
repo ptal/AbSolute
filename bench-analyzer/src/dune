@@ -1,6 +1,0 @@
-(executable
- (name analyzer)
- (public_name analyzer)
- (package absolute-analyzer)
- (modules :standard)
-)

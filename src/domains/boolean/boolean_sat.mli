@@ -1,5 +1,5 @@
-(** This module encapsulates a CDCL SAT solver based on MiniSat, and implemented by Albin Coquereau in OCaml in a library called SatML.
-    WARNING: only one instance of this module can be used at once, this is because SatML relies on global variables. *)
+(** This module encapsulates a CDCL SAT solver based on MiniSat, and implemented by Albin Coquereau in OCaml in a library called Minisatml.
+    WARNING: only one instance of this module can be used at once, this is because Minisatml relies on global variables. *)
 
 open Boolean_rep
 

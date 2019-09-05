@@ -1,0 +1,9 @@
+(library
+  (name lang)
+  (public_name absolute.lang)
+  (libraries absolute.core absolute.bounds)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)

@@ -1,0 +1,11 @@
+(library
+  (name bounds)
+  (public_name absolute.bounds)
+  (libraries absolute.core gmp)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (c_names ml_float)
+  (modules_without_implementation bound_sig)
+  (modules :standard)
+)

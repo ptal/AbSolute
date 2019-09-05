@@ -1,3 +1,5 @@
+open Core
+open Bounds
 open Dbm
 
 module type Variable_order = functor (DBM : DBM_sig) ->
@@ -180,7 +182,7 @@ struct
   let select_min (min1, min2, min3) current =
     (* For canonical variables, the lower and upper bounds have the same dimension (they are in the same "sub-square" of the matrix).
        min1, min2 and min3 are canonical variables, thus they operate on a single variable and have only one dimension. *)
-    let dim_x v = (snd current).lb.l / 2 in
+    let dim_x v = (snd v).lb.l / 2 in
     let k_x = dim_x current in
     let k_y = (snd current).lb.c / 2 in
     if dim_x min1 <> k_x && dim_x min1 <> k_y then
@@ -216,7 +218,7 @@ struct
     else
       let min_rotated = min_of_rotated_boxes dbm (min1, min2, min3) in
       let min_rotated = List.filter (fun (w,v) -> R.neq w R.zero && v <> null_itv) min_rotated in
-      let (width,var) = max_of_min min1 min_rotated in
+      let (_width,var) = max_of_min min1 min_rotated in
       Some var
 end
 
@@ -260,7 +262,7 @@ struct
   let select_max (max1, max2, max3) current =
     (* For canonical variables, the lower and upper bounds have the same dimension (they are in the same "sub-square" of the matrix).
        max1, max2 and max3 are canonical variables, thus they operate on a single variable and have only one dimension. *)
-    let dim_x v = (snd current).lb.l / 2 in
+    let dim_x v = (snd v).lb.l / 2 in
     let k_x = dim_x current in
     let k_y = (snd current).lb.c / 2 in
     if dim_x max1 <> k_x && dim_x max1 <> k_y then
@@ -296,7 +298,7 @@ struct
     else
       let max_rotated = max_of_rotated_boxes dbm (max1, max2, max3) in
       let max_rotated = List.filter (fun (w,v) -> R.neq w R.zero && v <> null_itv) max_rotated in
-      let (width,var) = min_of_max max1 max_rotated in
+      let (_width,var) = min_of_max max1 max_rotated in
       Some var
 end
 
