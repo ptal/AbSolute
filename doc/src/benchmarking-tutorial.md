@@ -1,7 +1,7 @@
 # Step by step tutorial
 
 We go through the necessary steps to design and perform benchmarks.
-If you want to try these steps out by yourself, a full [example project](https://github.com/ptal/kobe/tree/example) is provided.
+If you want to try these steps out by yourself, a full [example project](https://github.com/ptal/kobe/tree/master/example) is provided.
 Here are the steps explained in this section:
 
 1. [Gather data sets](benchmarking-tutorial.html#a1-gather-data-sets)
@@ -41,13 +41,13 @@ A _data set_ is a directory containing two things:
 2. A list of _data instance_ files, for example `j301_1.sm`, `j301_2.sm`,...
 
 Once we have these data, we can proceed to the description of our benchmarks.
-Sample data are available in the directory [data](https://github.com/ptal/kobe/tree/example/data).
+Sample data are available in the directory [data](https://github.com/ptal/kobe/tree/master/example/data).
 
 ### 2. Create the benchmark configuration file
 
 The benchmarks to perform are described in a single JSON configuration file.
 For the sake of example, we will benchmark with AbSolute because it is already available to us (for GeCode and Chuffed, see [MiniZinc Benchmarking](minizinc-benchmarking.html)).
-Let's have a look at the configuration file [example/scheduling-data.json](https://github.com/ptal/kobe/tree/example/scheduling-data.json):
+Let's have a look at the configuration file [example/scheduling-data.json](https://github.com/ptal/kobe/blob/master/example/scheduling-benchmark.json):
 
 ```json
 {
