@@ -2,7 +2,7 @@
 
 [![ptal on Travis CI][travis-image]][travis]
 
-[travis-image]: https://travis-ci.org/ptal/AbSolute.png
+[travis-image]: https://travis-ci.org/ptal/AbSolute.png?branch=master
 [travis]: https://travis-ci.org/ptal/AbSolute
 
 Please consult the [AbSolute book](http://ptal.github.io) for *research*, tutorial and general information.

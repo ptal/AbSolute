@@ -28,3 +28,10 @@ opam install absolute
 ```
 
 `AbSolute` is currently only a library project, so it must be used in an OCaml project, which we explain in the [next chapter](learn-absolute.html).
+
+To update `absolute` (and any OPAM package) to the latest version, you can simply type:
+
+```sh
+opam update
+opam install absolute
+```
