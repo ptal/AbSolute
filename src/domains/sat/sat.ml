@@ -1,14 +1,16 @@
+open Core
+open Core.Kleene
+open Bounds
+open Domains.Abstract_domain
+open Sat_rep
 open Minisatml
-open Solver
-open Boolean_rep
-open Abstract_domain
-open Kleene
+open Minisatml.Solver
 
-module type Boolean_sat_sig =
+module type Sat_sig =
 sig
   type t
 
-  module R = Boolean_rep
+  module R = Sat_rep
   module B = Bound_int
 
   val empty: t
@@ -25,7 +27,7 @@ sig
   val print: R.t -> Format.formatter -> t -> unit
 end
 
-module Boolean_sat =
+module Sat =
 struct
   (* Unfortunately, minisatml relies on global variables.
      We should update it later. *)
@@ -37,7 +39,7 @@ struct
     decision: Types.Lit.t;
   }
 
-  module R = Boolean_rep
+  module R = Sat_rep
   module B = Bound_int
 
   let empty = { depth=0; decision=dummy_lit }
@@ -68,7 +70,7 @@ struct
     let b = {b with depth=decisionLevel ()} in
     List.init n (fun _ -> b)
 
-  let copy b = failwith "`copy` is not supported on `Boolean_sat`."
+  let copy _ = failwith "`copy` is not supported on `Sat`."
 
   (* The learnt clause are stored in the watched literals array.
      Actually, there is no explicit "learnt clause database". *)

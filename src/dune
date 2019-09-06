@@ -5,4 +5,5 @@
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))
   (modules :standard)
+  (libraries minisatml)
 )

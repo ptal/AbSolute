@@ -1,9 +1,10 @@
+open Core
 open Lang
 open Lang.Ast
-open Libsatml
-open Libsatml.Types
+open Minisatml
+open Minisatml.Types
 
-module type Boolean_rep_sig =
+module type Sat_rep_sig =
 sig
   type t
   type var_kind = unit
@@ -22,8 +23,8 @@ end
    NOTE: It duplicates constraints if they occur in `<=>`. *)
 let eliminate_imply_and_equiv formula =
   let rec aux = function
-    | Cmp _ as c -> c
-    | FVar _ as c -> c
+    | Cmp _ as f -> f
+    | FVar _ as f -> f
     | Equiv (f1,f2) ->
         let f1 = aux f1 in
         let f2 = aux f2 in
@@ -40,7 +41,7 @@ let move_not_inwards formula =
   let rec aux neg formula =
     if neg then
       match formula with
-      | Cmp (op, e1, e2) -> Cmp (Csp.neg op,e1,e2)
+      | Cmp (e1, op, e2) -> Cmp (e1,Rewritting.neg op,e2)
       | FVar f -> Not (FVar f)
       | And (f1,f2) -> Or (aux true f1, aux true f2)
       | Or (f1,f2) -> And (aux true f1, aux true f2)
@@ -48,8 +49,8 @@ let move_not_inwards formula =
       | Equiv _ | Imply _ -> failwith "`move_not_inwards` must be called after `eliminate_imply_and_equiv`."
     else
       match formula with
-      | Cmp _ as c -> c
-      | FVar _ as c -> c
+      | Cmp _ as f -> f
+      | FVar _ as f -> f
       | And (f1,f2) -> And (aux false f1, aux false f2)
       | Or (f1,f2) -> Or (aux false f1, aux false f2)
       | Not f -> aux true f
@@ -59,8 +60,8 @@ let move_not_inwards formula =
 (* Distribute `Or` over `And`: a \/ (b /\ c) --> (a \/ b) /\ (a \/ c). *)
 let distribute_or formula =
   let rec aux = function
-    | Cmp _ as c -> c, false
-    | FVar _ as c -> c, false
+    | Cmp _ as f -> f, false
+    | FVar _ as f -> f, false
     | Or (f1, And (f2, f3)) -> And(Or(f1,f2), Or(f1,f3)), true
     | Or (And(f1,f2), f3) -> aux (Or(f3, And(f1,f2)))
     | And (f1,f2) ->
@@ -96,7 +97,7 @@ let map_clauses f formula =
     | _ -> failwith "`map_clauses` assumes the formula is in CNF." in
   aux formula
 
-module Boolean_rep =
+module Sat_rep =
 struct
   type var_kind = unit
   type var_id = Solver.var

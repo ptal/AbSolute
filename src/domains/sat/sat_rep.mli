@@ -1,6 +1,6 @@
 open Lang.Ast
 
-module type Boolean_rep_sig =
+module type Sat_rep_sig =
 sig
   type t
   type var_kind = unit
@@ -24,4 +24,4 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Boolean_rep: Boolean_rep_sig
+module Sat_rep: Sat_rep_sig
