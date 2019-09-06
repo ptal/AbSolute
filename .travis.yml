@@ -3,6 +3,8 @@ sudo: true
 install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
 script: bash -ex .travis-opam.sh
 env:
+  global:
+  - EXTRA_REMOTES="git://github.com/ptal/solvers-opam.git"
   matrix:
   - OCAML_VERSION=4.07
 os:
