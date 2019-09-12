@@ -44,6 +44,16 @@ type formula =
   | Or  of formula * formula
   | Not of formula
 
+val zero: expr
+val one: expr
+val two: expr
+
+(** Encoding of true and false as formula. *)
+val truef: formula
+val falsef: formula
+
+val conjunction: formula list -> formula
+
 (** Checks if an expression contains a variable. *)
 val has_variable: expr -> bool
 
@@ -52,10 +62,6 @@ val is_linear: expr -> bool
 
 (** Checks if a constraints is linear. *)
 val is_cons_linear: formula -> bool
-
-val zero: expr
-val one: expr
-val two: expr
 
 val is_cst: expr -> bool
 

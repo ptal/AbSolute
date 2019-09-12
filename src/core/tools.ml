@@ -129,6 +129,12 @@ let for_all_asymmetric_pairs l f =
     else
       [])
 
+(* val fold_left_hd: ('a -> 'a -> 'a) -> 'a list -> 'a *)
+let fold_left_hd f = function
+  | [] -> raise (Failure "`fold_left_hd` on empty list")
+  | a::[] -> a
+  | a::l -> List.fold_left f a l
+
 (**********************)
 (** {3} Map instances *)
 (**********************)

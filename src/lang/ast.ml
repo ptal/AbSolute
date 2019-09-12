@@ -24,6 +24,18 @@ type formula =
   | Or  of formula * formula
   | Not of formula
 
+let one = Cst (Bound_rat.one, Int)
+let zero = Cst (Bound_rat.zero, Int)
+let two  = Cst (Bound_rat.two, Int)
+
+let truef = Cmp (zero, LEQ, zero)
+let falsef = Cmp (one, LEQ, zero)
+
+let rec conjunction = function
+  | [] -> truef
+  | c::[] -> c
+  | c1::l -> And (c1, conjunction l)
+
 let rec has_variable = function
   | Funcall(_, args) -> List.exists has_variable args
   | Unary (_, e) -> has_variable e
@@ -48,10 +60,6 @@ let rec is_cons_linear = function
   | And (b1,b2)
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
-
-let one = Cst (Bound_rat.one, Int)
-let zero = Cst (Bound_rat.zero, Int)
-let two  = Cst (Bound_rat.two, Int)
 
 let join_annot a b =
   match a,b with
