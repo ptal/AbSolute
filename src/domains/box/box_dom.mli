@@ -62,10 +62,10 @@ sig
   val delta: t -> R.var_id list
 end
 
-module type Box_functor = functor (B: Bound_sig.BOUND) -> Box_sig with module Vardom.B = B
+module type Box_functor = functor (B: Bound_sig.S) -> Box_sig with module Vardom.B = B
 
 module Make
-  (B: Bound_sig.BOUND)
+  (B: Bound_sig.S)
   (VARDOM: Vardom_sig.Vardom_functor)
   (SPLIT: Box_split.Box_split_sig) : Box_sig
 

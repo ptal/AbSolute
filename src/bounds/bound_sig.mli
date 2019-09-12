@@ -7,8 +7,7 @@
 
 (* Signature for bounds: numeric values enriched with +oo and -oo. *)
 
-module type BOUND = sig
-
+module type S = sig
   type t
 
   (* ordering *)

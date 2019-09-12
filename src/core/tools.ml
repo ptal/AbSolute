@@ -90,6 +90,45 @@ let fold_map f a l =
   let (a, l') = List.fold_left f (a, []) l in
   (a, List.rev l')
 
+(** True if `s` starts with `head`.
+    `start_with` trims `s` and `head`. *)
+let start_with s head =
+  let s = String.trim s in
+  let head = String.trim head in
+  let head_len = String.length head in
+  if String.length s >= head_len then
+    (String.sub s 0 head_len) = head
+  else
+    false
+
+(* val for_all_pairs: 'a list -> ('a -> 'a -> 'b list) -> 'b list *)
+let for_all_pairs l f =
+  List.flatten (List.map (fun x ->
+    List.flatten (List.map (fun y ->
+      f x y
+    ) l)
+  ) l)
+
+let indexed_list l = List.mapi (fun i x -> (i,x)) l
+
+(* val for_all_distinct_pairs: 'a list -> ('a -> 'a -> 'b list) -> 'b list.
+   Two pairs are distinct if they do not have the same index. *)
+let for_all_distinct_pairs l f =
+  for_all_pairs (indexed_list l) (fun (i,x) (j,y) ->
+    if i != j then
+      f x y
+    else
+      [])
+
+(* val for_all_asymmetric_pairs: 'a list -> ('a -> 'a -> 'b list) -> 'b list.
+   Two pairs l[i] and l[j] are asymmetric if `i < j`. *)
+let for_all_asymmetric_pairs l f =
+  for_all_pairs (indexed_list l) (fun (i,x) (j,y) ->
+    if i < j then
+      f x y
+    else
+      [])
+
 (**********************)
 (** {3} Map instances *)
 (**********************)

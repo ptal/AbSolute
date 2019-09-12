@@ -40,7 +40,7 @@ module Box_oct_rep: Box_oct_rep_functor
 
 module type Box_octagon_disjoint_sig =
 sig
-  module B : Bound_sig.BOUND
+  module B : Bound_sig.S
   module R : Box_oct_rep_sig
   type t
   type bound = B.t

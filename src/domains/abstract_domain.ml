@@ -57,7 +57,7 @@ exception Conflict of int
 module type Abstract_domain =
 sig
   (** The module of the bound handled by this abstract domain. *)
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
 
   (** The representation of the variables and constraints inside the
      abstract domain.  It allows users to turn a logic specification

@@ -1,9 +1,8 @@
 open Core.Bot
 open Bounds
-open Bound_sig
 open Lang
 
-module Make(B:BOUND) = struct
+module Make(B: Bound_sig.S) = struct
 
   module B = B
   type bound = B.t

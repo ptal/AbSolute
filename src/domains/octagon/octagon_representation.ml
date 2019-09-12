@@ -29,7 +29,7 @@ let rec generic_rewrite c =
 
 module type Octagon_rep_sig =
 sig
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
   type t
   type var_kind = unit
   type var_id = dbm_interval
@@ -43,7 +43,7 @@ sig
   val negate: rconstraint -> rconstraint
 end
 
-module Octagon_rep(B: Bound_sig.BOUND) =
+module Octagon_rep(B: Bound_sig.S) =
 struct
   type var_id = dbm_interval
   type var_kind = unit

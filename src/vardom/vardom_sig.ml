@@ -11,7 +11,7 @@ type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
 
 module type Vardom_sig = sig
   type t
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
   type bound = B.t
 
   (** `var_kind` is a symbolic representation of a vardom.
@@ -127,4 +127,4 @@ module type Vardom_sig = sig
   val filter_binop_f: binop_kind -> t -> t -> t -> t bot
 end
 
-module type Vardom_functor = functor (B: Bound_sig.BOUND) -> Vardom_sig with module B=B
+module type Vardom_functor = functor (B: Bound_sig.S) -> Vardom_sig with module B=B

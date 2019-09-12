@@ -98,7 +98,7 @@ end
 
 module type DBM_sig =
 sig
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
   type bound = B.t
   type t
   val init: int -> t
@@ -114,7 +114,7 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-module MakeDBM(A: Array_store_sig)(B:Bound_sig.BOUND) = struct
+module MakeDBM(A: Array_store_sig)(B:Bound_sig.S) = struct
   module B=B
   type bound = B.t
   type t = {
@@ -168,7 +168,7 @@ module MakeCopy = MakeDBM(Array_store)
 module MakeTrailing = MakeDBM(Parray_store)
 module Make = MakeTrailing
 
-(* module Make(B:Bound_sig.BOUND) = struct
+(* module Make(B:Bound_sig.S) = struct
   module B=B
   type bound = B.t
   type t = {

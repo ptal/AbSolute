@@ -3,9 +3,9 @@ open Bounds
 open Vardom
 open Dbm
 
-module type Interval_view_sig = functor (B: Bound_sig.BOUND) ->
+module type Interval_view_sig = functor (B: Bound_sig.S) ->
 sig
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
   type bound = B.t
 
   val dbm_to_lb : dbm_var -> bound -> bound
@@ -21,7 +21,7 @@ end with module B=B
 
   To simplify the treatment (and improve soundness), we use interval arithmetic: (sqrt 2) is interpreted as the interval [sqrt_down 2, sqrt_up 2].
   Further operations are performed on this interval, and we chose the lower or upper bound at the end depending on what we need. *)
-module Interval_view(B: Bound_sig.BOUND) =
+module Interval_view(B: Bound_sig.S) =
 struct
   module B=B
   module R=Bound_rat

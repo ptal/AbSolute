@@ -76,7 +76,7 @@ module Fold_intervals_rotated : Fold_interval_sig
 
 module type DBM_sig =
 sig
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
   type bound = B.t
   type t
 
@@ -118,6 +118,6 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-module Make(B:Bound_sig.BOUND) : DBM_sig
-module MakeCopy(B:Bound_sig.BOUND) : DBM_sig
-module MakeTrailing(B:Bound_sig.BOUND) : DBM_sig
+module Make(B:Bound_sig.S) : DBM_sig
+module MakeCopy(B:Bound_sig.S) : DBM_sig
+module MakeTrailing(B:Bound_sig.S) : DBM_sig

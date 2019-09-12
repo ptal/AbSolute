@@ -7,11 +7,10 @@
 
 open Core.Bot
 open Bounds
-open Bound_sig
 open Lang
 open Vardom_sig
 
-module Itv(B:BOUND) = struct
+module Itv(B : Bound_sig.S) = struct
 
   (************************************************************************)
   (* TYPES *)

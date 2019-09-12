@@ -6,9 +6,9 @@ open Dbm
 
 (** This module signature provides function to view DBM's values as interval bounds.
     Rational: Conversion of an element in the DBM to an interval depends on the bound type. *)
-module type Interval_view_sig = functor (B: Bound_sig.BOUND) ->
+module type Interval_view_sig = functor (B: Bound_sig.S) ->
 sig
-  module B: Bound_sig.BOUND
+  module B: Bound_sig.S
   type bound = B.t
 
   (** The bounds of the variable must be retrieved with `DBM.project`. *)

@@ -7,6 +7,7 @@ type global_statistics = {
   sols: int;
   pruned: int;
   depth_max: int;
+  restarts: int;
 }
 
 let init_global_stats () = {
@@ -16,7 +17,8 @@ let init_global_stats () = {
   fails=0;
   sols=0;
   pruned=0;
-  depth_max=0
+  depth_max=0;
+  restarts=0;
 }
 
 type precision = float
