@@ -2,22 +2,43 @@ open Core
 open Bounds
 open Lang.Ast
 
-module Make(C: Bound_sig.S) =
+module Generic(T: Bound_sig.S)(C: Bound_sig.S) =
 struct
-  let resource_ty = if C.is_continuous then Real else Int
+  module D = Disjunctive.Make(T)
   type rtask = {
+    task: D.task;
     id: int;
     resources_usage: C.t
   }
+
+  let remove_tasks_not_using_resource rtasks =
+    List.filter (fun t -> C.neq t.resources_usage C.zero) rtasks
+
+  let resource_ty = if C.is_continuous then Real else Int
+
+  let make_sum terms =
+    if List.length terms = 0 then zero
+    else Tools.fold_left_hd (fun a b -> Binary (a, ADD, b)) terms
+end
+
+module MakeTaskRD(T: Bound_sig.S)(C: Bound_sig.S) =
+struct
+  include Generic(T)(C)
+
   type name_factory = rtask -> rtask -> string
 
   let default_name_factory t1 t2 =
     "task_" ^ (string_of_int t1.id) ^ "_runs_when_" ^ (string_of_int t2.id) ^ "_starts"
 
-  let remove_tasks_not_using_resource rtasks =
-    List.filter (fun t -> C.neq t.resources_usage C.zero) rtasks
+  let shared_constraints rtasks make_name =
+    let tasks = remove_tasks_not_using_resource rtasks in
+    conjunction (
+      Tools.for_all_distinct_pairs tasks (fun t1 t2 ->
+        let b = FVar (make_name t1 t2) in
+        [Equiv (b, D.overlap_before t1.task t2.task)]
+    ))
 
-  let cumulative_task_RD rtasks capacity make_name =
+  let cumulative rtasks capacity make_name =
     let tasks = remove_tasks_not_using_resource rtasks in
     conjunction (List.map (fun t1 ->
       (* Given the task `t1`, we retrieve the quantity of resource used by all other tasks `t2` during the execution of `t1`.
@@ -29,11 +50,37 @@ struct
           let r = Cst (C.to_rat t2.resources_usage, resource_ty) in
           [(Binary (b, MUL, r))]
       ) tasks) in
-      let sum =
-        if List.length resources_profile = 0 then zero
-        else Tools.fold_left_hd (fun a b -> Binary (a, ADD, b)) resources_profile in
+      let sum = make_sum resources_profile in
       (* We subtract the resource used by `t1` to the capacity since it is already known. *)
       let remaining_capacity = Bound_rat.sub_up (C.to_rat capacity) (C.to_rat t1.resources_usage) in
       Cmp (Cst (remaining_capacity, resource_ty), GEQ, sum)
     ) tasks)
+end
+
+module MakeTimeRD(C: Bound_sig.S) =
+struct
+  include Generic(Bound_int)(C)
+
+  type name_factory = rtask -> int -> string
+
+  let default_name_factory rtask instant =
+    "task_" ^ (string_of_int rtask.id) ^ "_runs_at_" ^ (string_of_int instant)
+
+  let shared_constraints rtasks horizon make_name =
+    conjunction (List.flatten (List.map (fun i ->
+      List.map (fun t ->
+        Equiv (FVar (make_name t i), D.at_instant t.task i)
+      ) rtasks
+    ) (Tools.range 0 horizon)))
+
+  let cumulative rtasks horizon capacity make_name =
+    conjunction (List.map (fun instant ->
+      let resources_profile = List.map (fun t ->
+        let b = Var (make_name t instant) in
+        let r = Cst (C.to_rat t.resources_usage, resource_ty) in
+        Binary (b, MUL, r)
+      ) rtasks in
+      let sum = make_sum resources_profile in
+      Cmp (Cst (C.to_rat capacity, resource_ty), GEQ, sum)
+    ) (Tools.range 0 horizon))
 end
