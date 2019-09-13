@@ -21,4 +21,8 @@ sig
 
   (** Ensure that a task is running at the instant `i`. *)
   val at_instant: task -> B.t -> formula
+
+  (** Given two tasks name `s1,s2`, and a duration `d`, ensure that `s2` starts at least `d` units after the start of `s1`.
+      The resulting constraint is `s1 + d1 <= s2` that we rewrite to `s1 - s2 <= -d1`. *)
+  val precedence: string -> string -> B.t -> formula
 end

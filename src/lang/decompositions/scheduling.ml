@@ -38,4 +38,8 @@ struct
     let i' = Bound_rat.sub_up i (B.to_rat task.duration) in
     let after_i = Cmp (Var task.start, GT, Cst (i', ty)) in
     And (before_i, after_i)
+
+  let precedence s1 s2 d =
+    let d = Cst(Bound_rat.neg (B.to_rat d), ty) in
+    Cmp (Binary (Var s1, SUB, Var s2), LEQ, d)
 end
