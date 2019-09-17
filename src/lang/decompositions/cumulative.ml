@@ -4,9 +4,9 @@ open Lang.Ast
 
 module Generic(T: Bound_sig.S)(C: Bound_sig.S) =
 struct
-  module D = Disjunctive.Make(T)
+  module S = Scheduling.Make(T)
   type rtask = {
-    task: D.task;
+    task: S.task;
     id: int;
     resources_usage: C.t
   }
@@ -35,7 +35,7 @@ struct
     conjunction (
       Tools.for_all_distinct_pairs tasks (fun t1 t2 ->
         let b = FVar (make_name t1 t2) in
-        [Equiv (b, D.overlap_before t1.task t2.task)]
+        [Equiv (b, S.overlap_before t1.task t2.task)]
     ))
 
   let cumulative rtasks capacity make_name =
@@ -69,7 +69,7 @@ struct
   let shared_constraints rtasks horizon make_name =
     conjunction (List.flatten (List.map (fun i ->
       List.map (fun t ->
-        Equiv (FVar (make_name t i), D.at_instant t.task i)
+        Equiv (FVar (make_name t i), S.at_instant t.task i)
       ) rtasks
     ) (Tools.range 0 horizon)))
 

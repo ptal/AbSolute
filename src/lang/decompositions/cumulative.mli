@@ -5,11 +5,11 @@ open Lang.Ast
 
 module Generic(T: Bound_sig.S)(C: Bound_sig.S) :
 sig
-  module D : (module type of Disjunctive.Make(T))
+  module S : (module type of Scheduling.Make(T))
 
   (** A task with resource consumption. *)
   type rtask = {
-    task: D.task;
+    task: S.task;
     id: int; (** The ID of a task is useful to create name of new variables involving this task.
                  It should uniquely identify the task. *)
     resources_usage: C.t
