@@ -1,3 +1,15 @@
+(* Copyright 2019 Pierre Talbot
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Lesser General Public License for more details. *)
+
 open Core
 
 module type Pengine_sig =
@@ -58,7 +70,7 @@ struct
     let num_actives = engine.num_actives + 1 in
     { engine with actives; num_actives }
 
-  (* Schedule a task if it is active and not already present in the reactor. *)
+  (* Schedule a task if it is active and not already present in the scheduler. *)
   let schedule engine task =
     if Parray.get engine.actives task &&
        not (CCBV.get engine.inside_queue task) then
@@ -86,7 +98,7 @@ struct
 
   let num_active_tasks engine = engine.num_actives
 
-  (* A invariant is that the scheduler is empty at the end of this function, thus it is idempotent. *)
+  (* An invariant is that the scheduler is empty at the end of this function, thus it is idempotent. *)
   let fixpoint engine f acc =
     let rec aux engine acc =
       if CCDeque.is_empty engine.scheduler then
