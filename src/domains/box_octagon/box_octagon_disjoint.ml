@@ -20,6 +20,7 @@ open Lang.Rewritting
 open Octagon
 open Box
 open Box.Box_dom
+open Domains.Abstract_domain
 
 module type Box_oct_rep_sig =
 sig
@@ -130,7 +131,8 @@ sig
   module R : Box_oct_rep_sig
   type t
   type bound = B.t
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
   val lazy_copy: t -> int -> t list
@@ -155,16 +157,20 @@ struct
   module R = Box_oct_rep(Box.R)(Octagon.R)
 
   type t = {
+    uid: ad_uid;
     box : Box.t;
     octagon: Octagon.t;
     reified_octagonal: R.reified_octagonal list;
   }
 
-  let empty = {
-    box=Box.empty;
-    octagon=Octagon.empty;
+  let empty uid = {
+    uid=uid;
+    box=Box.empty 0;
+    octagon=Octagon.empty 0;
     reified_octagonal=[];
   }
+
+  let uid box_oct = box_oct.uid
 
   let extend box_oct = function
   | R.BoxKind k ->

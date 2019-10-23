@@ -16,6 +16,7 @@ open Lang.Ast
 open Octagon
 open Box
 open Box.Box_dom
+open Domains.Abstract_domain
 
 module type Box_oct_rep_sig =
 sig
@@ -56,7 +57,8 @@ sig
   module R : Box_oct_rep_sig
   type t
   type bound = B.t
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
   val lazy_copy: t -> int -> t list

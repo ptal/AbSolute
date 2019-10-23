@@ -25,7 +25,8 @@ sig
   module R = Sat_rep
   module B = Bound_int
 
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
   val lazy_copy: t -> int -> t list
@@ -44,6 +45,7 @@ struct
   (* Unfortunately, minisatml relies on global variables.
      We should update it later. *)
   type t = {
+    uid: ad_uid;
     (* The depth is necessary to backtrack the state of minisat, it corresponds to the decision level. *)
     depth: int;
     (* A decision from `split` that is propagated in `closure`.
@@ -54,7 +56,8 @@ struct
   module R = Sat_rep
   module B = Bound_int
 
-  let empty = { depth=0; decision=dummy_lit }
+  let empty uid = { uid; depth=0; decision=dummy_lit }
+  let uid b = b.uid
 
   (* Minisatml does not use functional structure for automatic backtracking, so we trigger the backtracking manually.
      For safety, we guard all public functions of this module with `backtrack_state`.

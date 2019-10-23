@@ -14,6 +14,7 @@ open Core
 open Core.Kleene
 open Dbm
 open Octagon_representation
+open Domains.Abstract_domain
 
 module Octagon_representation = Octagon_representation
 module Dbm = Dbm
@@ -26,7 +27,8 @@ sig
   module B = DBM.B
   module R : Octagon_rep_sig with module B=B
   type t
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
   val lazy_copy: t -> int -> t list
@@ -55,12 +57,14 @@ struct
   module Itv_view = Interval_view_dbm.Interval_view(B)
 
   type t = {
+    uid: ad_uid;
     dbm: DBM.t;
     (* These constraints must be coherent (see `Dbm.ml`). *)
     constraints: R.rconstraint list;
   }
 
-  let empty = { dbm=DBM.empty; constraints=[] }
+  let empty uid = { uid; dbm=DBM.empty; constraints=[] }
+  let uid octagon = octagon.uid
 
   let extend octagon () =
     let (dbm, itv) = DBM.extend octagon.dbm in
@@ -99,7 +103,7 @@ struct
         |> Closure.closure
       else
         List.fold_left Closure.incremental_closure octagon.dbm octagon.constraints in
-    {dbm=dbm; constraints=[]}
+    {octagon with dbm; constraints=[]}
 
   let weak_incremental_closure octagon oc =
     match entailment octagon oc with

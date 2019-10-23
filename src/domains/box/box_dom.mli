@@ -15,6 +15,7 @@ open Core
 open Bounds
 open Vardom
 open Box_representation
+open Domains.Abstract_domain
 
 module type Box_sig =
 sig
@@ -25,7 +26,8 @@ sig
   type bound = Vardom.B.t
 
   (** Creates an empty box. *)
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
 
   (** Add a variable into the box. *)
   val extend: t -> R.var_kind -> (t * R.var_id)

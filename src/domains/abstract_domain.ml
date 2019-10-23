@@ -66,6 +66,8 @@ end
     In addition to `Bot.Bot_found`, `Conflict n` forces the backtrack in the search tree to the level `n`. *)
 exception Conflict of int
 
+type ad_uid = int
+
 module type Abstract_domain =
 sig
   (** The module of the bound handled by this abstract domain. *)
@@ -79,8 +81,14 @@ sig
   (** The type of the abstract domain. *)
   type t
 
-  (** An empty abstract domain. *)
-  val empty: t
+  (** An empty abstract domain identified by a unique identifier (UID).
+      See also `uid`. *)
+  val empty: ad_uid -> t
+
+  (** Retrieve the UID of this abstract domain.
+      UIDs are mainly useful to perform event-based propagation and associate event and task to a specific abstract domain.
+      See also `Transformers.Event_loop`. *)
+  val uid: t -> ad_uid
 
   (** Extend the abstract domain with a variable.  An abstract domain
      can handle variables of different kind, the meaning of "kind" is

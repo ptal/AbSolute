@@ -16,6 +16,7 @@
 open Bounds
 open Core
 open Sat_rep
+open Domains.Abstract_domain
 
 module type Sat_sig =
 sig
@@ -27,7 +28,8 @@ sig
       NOTE: We use `Bound_int` instead of introducing a new `Bound_bool`. *)
   module B = Bound_int
 
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (B.t * B.t)
   val lazy_copy: t -> int -> t list

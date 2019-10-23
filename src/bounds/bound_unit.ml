@@ -32,7 +32,7 @@ let even _ = true
 let min x _ = x
 let max x _ = x
 
-let sign _ _ = 0
+let sign _ = 0
 
 let is_continuous = false
 

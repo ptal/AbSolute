@@ -18,6 +18,7 @@ open Vardom
 open Box_dom
 open Box_representation
 open Fixpoint.Pengine
+open Domains.Abstract_domain
 
 let recursive_reified () = raise (Wrong_modelling "Reified constraint inside reified constraint is not implemented.")
 
@@ -92,7 +93,8 @@ sig
   type bound = B.t
   type vardom = Vardom.t
 
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (Vardom.B.t * Vardom.B.t)
   val project_vardom: t -> R.var_id -> vardom
@@ -115,16 +117,20 @@ struct
   type bound = B.t
   type vardom = Vardom.t
   type t = {
+    uid: ad_uid;
     inner: Box.t;
     reified_constraints: R.reified_constraint Parray.t;
     engine: Pengine.t;
   }
 
-  let empty = {
-    inner=Box.empty;
+  let empty uid = {
+    uid;
+    inner=Box.empty 0;
     reified_constraints=Tools.empty_parray ();
     engine=Pengine.empty ();
   }
+
+  let uid box = box.uid
 
   let extend box () =
     let (inner, idx) = Box.extend box.inner () in

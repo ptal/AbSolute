@@ -17,6 +17,7 @@ open Box_dom
 open Box_representation
 open Lang.Ast
 open Vardom
+open Domains.Abstract_domain
 
 module type Reified_box_rep_sig =
 sig
@@ -52,7 +53,8 @@ sig
   type bound = B.t
   type vardom = Vardom.t
 
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (Vardom.B.t * Vardom.B.t)
   val project_vardom: t -> R.var_id -> vardom

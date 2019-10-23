@@ -16,6 +16,7 @@ open Core.Kleene
 open Bounds
 open Vardom
 open Box_representation
+open Domains.Abstract_domain
 
 module type Box_sig =
 sig
@@ -25,7 +26,8 @@ sig
   type vardom = Vardom.t
   type bound = Vardom.B.t
 
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
   val extend: t -> R.var_kind -> (t * R.var_id)
   val project: t -> R.var_id -> (Vardom.B.t * Vardom.B.t)
   val project_vardom: t -> R.var_id -> vardom
@@ -64,6 +66,7 @@ struct
      (We rarely add a new constraint inside the problem during resolution,
      but with Parray, it is possible to do so). *)
   type t = {
+    uid: ad_uid;
     store: Store.t;
     constraints: R.rconstraint Parray.t;
     (* Propagation engine of the constraints in `constraints`. *)
@@ -73,11 +76,14 @@ struct
   (* Reexported functions from the parametrized modules. *)
   let entailment box = Closure.entailment box.store
 
-  let empty = {
+  let empty uid = {
+    uid;
     store=Store.empty;
     constraints = Tools.empty_parray ();
     engine = Pengine.empty ();
   }
+
+  let uid box = box.uid
 
   let extend box () =
     let (store, idx) = Store.extend box.store in

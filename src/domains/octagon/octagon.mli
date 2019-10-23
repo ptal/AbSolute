@@ -13,6 +13,7 @@
 open Core
 open Dbm
 open Octagon_representation
+open Domains.Abstract_domain
 
 module Octagon_representation = Octagon_representation
 module Dbm = Dbm
@@ -27,7 +28,8 @@ sig
   type t
 
   (** Create an empty octagon. *)
-  val empty: t
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
 
   (** Extend the DBM with an additional variable. *)
   val extend: t -> R.var_kind -> (t * R.var_id)
