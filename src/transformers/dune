@@ -1,0 +1,8 @@
+(library
+  (name transformers)
+  (public_name absolute.transformers)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)
