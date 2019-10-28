@@ -10,11 +10,16 @@
 
 (** See `bound_sig.mli` for the interface of this module. *)
 
+open Core
+
 (* (\* sets FPU rounding mode towards +oo, once and for all *\) *)
 external init: unit -> unit = "ml_float_init"
 let _ = init ()
 
 type t = float
+
+let abstract_ty = Types.Float
+let concrete_ty = Types.Real
 
 (* ordering *)
 
@@ -36,7 +41,6 @@ let sign (x:t) : int =
   if x > 0. then 1 else
   if x < 0. then -1 else 0
 
-let is_continuous = true
 let succ x = x
 let prec x = x
 

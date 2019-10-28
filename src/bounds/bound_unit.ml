@@ -14,9 +14,14 @@
   In a sense, it is the worst over-approximation possible of anything.
   It maps to `0` when needed to convert to other numbers.
   This module is mainly useful for "meta abstract domain" that coordinates other abstract domains, but does not represent element or constraint.
-  Rational: The signature of `Abstract_domain` requires a `Bound`. *)
+  Design rational: The signature of `Abstract_domain` requires a `Bound`. *)
+
+open Core
 
 type t = unit
+
+let abstract_type = Types.VUnit
+let concrete_type = Types.Int
 
 let compare _ _ = 0
 let equal _ _ = true
@@ -34,7 +39,6 @@ let max x _ = x
 
 let sign _ = 0
 
-let is_continuous = false
 
 let succ x = x
 let prec x = x

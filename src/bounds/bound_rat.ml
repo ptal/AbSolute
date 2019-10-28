@@ -13,10 +13,13 @@ open Core
 (* We encode -infinity and infinity as `-1/0` and `1/0`. *)
 type t = Mpqf.t
 
-(* ordering *)
+let abstract_ty = Types.Rational
+let concrete_ty = Types.Real
 
 let name = "rational"
-let is_continuous = true
+
+(* ordering *)
+
 let succ x = x
 let prec x = x
 

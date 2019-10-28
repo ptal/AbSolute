@@ -9,8 +9,9 @@
    Lesser General Public License for more details. *)
 
 type t
+val abstract_ty: Core.Types.var_abstract_ty
+val concrete_ty: Core.Types.var_concrete_ty
 val name : string
-val is_continuous: bool
 val succ: t -> t
 val prec: t -> t
 val zero : t

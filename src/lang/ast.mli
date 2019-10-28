@@ -14,6 +14,7 @@
     This syntactic representation can be transformed by the `Representation_sig` of an abstract domain. *)
 
 open Bounds
+open Core.Types
 
 (** This exception is raised when a constraint is passed to an abstract
    domain that cannot represent this constraint. *)
@@ -22,10 +23,8 @@ exception Wrong_modelling of string
 (** Variables are identified by a string. *)
 type var = string
 
-(** Constants are defined over rational. *)
+(** Constants are defined over rational because they can represent exactly integers or floating point numbers. *)
 type i = Bound_rat.t
-
-type annot = Int | Real
 
 (** Unary arithmetic operators. *)
 type unop = NEG
@@ -41,7 +40,7 @@ type expr =
   | Unary   of unop * expr
   | Binary  of expr * binop * expr
   | Var     of var
-  | Cst     of i * annot
+  | Cst     of i * var_concrete_ty
 
 (** A binary constraint. *)
 type bconstraint = (expr * cmpop * expr)
@@ -55,6 +54,12 @@ type formula =
   | And of formula * formula
   | Or  of formula * formula
   | Not of formula
+
+(** Formula with existential quantifier.
+    It is mainly useful for declaring the concrete type of a variable's value. *)
+type qformula =
+  | QFFormula of formula
+  | Exists of var * var_ty * qformula
 
 val zero: expr
 val one: expr
@@ -76,5 +81,3 @@ val is_linear: expr -> bool
 val is_cons_linear: formula -> bool
 
 val is_cst: expr -> bool
-
-val join_annot: annot -> annot -> annot

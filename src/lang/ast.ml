@@ -11,11 +11,11 @@
    Lesser General Public License for more details. *)
 
 open Bounds
+open Core.Types
 
 exception Wrong_modelling of string
 type var = string
 type i = Bound_rat.t
-type annot = Int | Real
 type unop = NEG
 type binop = ADD | SUB | MUL | DIV | POW
 type cmpop = EQ | LEQ | GEQ | NEQ | GT | LT
@@ -24,7 +24,7 @@ type expr =
   | Unary   of unop * expr
   | Binary  of expr * binop * expr
   | Var     of var
-  | Cst     of i * annot
+  | Cst     of i * var_concrete_ty
 
 type bconstraint = (expr * cmpop * expr)
 type formula =
@@ -35,6 +35,10 @@ type formula =
   | And of formula * formula
   | Or  of formula * formula
   | Not of formula
+
+type qformula =
+  | QFFormula of formula
+  | Exists of var * var_ty * qformula
 
 let one = Cst (Bound_rat.one, Int)
 let zero = Cst (Bound_rat.zero, Int)
@@ -72,11 +76,6 @@ let rec is_cons_linear = function
   | And (b1,b2)
   | Or (b1,b2) -> is_cons_linear b1 && is_cons_linear b2
   | Not b -> is_cons_linear b
-
-let join_annot a b =
-  match a,b with
-  | Int,Int -> Int
-  | _ -> Real
 
 let is_cst = function
   | Cst _ -> true

@@ -15,6 +15,9 @@
 module type S = sig
   type t
 
+  val abstract_ty: Core.Types.var_abstract_ty
+  val concrete_ty: Core.Types.var_concrete_ty
+
   (* ordering *)
   (* ******** *)
 
@@ -34,9 +37,6 @@ module type S = sig
   val max: t -> t -> t
 
   val sign: t -> int
-
-  (** True if the bound elements do not have machine-representable successors or predecessors. *)
-  val is_continuous: bool
 
   (** `succ` and `prec` returns the number right after the current one, if it exists.
       Otherwise, it acts as the identity function.
