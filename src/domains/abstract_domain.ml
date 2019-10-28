@@ -10,57 +10,12 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** Signature of abstract domain.  It differs from `Adcp_sig` because
-   we suppose here that the constraints are encapsulated in the
-   abstract element. *)
+(** Signature of abstract domain.
+    We suppose here that the constraints are encapsulated in the abstract element. *)
 
 open Core
 open Bounds
-open Lang
-
-(** Every abstract domain may have a different variable and constraint
-   representation according to their internal implementation.  We ask
-   every abstract domain to provide a representation module in order
-   to connect the logic specification (`Ast.formula`) and the
-   representation of the abstract domain.  This module can also
-   rewrite a logic constraint into a more suited representation of the
-   abstract domain. *)
-module type Representation_sig = sig
-  type t
-
-  (** Kind of the variable in the abstract domain. *)
-  type var_kind
-
-  (** Variable ID as represented in the abstract domain. *)
-  type var_id
-
-  (** Constraint representation in the abstract domain. *)
-  type rconstraint
-
-  (** An empty (unconstrainted) representation. *)
-  val empty: t
-
-  (** Add a mapping between a logical variable and its representation
-     in the abstract domain. *)
-  val extend: t -> (Ast.var * var_id) -> t
-
-  (** Conversions utilities between logical variables and their
-     representations *)
-  val to_logic_var: t -> var_id -> Ast.var
-  val to_abstract_var: t -> Ast.var -> var_id
-
-  (** Rewrite a logic constraint into an abstract constraint. *)
-  val rewrite: t -> Ast.formula -> rconstraint list
-
-  (** Same as `rewrite` but the obtained constraints can
-     over-approximate the set of initial constraints (the set of
-     solutions might be greater with the obtained constraints). *)
-  val relax: t -> Ast.formula -> rconstraint list
-
-  (** Negate the constraint.  The negated constraint can be an
-     over-approximation of the initial constraint. *)
-  val negate: rconstraint -> rconstraint
-end
+open Interpretation
 
 (** Exception raised whenever a failure is encountered.
     In addition to `Bot.Bot_found`, `Conflict n` forces the backtrack in the search tree to the level `n`. *)
@@ -76,7 +31,7 @@ sig
   (** The representation of the variables and constraints inside the
      abstract domain.  It allows users to turn a logic specification
      into an abstract domain. *)
-  module R: Representation_sig
+  module I: Interpretation_sig
 
   (** The type of the abstract domain. *)
   type t
@@ -90,13 +45,14 @@ sig
       See also `Transformers.Event_loop`. *)
   val uid: t -> ad_uid
 
-  (** Extend the abstract domain with a variable.  An abstract domain
-     can handle variables of different kind, the meaning of "kind" is
-     proper to the abstract domain. *)
-  val extend: t -> R.var_kind -> (t * R.var_id)
+  (** Extend the abstract element with a variable of the given type.
+      The ID of the fresh variable is returned along with its abstract type.
+      Raise `Wrong_modelling` if the abstract domain does not support variables
+      of the given type. *)
+  val extend: t -> Types.var_ty -> (t * I.var_id * Types.var_abstract_ty)
 
   (** Project the lower and upper bounds of a single variable. *)
-  val project: t -> R.var_id -> (B.t * B.t)
+  val project: t -> I.var_id -> (B.t * B.t)
 
   (** `lazy_copy a n` creates `n` copies of the element `a` with the
      assumption that this one will not be used anymore, thus it might
@@ -119,15 +75,15 @@ sig
      domain.  This operation is in constant time and must not perform
      any closure algorithm.  It can however raise `Bot_found` if the
      constraint is detected disentailed in constant time. *)
-  val weak_incremental_closure: t -> R.rconstraint -> t
+  val weak_incremental_closure: t -> I.rconstraint -> t
 
   (** `entailment a c` returns `True` if the constraint `c` is
-     entailed by the abstract domain `a`.  Being entailed means that
+     entailed by the abstract element `a`.  Being entailed means that
      the constraint is redundant in comparison to the information
      already in `a`.  It returns `False` if adding `c` to `a` would
-     make the element inconsistant.  If `c` can become either `True`
+     make the element inconsistent.  If `c` can become either `True`
      or `False` in the future, then `Unknown` is returned. *)
-  val entailment: t -> R.rconstraint -> Kleene.t
+  val entailment: t -> I.rconstraint -> Kleene.t
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split t` should be equal to `t`. *)
@@ -150,7 +106,7 @@ sig
      floating numbers and rational. *)
   val state_decomposition: t -> Kleene.t
 
-  (** Print the current element in the abstract domain using the
-     initial names of variables. *)
-  val print: R.t -> Format.formatter -> t -> unit
+  (** Print the current element in the abstract element using the
+      logical names of variables. *)
+  val print: t -> Format.formatter -> t -> unit
 end
