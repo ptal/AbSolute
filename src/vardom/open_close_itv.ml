@@ -10,16 +10,77 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Core.Bot
 open Bounds
 open Lang
 
 module Make(B: Bound_sig.S) = struct
+  module OC_itv_of_bounds =
+  struct
+    module B = B
+    type bound = B.t
 
-  module B = B
-  type bound = B.t
+    type kind = Strict | Large
 
-  type kind = Strict | Large
+    type real_bound = kind * bound
+    type t = real_bound * real_bound
+
+    (* returns the half space defined by a bound and a direction.
+       - true for going toward +oo
+       - false for going toward -oo
+       Ex: half_space (Strict,0) true gives ]0; +oo[ *)
+    let half_space (k,b) dir =
+      (match (k,dir) with
+      | Strict, false  -> B.gt
+      | Strict, true -> B.lt
+      | Large , false  -> B.geq
+      | Large , true -> B.leq) b
+
+    (* check if a value is in a half space *)
+    let in_half (k,b) dir v : bool = v |> half_space (k,b) dir
+
+    (* maps empty intervals to explicit bottom *)
+    let to_bot ((((_,l) as b1),((_,h)as b2)) as itv) : t bot =
+      if in_half b1 true h && in_half b2 false l then Nb itv else Bot
+
+    let to_string (((kl,l),(kh,h)):t) : string =
+      Printf.sprintf
+        "%c%a;%a%c"
+        (if kl = Strict then ']' else '[')
+        B.sprint l
+        B.sprint h
+        (if kh = Large then ']' else '[')
+
+    (* not all pairs of rationals are valid intervals *)
+    let validate x =
+      if to_bot x = Bot then failwith ("invalid interval: " ^ to_string x)  else x
+
+    let large (x:B.t) (y:B.t) : t = validate ((Large,x),(Large,y))
+    let strict (x:B.t) (y:B.t) : t = validate ((Strict,x),(Strict,y))
+    let large_strict (x:B.t) (y:B.t) : t = validate ((Large,x),(Strict,y))
+    let strict_large (x:B.t) (y:B.t) : t = validate ((Strict,x),(Large,y))
+
+    let type_dispatch ty f =
+      Types.(match ty with
+      | (Concrete ty) when ty=B.concrete_ty -> f ()
+      | (Abstract ty) when ty=B.abstract_ty -> f ()
+      | ty -> raise (Ast.Wrong_modelling (
+          "Open_close_itv(" ^ (string_of_aty B.abstract_ty) ^ ") does not support " ^
+          (string_of_ty ty))))
+
+    let of_bounds ?(ty = Types.Concrete B.concrete_ty) (l,u) =
+      type_dispatch ty (fun _ -> large l u)
+  end
+
+  open OC_itv_of_bounds
+
+  include Vardom_factory.Make(OC_itv_of_bounds)
+
+  let to_bot = OC_itv_of_bounds.to_bot
+
+  let top ?(ty = Types.Concrete B.concrete_ty) () =
+    type_dispatch ty (fun _ -> (Strict,B.minus_inf), (Strict,B.inf))
 
   let sym = function
     | Large,x -> Strict,x
@@ -28,8 +89,6 @@ module Make(B: Bound_sig.S) = struct
   let stricten = function
     | Large,x -> Strict,x
     | x -> x
-
-  type real_bound = kind * bound
 
   let mix k1 k2 =
     match k1,k2 with
@@ -61,34 +120,11 @@ module Make(B: Bound_sig.S) = struct
   (*let ( /$ ) rb1 rb2 = *)
   let ( /$ ) rb1 rb2 = bound_arith rb1 rb2 bound_div_down
 
-  type t = real_bound * real_bound
-
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
-  let to_string (((kl,l),(kh,h)):t) : string =
-    Printf.sprintf
-      "%c%a;%a%c"
-      (if kl = Strict then ']' else '[')
-      B.sprint l
-      B.sprint h
-      (if kh = Large then ']' else '[')
 
   let print fmt (x:t) = Format.fprintf fmt "%s" (to_string x)
-
-  (* returns the half space defined by a bound and a direction.
-     - true for going toward +oo
-     - false for going toward -oo
-     Ex: half_space (Strict,0) true gives ]0; +oo[ *)
-  let half_space (k,b) dir =
-    (match (k,dir) with
-    | Strict, false  -> B.gt
-    | Strict, true -> B.lt
-    | Large , false  -> B.geq
-    | Large , true -> B.leq) b
-
-  (* check if a value is in a half space *)
-  let in_half (k,b) dir v : bool = v |> half_space (k,b) dir
 
   let cmp_low ((_,b1) as l1) ((_,b2) as l2) =
     if in_half l1 true b2 then -1
@@ -121,64 +157,6 @@ module Make(B: Bound_sig.S) = struct
   (* returns the higher bound two high bounds *)
   let max_up u1 u2 = if cmp_up u1 u2 = 1 then u1 else u2
 
-  (* maps empty intervals to explicit bottom *)
-  let to_bot ((((_,l) as b1),((_,h)as b2)) as itv) : t bot =
-    if in_half b1 true h && in_half b2 false l then Nb itv else Bot
-
-  (* not all pairs of rationals are valid intervals *)
-  let validate x =
-    if to_bot x = Bot then failwith ("invalid interval: " ^ to_string x)  else x
-
-    (************************************************************************)
-  (* CONSTRUCTORS AND CONSTANTS *)
-  (************************************************************************)
-
-  let large (x:B.t) (y:B.t) : t = validate ((Large,x),(Large,y))
-
-  let strict (x:B.t) (y:B.t) : t = validate ((Strict,x),(Strict,y))
-
-  let large_strict (x:B.t) (y:B.t) : t = validate ((Large,x),(Strict,y))
-
-  let strict_large (x:B.t) (y:B.t) : t = validate ((Strict,x),(Large,y))
-
-  let of_bound (x:B.t) : t = large x x
-
-  let zero : t = of_bound B.zero
-
-  let one : t = of_bound B.one
-
-  let minus_one : t = of_bound B.minus_one
-
-  let top_real : t = (Strict,B.minus_inf), (Strict,B.inf)
-  let top_int : t = (Strict,B.minus_inf), (Strict,B.inf)
-  let top = top_real
-
-  let zero_one : t = large B.zero B.one
-
-  let minus_one_zero : t = large B.minus_one B.zero
-
-  let minus_one_one : t = large B.minus_one B.one
-
-  let positive : t = large_strict B.zero B.inf
-
-  let negative : t = strict_large B.minus_inf B.zero
-
-  let of_bounds = large
-
-  let of_ints (l:int) (h:int) : t =
-    of_bounds (B.of_int_down l) (B.of_int_up h)
-
-  let of_int (x:int) : t = of_ints x x
-
-  let of_floats (l:float) (h:float) : t =
-    of_bounds (B.of_float_down l) (B.of_float_up h)
-
-  let of_float (x:float) : t = of_floats x x
-
-  let of_rats (l:Bound_rat.t) (h:Bound_rat.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
-
-  let of_rat (x:Bound_rat.t) = of_rats x x
-
   let hull (x:B.t) (y:B.t) : t =
     try large x y
     with Failure _ -> large y x
@@ -190,14 +168,14 @@ module Make(B: Bound_sig.S) = struct
   let to_expr (((kl, l), (kh, h)):t) =
     let open Ast in
     match kl, kh with
-      | Strict, Strict -> ((GT, Cst(B.to_rat l,Real)),
-                           (LT, Cst(B.to_rat h,Real)))
-      | Strict, Large -> ((GT, Cst(B.to_rat l,Real)),
-                          (LEQ, Cst(B.to_rat h,Real)))
-      | Large, Strict -> ((GEQ, Cst(B.to_rat l,Real)),
-                          (LT, Cst(B.to_rat h,Real)))
-      | Large, Large -> ((GEQ, Cst(B.to_rat l,Real)),
-                         (LEQ, Cst(B.to_rat h,Real)))
+      | Strict, Strict -> ((GT, Cst(B.to_rat l, B.concrete_ty)),
+                           (LT, Cst(B.to_rat h, B.concrete_ty)))
+      | Strict, Large -> ((GT, Cst(B.to_rat l, B.concrete_ty)),
+                          (LEQ, Cst(B.to_rat h, B.concrete_ty)))
+      | Large, Strict -> ((GEQ, Cst(B.to_rat l, B.concrete_ty)),
+                          (LT, Cst(B.to_rat h, B.concrete_ty)))
+      | Large, Large -> ((GEQ, Cst(B.to_rat l, B.concrete_ty)),
+                         (LEQ, Cst(B.to_rat h, B.concrete_ty)))
 
    (************************************************************************)
   (* SET-THEORETIC *)
@@ -487,18 +465,18 @@ module Make(B: Bound_sig.S) = struct
 
   let tan (((kl, l), (kh, h) as itv):t) =
     let diam = range itv in
-    if B.geq diam (snd (fst i_pi)) then top
+    if B.geq diam (snd (fst i_pi)) then top ()
     else
       let (l',h') = scale_to_two_pi_itv (l, h) in
       let diam = range itv
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
-      if q_inf = q_sup && B.geq diam (snd (fst i_pi)) then top
+      if q_inf = q_sup && B.geq diam (snd (fst i_pi)) then top ()
       else
         match q_inf, q_sup with
         | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
-	   mon_incr (B.tan_down, B.tan_up) ((kl, l'), (kh, h'))
-        | (One | Two | Three | Four), (One | Two | Three | Four) -> top
+            mon_incr (B.tan_down, B.tan_up) ((kl, l'), (kh, h'))
+        | (One | Two | Three | Four), (One | Two | Three | Four) -> top ()
   (*| _  -> (bfg B.min B.tan_down (kl, l') (kh, h'), bfg B.max B.tan_up (kl, l') (kh, h'))*)
 
   (* interval cot *)
@@ -878,9 +856,6 @@ module Make(B: Bound_sig.S) = struct
   let to_range ((_,l),(_,h)) = (l, h)
   let lb ((_,l),_) = l
   let ub (_,(_,h)) = h
-
-  (* returns the type annotation of the represented values *)
-  let to_annot _ = Ast.Real
 
   (* generate a random float between l and h *)
   let spawn (((_,l),(_,h)):t) =

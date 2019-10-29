@@ -10,13 +10,12 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(*
-   Generic intervals.
-   Can be instantiated with any bound type.
-   An interval is a pair `(l,u)` where `l` is the lower bound and `u` is the upper bound.
-   Consequently it does not handle "holes" in the domain.
-*)
+(** Generic intervals.
+    Can be instantiated with any bound type.
+    An interval is a pair `(l,u)` where `l` is the lower bound and `u` is the upper bound.
+    Consequently it does not handle "holes" in the domain. *)
 
+open Core
 open Core.Bot
 open Bounds
 open Lang
@@ -28,26 +27,40 @@ module Itv(B : Bound_sig.S) = struct
   (* TYPES *)
   (************************************************************************)
 
-  (* interval bound (possibly -oo or +oo *)
-  module B = B
-  type bound = B.t
-  type var_kind = ZERO | ONE | TOP_INT | TOP_REAL | TOP
-                  | OF_BOUNDS of bound*bound | OF_INTS of int*int | OF_RATS of Bound_rat.t*Bound_rat.t | OF_FLOATS of float*float
-                  | OF_INT of int | OF_RAT of Bound_rat.t | OF_FLOAT of float
-                  | COMPLETE of int (* complete BDD *)
+  module Itv_of_bounds =
+  struct
+    (* interval bound (possibly -oo or +oo *)
+    module B = B
+    type bound = B.t
 
-  (* an interval is a pair of bounds (lower,upper);
-     intervals are always non-empty: lower <= upper;
-     functions that can return an empty interval return it as Bot
-   *)
-  type t = bound * bound
+    (* an interval is a pair of bounds (lower,upper);
+       intervals are always non-empty: lower <= upper;
+       functions that can return an empty interval return it as Bot
+     *)
+    type t = bound * bound
 
-  (* not all pairs of rationals are valid intervals *)
-  let validate ((l,h):t) : t =
-    match B.classify l, B.classify h with
-    | B.INVALID,_ | _,B.INVALID  | B.MINF,_ | _,B.INF
-    | _ when B.gt l h -> invalid_arg "int.validate"
-    | _ -> l,h
+    (* not all pairs of rationals are valid intervals *)
+    let validate ((l,h):t) : t =
+      match B.classify l, B.classify h with
+      | B.INVALID,_ | _,B.INVALID  | B.MINF,_ | _,B.INF
+      | _ when B.gt l h -> invalid_arg "int.validate"
+      | _ -> l,h
+
+    let type_dispatch ty f =
+      Types.(match ty with
+      | (Concrete ty) when ty=B.concrete_ty -> f ()
+      | (Abstract ty) when ty=B.abstract_ty -> f ()
+      | ty -> raise (Ast.Wrong_modelling (
+          "Itv(" ^ (string_of_aty B.abstract_ty) ^ ") does not support " ^
+          (string_of_ty ty))))
+
+    let of_bounds ?(ty = Types.Abstract B.abstract_ty) bounds =
+      type_dispatch ty (fun () -> validate bounds)
+  end
+
+  include Vardom_factory.Make(Itv_of_bounds)
+
+  let validate = Itv_of_bounds.validate
 
   (* maps empty intervals to explicit bottom *)
   let to_bot ((l,h):t) : t bot =
@@ -57,67 +70,20 @@ module Itv(B : Bound_sig.S) = struct
   (* CONSTRUCTORS AND CONSTANTS *)
   (************************************************************************)
 
+  let top ?(ty = Types.Abstract B.abstract_ty) () =
+    Itv_of_bounds.type_dispatch ty (fun () -> B.minus_inf, B.inf)
 
-  let of_bound (x:B.t) : t = validate (x,x)
+  let top_real : t = top ~ty:Types.(Concrete Real) ()
+  let top_int : t = top ~ty:Types.(Concrete Int) ()
 
-  let zero : t = of_bound B.zero
-
-  let one : t = of_bound B.one
-
-  let minus_one : t = of_bound B.minus_one
-
-  let top_real : t = B.minus_inf, B.inf
-  let top_int : t = B.minus_inf, B.inf
-  let top : t = B.minus_inf, B.inf
-
-  let zero_one : t = B.zero, B.one
-
-  let minus_one_zero : t = B.minus_one, B.zero
-
-  let minus_one_one : t = B.minus_one, B.one
-
-  let positive : t = B.zero, B.inf
-
-  let negative : t = B.minus_inf, B.zero
-
-  let of_bounds (l:bound) (h:bound) = validate (l,h)
-
-  let of_ints (l:int) (h:int) : t = of_bounds (B.of_int_down l) (B.of_int_up h)
-
-  let of_int (x:int) = of_ints x x
-
-  let of_rats (l:Bound_rat.t) (h:Bound_rat.t) : t = of_bounds (B.of_rat_down l) (B.of_rat_up h)
-
-  let of_rat (x:Bound_rat.t) = of_rats x x
-
-  let of_floats (l:float) (h:float) : t = of_bounds (B.of_float_down l) (B.of_float_up h)
-
-  let of_float (x:float) = of_floats x x
-
-  let hull (x:B.t) (y:B.t) = B.min x y, B.max x y
-
-  (* The only function of the signature, maybe we don't have to define the previous functions, and directly put it in this function *)
-  let create var = match var with
-    | ZERO -> zero
-    | ONE -> one
-    | TOP_INT -> top_int
-    | TOP_REAL -> top_real
-    | TOP -> top
-    | OF_BOUNDS(b1,b2) -> of_bounds b1 b2
-    | OF_INTS(i1,i2) -> of_ints i1 i2
-    | OF_RATS(r1,r2) -> of_rats r1 r2
-    | OF_FLOATS(f1,f2) -> of_floats f1 f2
-    | OF_INT(i) -> of_int i
-    | OF_RAT(r) -> of_rat r
-    | OF_FLOAT(f) -> of_float f
-    | _ -> failwith "This creation of variable is not suited (or not implemented) for intervals of bounds"
+  let hull (x:bound) (y:bound) = B.min x y, B.max x y
 
   (************************************************************************)
   (* PRINTING *)
   (************************************************************************)
 
   let pp_print_bound fmt (b:B.t) =
-    if B.is_continuous then
+    if Types.is_continuous B.abstract_ty then
       if B.ceil b = b then
         Format.fprintf fmt "%0F" (B.to_float_down b)
       else
@@ -132,8 +98,8 @@ module Itv(B : Bound_sig.S) = struct
     else Format.fprintf fmt "[%a;%a]" pp_print_bound l pp_print_bound h
 
   let to_expr ((l, h):t) =
-    ((Ast.GEQ, Ast.Cst(B.to_rat l, Ast.Real)),
-     (Ast.LEQ, Ast.Cst(B.to_rat h, Ast.Real)))
+    ((Ast.GEQ, Ast.Cst(B.to_rat l, B.concrete_ty)),
+     (Ast.LEQ, Ast.Cst(B.to_rat h, B.concrete_ty)))
 
   (************************************************************************)
   (* SET-THEORETIC *)
@@ -365,7 +331,7 @@ module Itv(B : Bound_sig.S) = struct
       match p with
       | 1 -> Nb (il, ih)
       | x when x > 1 && B.odd l ->
-	Nb (B.root_down il p, B.root_up ih p)
+          Nb (B.root_down il p, B.root_up ih p)
       | x when x > 1 && B.even l ->
         if B.lt ih B.zero then Bot
         else if B.leq il B.zero then Nb (B.neg (B.root_up ih p), B.root_up ih p)
@@ -632,9 +598,6 @@ module Itv(B : Bound_sig.S) = struct
   let to_range x = x
   let lb (l,_) = l
   let ub (_,h) = h
-
-  (* returns the type annotation of the represented values *)
-  let to_annot _ = Ast.Real
 
   (* generate a random float between l and h *)
   let spawn (l,h) =

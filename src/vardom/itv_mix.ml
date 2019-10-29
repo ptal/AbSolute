@@ -10,20 +10,55 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Core.Bot
 open Bounds
+open Lang
 
 module I = Itv.ItvI
 module R = Open_close_itv.Test
 
-type t = Int of I.t | Real of R.t
-(* Rational can represent both floating point numbers and integers. *)
-module B = Bound_rat
-type bound = B.t
+module Itv_mix_of_bounds =
+struct
+  type t = Int of I.t | Real of R.t
+  (* Rational can represent both floating point numbers and integers. *)
+  module B = Bound_rat
+  type bound = B.t
 
-(* useful constructors *)
+  let type_dispatch ty f_int f_real =
+    Types.(match ty with
+    | (Concrete ty) when ty=I.B.concrete_ty -> f_int ()
+    | (Concrete ty) when ty=R.B.concrete_ty -> f_real ()
+    | (Abstract ty) when ty=I.B.abstract_ty -> f_int ()
+    | (Abstract ty) when ty=R.B.abstract_ty -> f_real ()
+    | ty -> raise (Ast.Wrong_modelling ("Itv_mix does not support " ^ (string_of_ty ty))))
+
+  let of_bounds ?(ty = Types.Concrete Types.Real) (l,u) =
+    type_dispatch ty
+    (fun _ -> Int (I.of_bounds ~ty (I.B.of_rat_down l, I.B.of_rat_up u)))
+    (fun _ -> Real (R.of_bounds ~ty (R.B.of_rat_down l, R.B.of_rat_up u)))
+end
+
+open Itv_mix_of_bounds
+
+include Vardom_factory.Make(Itv_mix_of_bounds)
+
 let make_real x = Real x
 let make_int x  = Int x
+
+let top ?(ty = Types.Concrete Types.Real) () =
+  Itv_mix_of_bounds.type_dispatch ty
+  (fun _ -> Int (I.top ~ty ()))
+  (fun _ -> Real (R.top ~ty ()))
+
+(* maps empty intervals to explicit bottom *)
+let to_bot (x:t) : t bot =
+  match x with
+  | Int x -> lift_bot make_int (I.to_bot x)
+  | Real x -> lift_bot make_real (R.to_bot x)
+
+let zero = of_int 0
+let one = of_int 1
 
 (* Conversion utilities *)
 (************************)
@@ -55,45 +90,6 @@ let dispatch f_int f_real = function
 let map f_int f_real = function
   | Int x -> Int (f_int x)
   | Real x -> Real (f_real x)
-
-(************************************************************************)
-(*                      CONSTRUCTORS AND CONSTANTS                      *)
-(************************************************************************)
-
-let of_ints (x1:int) (x2:int) : t =
-  Int(I.of_ints x1 x2)
-
-let of_floats (x1:float) (x2:float) : t =
-  Real(R.of_floats x1 x2)
-
-let of_int (x1:int) : t =
-  of_ints x1 x1
-
-let of_float (x1:float) : t =
-  of_floats x1 x1
-
-let of_rats (m1:Bound_rat.t) (m2:Bound_rat.t) : t =
-  Real(R.of_rats m1 m2)
-
-let of_rat (m1:Bound_rat.t) : t =
-  of_rats m1 m1
-
-let of_bounds = of_rats
-
-(* maps empty intervals to explicit bottom *)
-let to_bot (x:t) : t bot =
-  match x with
-  | Int x -> lift_bot make_int (I.to_bot x)
-  | Real x -> lift_bot make_real (R.to_bot x)
-
-(* unbounded interval constructor *)
-let top_int : t = of_ints min_int max_int (*TODO: improve soundness*)
-
-let top_real : t = Real (R.top_real)
-let top : t = Real (R.top_real)
-
-let zero = of_int 0
-let one = of_int 1
 
 (************************************************************************)
 (*                       PRINTING and CONVERSIONS                       *)
@@ -444,10 +440,6 @@ let filter_root_f i r n =
 
 let to_expr (itv:t) =
   dispatch I.to_expr R.to_expr itv
-
-(* returns the type annotation of the represented values *)
-let to_annot x =
-  dispatch I.to_annot R.to_annot x
 
 (* filtering function calls like (sqrt, exp, ln ...) is done here :
    given a function name, a list of argument, and a result,

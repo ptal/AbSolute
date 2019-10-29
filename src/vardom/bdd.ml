@@ -10,27 +10,26 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** Generic signature for intervals. The interface is functional.*)
+(** Binary bounded diagrams.
+    This code is still in an early stage and might contain bugs, and is far from complete to be usable. *)
 
+open Core
 open Core.Bot
 open Bounds
 open Vardom_sig
+open Lang
 
 (************************************************************************)
 (** {1 TYPES} *)
 (************************************************************************)
 
+(** You should never use the N constructor but `bdd_of` instead (to ensure maximal sharing) *)
 type t = T | F | N of t*t
 module B = Bound_int
 type bound = B.t
-type var_kind = ZERO | ONE | TOP_INT | TOP_REAL | TOP
-                | OF_BOUNDS of bound*bound | OF_INTS of int*int | OF_RATS of Bound_rat.t*Bound_rat.t | OF_FLOATS of float*float
-                | OF_INT of int | OF_RAT of Bound_rat.t | OF_FLOAT of float
-                | COMPLETE of int (* complete BDD *)
 
 (* Functions on BDDs *)
 
-(* One should never use the N constructor but this one instead (to ensure maximal sharing) *)
 let bdd_of =
   let main_hash = Hashtbl.create 101 in
   Hashtbl.add main_hash (ref F,ref F) F;
@@ -52,9 +51,21 @@ let rec complete_bdd depth =
   | _ -> let res = complete_bdd (depth-1) in
          bdd_of res res
 
-let create var = match var with
-  | COMPLETE(i) -> complete_bdd i
-  | _ -> failwith "his creation of variable is not suited (or not implemented) for BDDs"
+
+(* Note that the depth of the BDD will differ, so I am unsure if the operations on BDD take into account BDD of different depth.
+   If not these values are probably wrong. *)
+let zero = T
+let one = N (F, T)
+
+let default_depth = 6
+
+let top ?(ty = Types.Concrete Types.Int) ()=
+  match ty with
+ | Types.Concrete Types.Int -> complete_bdd default_depth
+ | Types.Abstract (Types.BDD i) -> complete_bdd i
+ | _ -> raise (Ast.Wrong_modelling "BDD.top is only possible with a `Concrete(Int)` or `Abstract (BDD _)`.")
+
+let of_bounds _ _ = raise (Ast.Wrong_modelling "BDD.of_bounds is not yet supported in BDD.")
 
 (************************************************************************)
 (** {1 PRINTING and CONVERSIONS } *)
@@ -81,9 +92,14 @@ let to_float_range _ = failwith "BDDs can't be translated to float range"
 let to_rational_range _ = failwith "BDDs can't be translated to float range"
 let to_range b = lb b, ub b
 
-(** returns the type annotation of the represented values *)
-let to_annot _ = failwith "TODO I don't know what is the point of this function"
-let print fmt = Format.printf fmt "BDDs are too hard to print"
+let rec depth_of = function
+  | T | F -> 0
+  (* I think whatever the child we take, it should always lead to the same depth, but I am unsure. *)
+  | N (i,j) -> max (depth_of i) (depth_of j)
+
+let to_abstract_ty b = Types.BDD (depth_of b)
+
+let print fmt b = Format.printf fmt "BDD[%d..%d]" (lb b) (ub b)
 
 let to_expr _ = failwith "BDDs can't be represented by expressions"
 

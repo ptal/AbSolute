@@ -126,7 +126,7 @@ module Make (I:Vardom_sig.Vardom_sig) = struct
   let pi_fitv        = (F.of_float_down pi_down), (F.of_float_up pi_up)
   let twopi_fitv     = (twopidown, twopiup)
 
-  let fitv_to_i (f1,f2) = I.create (OF_FLOATS (f1, f2))
+  let fitv_to_i (f1,f2) = I.of_floats f1 f2
 
   let pihalf_itv = fitv_to_i pihalf_fitv
   let pi_itv     = fitv_to_i pi_fitv
@@ -211,7 +211,7 @@ module Make (I:Vardom_sig.Vardom_sig) = struct
     | mon ->
        (* Format.printf "monotony is %a on %a\n%!" print_monotony mon print_fitv (a,b); *)
        fitv_to_i (itv mon cos_down cos_up (a,b))
-    | exception Exit -> I.create (OF_FLOATS ((-1.), 1.))
+    | exception Exit -> I.of_floats (-1.) 1.
 
   (* interval acos *)
   let acos_itv i =
@@ -220,7 +220,7 @@ module Make (I:Vardom_sig.Vardom_sig) = struct
     else
       let l' = if 1. < u then 0. else debot (acos_down u)
       and u' =  if l < -1. then pi_up else debot (acos_up l)
-      in Nb (I.create (OF_FLOATS(l', u')))
+      in Nb (I.of_floats l' u')
 
   (* sinus of an interval *)
   let sin_itv i =
@@ -269,7 +269,7 @@ module Make (I:Vardom_sig.Vardom_sig) = struct
     else
       let (a,_) = I.to_float_range i in
       let nb = floor (F.div_down (a-.target) maxsize) in
-      let dist = I.binop MUL (I.create (OF_FLOAT nb)) (I.create (OF_FLOAT maxsize)) in
+      let dist = I.binop MUL (I.of_float nb) (I.of_float maxsize) in
       let i' = I.binop SUB i dist in
       (* the interval can grow during the normalization so we have to recheck *)
       if maxsize <= I.float_size i' then raise Exit
@@ -289,10 +289,10 @@ module Make (I:Vardom_sig.Vardom_sig) = struct
        |> join_bot2 I.join (fun_itv result)
 
   (* 0 < x < 2pi && cos(x) = r <=> x = arcos r || x = arcos(-r)+pi *)
-  let arcos_0_2pi = arc (I.create (OF_FLOATS(0., pi_up))) acos_itv
+  let arcos_0_2pi = arc (I.of_floats 0. pi_up) acos_itv
 
   (* -pi/2 < x < 3pi/2 && sin(x) = r <=> x = arcsin r *)
-  let arcsin_mpih_pih = arc (I.binop SUB (I.create (OF_FLOATS(0., pi_up))) pihalf_itv) asin_itv
+  let arcsin_mpih_pih = arc (I.binop SUB (I.of_floats 0. pi_up) pihalf_itv) asin_itv
 
   (* general function for both filter_sin and filter_cos *)
   let filter domain_range fun_itv =
@@ -318,15 +318,15 @@ module Make (I:Vardom_sig.Vardom_sig) = struct
 
   (* r = cos i => i mod 2pi = arccos r *)
   let filter_cos =
-    filter (I.create (OF_FLOATS(0., twopiup))) arcos_0_2pi
+    filter (I.of_floats 0. twopiup) arcos_0_2pi
 
   (* r = sin i => i mod 2pi = arcsin r *)
   let filter_sin =
-    filter (I.binop SUB (I.create (OF_FLOATS(0., twopiup))) pihalf_itv) arcsin_mpih_pih
+    filter (I.binop SUB (I.of_floats 0. twopiup) pihalf_itv) arcsin_mpih_pih
 
   (* -pi/2 < x < 3pi/2 && tan(x) = r <=> x = arctan r *)
   let arctan_mpih_pih =
-    arc (I.binop SUB (I.create (OF_FLOATS(0., pi_up))) pihalf_itv) (fun i -> Nb (atan_itv i))
+    arc (I.binop SUB (I.of_floats 0. pi_up) pihalf_itv) (fun i -> Nb (atan_itv i))
 
   (* r = tan i => i = artan r) => *)
   let filter_tan (i:I.t) (r:I.t) : I.t bot =

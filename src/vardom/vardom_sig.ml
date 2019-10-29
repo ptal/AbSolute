@@ -1,4 +1,4 @@
-(* Copyright 2019 Mathieu Vavrille
+(* Copyright 2019 Mathieu Vavrille, Pierre Talbot
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -11,32 +11,28 @@
    Lesser General Public License for more details. *)
 
 (** Generic signature for variable domains, called `vardom` here.
-    Examples of vardom are intervals of integers, floats, rational, sets or BDD. *)
+    Examples of vardom are intervals of integers, floats, rational, sets or BDD.
+    When implementing your vardom, consider using `Vardom_factory` to factorize some code. *)
 
+open Core
 open Core.Bot
 open Bounds
 open Lang
+open Vardom_factory
 
 (** Language of unary and binary operations that can be applied to `vardom`. *)
 type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
 type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
 
 module type Vardom_sig = sig
-  type t
-  module B: Bound_sig.S
-  type bound = B.t
 
-  (** `var_kind` is a symbolic representation of a vardom.
-      Not every vardom supports all variable kinds.
-      You can add your variant here if your new vardom requires specific initialization.
-      For example, BDD must be initialized with a maximum width given by `COMPLETE of int`. *)
-  type var_kind = ZERO | ONE | TOP_INT | TOP_REAL | TOP
-                  | OF_BOUNDS of bound*bound | OF_INTS of int*int | OF_RATS of Bound_rat.t*Bound_rat.t | OF_FLOATS of float*float
-                  | OF_INT of int | OF_RAT of Bound_rat.t | OF_FLOAT of float
-                  | COMPLETE of int (* complete BDD *)
+  include Vardom_factory_sig
 
-  (** Raise `Wrong_modelling` if `var_kind` is not supported in this vardom. *)
-  val create: var_kind -> t
+  (** Top element (the less precise element) of the Vardom.
+      In case of a concrete type, a suited abstract representation is picked,
+      otherwise, the abstract type must be exactly the one supported in this vardom.
+      Raise `Wrong_modelling` if the vardom cannot represent the given type. *)
+  val top: ?ty:Types.var_ty -> unit -> t
 
   (** Convert a vardom to a possibly over-approximated floating point range. *)
   val to_float_range : t -> float * float
@@ -52,9 +48,6 @@ module type Vardom_sig = sig
 
   (** Upper bound (largest element in the vardom). *)
   val ub: t -> bound
-
-  (** Type annotation (integer or real) of the represented values. *)
-  val to_annot : t -> Ast.annot
 
   val print: Format.formatter -> t -> unit
 
