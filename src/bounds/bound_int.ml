@@ -18,8 +18,6 @@ type t = int
 let abstract_ty = Types.Integer
 let concrete_ty = Types.Int
 
-let name = "integer"
-
 (* ordering *)
 
 exception NotAnIntegerNumber

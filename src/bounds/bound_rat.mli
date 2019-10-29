@@ -11,7 +11,6 @@
 type t
 val abstract_ty: Core.Types.var_abstract_ty
 val concrete_ty: Core.Types.var_concrete_ty
-val name : string
 val succ: t -> t
 val prec: t -> t
 val zero : t

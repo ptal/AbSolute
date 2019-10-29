@@ -16,8 +16,6 @@ type t = Mpqf.t
 let abstract_ty = Types.Rational
 let concrete_ty = Types.Real
 
-let name = "rational"
-
 (* ordering *)
 
 let succ x = x
