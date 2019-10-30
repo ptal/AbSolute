@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Vardom.Vardom_sig
 
 module type Var_store_sig =
@@ -20,7 +21,7 @@ sig
   type key=int
 
   val empty: t
-  val extend: t -> (t * key)
+  val extend: ?ty:Types.var_ty -> t -> (t * key * Types.var_abstract_ty)
 
   (** `set store k v` is a monotonic `set`.
       It merges `v` with `store[k]` using `V.meet`. *)

@@ -14,6 +14,7 @@
     Design rational: avoid circular dependencies between Bounds and Lang,
     because we need to associate an abstract type to each bound. *)
 
+(** `Integer` is considered to be over 32 bits. *)
 type var_abstract_ty =
   | VUnit
   | Bool
@@ -28,9 +29,17 @@ type var_ty =
   | Concrete of var_concrete_ty
   | Abstract of var_abstract_ty
 
+val string_of_cty: var_concrete_ty -> string
+val string_of_aty: var_abstract_ty -> string
+val string_of_ty: var_ty -> string
+
 val abstract_to_concrete_ty: var_abstract_ty -> var_concrete_ty
 
 (** True if the abstract element do not have machine-representable successors or predecessors. *)
 val is_continuous: var_abstract_ty -> bool
 
 val join_concrete_ty: var_concrete_ty -> var_concrete_ty -> var_concrete_ty
+
+(** We compare the abstract type with respect to their precision.
+    Abstract types that do not have the same concrete type are unordered (Kleene.Unknown). *)
+val less_precise_than: var_abstract_ty -> var_abstract_ty -> Kleene.t

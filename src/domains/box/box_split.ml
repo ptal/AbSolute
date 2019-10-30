@@ -10,35 +10,34 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-
 open Lang
-open Box_representation
+open Box_interpretation
 
-module type Variable_order = functor (R: Box_rep_sig) ->
+module type Variable_order = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val select: R.Store.t -> (R.var_id * R.var_dom) option
 end with module R=R
 
-module type Value_order = functor (R: Box_rep_sig) ->
+module type Value_order = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val select: R.var_dom -> R.Vardom.B.t
 end with module R=R
 
-module type Distributor = functor (R: Box_rep_sig) ->
+module type Distributor = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val distribute: R.var_id -> R.Vardom.B.t -> R.rconstraint list
 end with module R=R
 
-module type Box_split_sig = functor (R: Box_rep_sig) ->
+module type Box_split_sig = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val split: R.Store.t -> R.rconstraint list
 end with module R=R
 
-module Input_order(R: Box_rep_sig) =
+module Input_order(R: Box_interpretation_sig) =
 struct
   module R=R
   module Store = R.Store
@@ -53,7 +52,7 @@ struct
 end
 
 (* This module factorizes `First_fail` and `Anti_first_fail`. *)
-module Width_order(R: Box_rep_sig) =
+module Width_order(R: Box_interpretation_sig) =
 struct
   module R=R
   module V = R.Vardom
@@ -75,21 +74,21 @@ struct
     | None -> None
 end
 
-module First_fail(R: Box_rep_sig) =
+module First_fail(R: Box_interpretation_sig) =
 struct
   module R=R
   module W = Width_order(R)
   let select store = W.select store R.Vardom.B.lt
 end
 
-module Anti_first_fail(R: Box_rep_sig) =
+module Anti_first_fail(R: Box_interpretation_sig) =
 struct
   module R=R
   module W = Width_order(R)
   let select store = W.select store R.Vardom.B.gt
 end
 
-module Middle (R: Box_rep_sig) =
+module Middle (R: Box_interpretation_sig) =
 struct
   module R=R
   module V = R.Vardom
@@ -99,35 +98,39 @@ struct
     B.div_down (B.add_up l u) B.two
 end
 
-module Lower_bound (R: Box_rep_sig) =
+module Lower_bound (R: Box_interpretation_sig) =
 struct
   module R=R
   module V = R.Vardom
   let select vardom = fst (V.to_range vardom)
 end
 
-module Upper_bound (R: Box_rep_sig) =
+module Upper_bound (R: Box_interpretation_sig) =
 struct
   module R=R
   module V = R.Vardom
   let select vardom = snd (V.to_range vardom)
 end
 
-module Assign (R: Box_rep_sig) =
+module Assign (R: Box_interpretation_sig) =
 struct
   module R=R
   module V=R.Vardom
-  let make_cst v = R.(make_expr (BCst (V.create (V.OF_BOUNDS(v, v)))))
+  let make_cst v =
+    let v, ty = V.of_bounds (v,v) in
+    R.(make_expr (BCst (v, ty)))
   let distribute var_idx value =
     R.[(make_expr (BVar var_idx), Ast.EQ, make_cst value);
        (make_expr (BVar var_idx), Ast.NEQ, make_cst value)]
 end
 
-module Bisect (R: Box_rep_sig) =
+module Bisect (R: Box_interpretation_sig) =
 struct
   module R=R
   module V=R.Vardom
-  let make_cst v = R.(make_expr (BCst (V.create (V.OF_BOUNDS(v, v)))))
+  let make_cst v =
+    let v, ty = V.of_bounds (v,v) in
+    R.(make_expr (BCst (v, ty)))
   let distribute var_idx value =
     R.[(make_expr (BVar var_idx), Ast.LEQ, make_cst value);
        (make_expr (BVar var_idx), Ast.GT, make_cst value)]
@@ -137,7 +140,7 @@ module Make
   (VARIABLE: Variable_order)
   (VALUE: Value_order)
   (DISTRIB: Distributor)
-  (R: Box_rep_sig) =
+  (R: Box_interpretation_sig) =
 struct
   module R = R
   module Variable = VARIABLE(R)

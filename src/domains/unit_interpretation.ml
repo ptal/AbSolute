@@ -10,14 +10,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** This module is only provided when an abstract domain has no "representation".
-    This is case for meta abstract domain coordinating others abstract domain.
-    See also `Bound_unit`. *)
-
 open Lang.Ast
 
 type t = unit
-type var_kind = unit
 type var_id = unit
 type rconstraint = unit
 
@@ -26,6 +21,6 @@ let empty = ()
 let extend _ _ = no_variable_exn ()
 let to_logic_var _ _ = no_variable_exn ()
 let to_abstract_var _ _ = no_variable_exn ()
-let rewrite _ _ = []
-let relax _ _ = []
-let negate _ = ()
+let interpret _ _ _ = []
+let to_qformula _ _ = QFFormula truef
+let negate _ _ = Some ()

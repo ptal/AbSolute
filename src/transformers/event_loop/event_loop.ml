@@ -10,13 +10,15 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+module Event_abstract_domain = Event_abstract_domain
+
 open Domains
 open Domains.Abstract_domain
-open Event_abstract_domain
 open Fixpoint
 open Core
 open Lang.Ast
 open Bounds
+open Event_abstract_domain
 
 module type Event_combinator =
 sig
@@ -78,7 +80,7 @@ end
 module Event_loop(L: Event_combinator) =
 struct
   module B = Bound_unit
-  module R = Unit_representation
+  module I = Unit_interpretation
 
   type t = {
     uid: ad_uid;
@@ -109,7 +111,7 @@ struct
   let meta_exn s = raise (Wrong_modelling ("`Event_loop." ^ s ^ "` is a meta abstract domain that does not represent any kind of variable or constraint."))
 
   let empty _ = raise (Wrong_modelling "`Event_loop.empty` is not supported, you should first create the abstract domains and then pass their references to `Event_loop.init`.")
-  let extend _ _ = meta_exn "extend"
+  let extend ?ty:_ _ = meta_exn "extend"
   let project _ _ = meta_exn "project"
   let weak_incremental_closure _ _ = meta_exn "weak_incremental_closure"
   let entailment _ _ = meta_exn "entailment"

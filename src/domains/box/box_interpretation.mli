@@ -1,4 +1,4 @@
-(* Copyright 2019 Pierre Talbot
+(* Copyright 2019 AbSolute Team
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -10,23 +10,23 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-
+open Core
 open Lang.Ast
 open Vardom
 open Var_store
+open Domains.Interpretation
 
-module type Box_rep_sig =
+module type Box_interpretation_sig =
 sig
   module Vardom: Vardom_sig.Vardom_sig
 
-  (** Box_rep depends on the store to represent the `var_id`.
+  (** We depend on the store to represent the `var_id`.
       However, the store is contained in `Box` itself and not here.
-      NOTE: We could parametrize Box_rep_sig with a `Store` if we have different kind of stores in the future. *)
+      NOTE: We could parametrize Box_interpretation_sig with a `Store` if we have different kind of stores in the future. *)
   module Store: Var_store_sig with module V=Vardom
 
-  type t
-  type var_kind = unit
-  type var_id = Store.key
+  include module type of (Interpretation_base(struct type var_id=Store.key end))
+
   type var_dom = Store.cell
 
   (** We annotate each node of this expression with its interval evaluation.
@@ -41,29 +41,16 @@ sig
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
     | BVar     of var_id
-    | BCst     of Vardom.t
+    | BCst     of Vardom.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
 
-  val empty: t
-
-  (** Initialize the rewriter with the map between variable's name and store's index. *)
-  val extend: t -> (var * var_id) -> t
-
-  val to_logic_var: t -> var_id -> var
-  val to_abstract_var: t -> var -> var_id
-
-  (** Simple rewriting: substitute the variable names by their respective indices. *)
-  val rewrite: t -> formula -> rconstraint list
-
-  (** Currently the same than `rewrite`. *)
-  val relax: t -> formula -> rconstraint list
-
-  (** Negate the constraint. *)
-  val negate: rconstraint -> rconstraint
-
-  (** Convert an "abstract" constraint to its logical equivalent. *)
-  val to_logic_constraint: t -> rconstraint -> bconstraint
+  (** Over-approximation is always supported.
+      No special effort is currently made for supporting under-approximations, it is considered equivalent to Exact representation.
+      Exact representation is supported if the abstract types of the variables of `f` are all different from floating point numbers. *)
+  val interpret: t -> formula -> approx_kind -> rconstraint list
+  val to_qformula: t -> rconstraint list -> qformula
+  val negate: rconstraint -> approx_kind -> rconstraint option
 
   (** Create an expression from a node.
       The vardom ref is initialized to TOP. *)
@@ -73,7 +60,7 @@ sig
   val vars_of_constraint: rconstraint -> var_id list
 end
 
-module type Box_rep_functor = functor (Vardom: Vardom_sig.Vardom_sig) -> Box_rep_sig
+module type Box_interpretation_functor = functor (Vardom: Vardom_sig.Vardom_sig) -> Box_interpretation_sig
   with module Vardom=Vardom
 
-module Box_rep: Box_rep_functor
+module Box_interpretation: Box_interpretation_functor

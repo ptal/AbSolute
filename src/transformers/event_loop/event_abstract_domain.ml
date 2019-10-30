@@ -19,11 +19,14 @@ module type Event_abstract_domain =
 sig
   include Abstract_domain
 
-  (** [exec_task t task] executes the `task` inside the abstract domain `t`. *)
+  (** [exec_task t task] executes the `task` inside the abstract domain `t`.
+      Precondition:
+        - The UID of the task corresponds to the one of the abstract element.
+        - The task ID was obtained through `drain_tasks`. *)
   val exec_task: t -> task -> (t * bool)
 
   (** [drain_events t] returns the events produced since the last call.
-      The events are removed from `t`, so a next call will return an empty list. *)
+      The events are removed from `t`, so an immediate next call will return an empty list. *)
   val drain_events: t -> (t * event list)
 
   (** [drain_tasks t] returns the list of tasks of `t` that need to be register in `Event_loop` for scheduling.

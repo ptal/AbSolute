@@ -11,11 +11,11 @@
    Lesser General Public License for more details. *)
 
 open Core
-open Box_representation
+open Box_interpretation
 
-module type Box_closure_sig = functor (R: Box_rep_sig) ->
+module type Box_closure_sig = functor (R: Box_interpretation_sig) ->
 sig
-  module R : Box_rep_sig
+  module R : Box_interpretation_sig
   module Store = R.Store
 
   (** Perform the filtering of the constraint.

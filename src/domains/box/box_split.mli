@@ -11,29 +11,29 @@
    Lesser General Public License for more details. *)
 
 
-open Box_representation
+open Box_interpretation
 
-module type Variable_order = functor (R: Box_rep_sig) ->
+module type Variable_order = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val select: R.Store.t -> (R.var_id * R.var_dom) option
 end with module R=R
 
-module type Value_order = functor (R: Box_rep_sig) ->
+module type Value_order = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val select: R.var_dom -> R.Vardom.B.t
 end with module R=R
 
-module type Distributor = functor (R: Box_rep_sig) ->
+module type Distributor = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val distribute: R.var_id -> R.Vardom.B.t -> R.rconstraint list
 end with module R=R
 
-module type Box_split_sig = functor (R: Box_rep_sig) ->
+module type Box_split_sig = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   val split: R.Store.t -> R.rconstraint list
 end with module R=R
 

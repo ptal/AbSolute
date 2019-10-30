@@ -10,9 +10,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+module Event_abstract_domain = Event_abstract_domain
+
 open Domains.Abstract_domain
-open Event_abstract_domain
 open Fixpoint
+open Event_abstract_domain
 
 (** This module type is useful to parametrize `Event_loop` by a list of modules. *)
 module type Event_combinator =
@@ -39,7 +41,6 @@ end
     The main role of `Event_loop` is to schedule the tasks given by these domains. *)
 module Event_loop(L: Event_combinator) :
 sig
-  type t
-  include Abstract_domain with type t := t
+  include Abstract_domain
   val init: ad_uid -> L.t -> t
 end

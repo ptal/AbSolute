@@ -29,18 +29,18 @@ sig
   module B: Bound_sig.S
 
   (** The representation of the variables and constraints inside the
-     abstract domain.  It allows users to turn a logic specification
-     into an abstract domain. *)
+     abstract element.  It allows users to turn a logic specification
+     into an abstract element. *)
   module I: Interpretation_sig
 
   (** The type of the abstract domain. *)
   type t
 
-  (** An empty abstract domain identified by a unique identifier (UID).
+  (** An empty abstract element identified by a unique identifier (UID).
       See also `uid`. *)
   val empty: ad_uid -> t
 
-  (** Retrieve the UID of this abstract domain.
+  (** Retrieve the UID of this abstract element.
       UIDs are mainly useful to perform event-based propagation and associate event and task to a specific abstract domain.
       See also `Transformers.Event_loop`. *)
   val uid: t -> ad_uid
@@ -49,7 +49,7 @@ sig
       The ID of the fresh variable is returned along with its abstract type.
       Raise `Wrong_modelling` if the abstract domain does not support variables
       of the given type. *)
-  val extend: t -> Types.var_ty -> (t * I.var_id * Types.var_abstract_ty)
+  val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
 
   (** Project the lower and upper bounds of a single variable. *)
   val project: t -> I.var_id -> (B.t * B.t)
@@ -66,15 +66,16 @@ sig
      want to impact the current node. *)
   val copy: t -> t
 
-  (** Closure of the abstract domain: it tries to remove as much
+  (** Closure of the abstract element: it tries to remove as much
      inconsistent values as possible from the abstract element
      according to the constraints encapsulated. *)
   val closure: t -> t
 
   (** Weak incremental closure add the constraint into the abstract
-     domain.  This operation is in constant time and must not perform
+     element.  This operation is in constant time and must not perform
      any closure algorithm.  It can however raise `Bot_found` if the
-     constraint is detected disentailed in constant time. *)
+     constraint is detected disentailed in constant time.
+     Precondition: The variables in `c` must all belong to the abstract element. *)
   val weak_incremental_closure: t -> I.rconstraint -> t
 
   (** `entailment a c` returns `True` if the constraint `c` is
@@ -102,11 +103,12 @@ sig
   (** An element belongs to one category: failed, satisfiable and
      unknown.  Note that this function cannot be recovered from
      `volume` because `state_decomposition` can return satisfiable
-     even if `volume t > 1` on integers or a given precision on
-     floating numbers and rational. *)
+     even if `volume t > 1`.
+     Normally, `False` is never returned because `Bot_found` is raised
+     in case of unsatisfiability in `incremental_closure` or `closure`. *)
   val state_decomposition: t -> Kleene.t
 
   (** Print the current element in the abstract element using the
       logical names of variables. *)
-  val print: t -> Format.formatter -> t -> unit
+  val print: I.t -> Format.formatter -> t -> unit
 end

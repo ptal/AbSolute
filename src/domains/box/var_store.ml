@@ -21,7 +21,7 @@ sig
   type key=int
 
   val empty: t
-  val extend: t -> (t * key)
+  val extend: ?ty:Types.var_ty -> t -> (t * key * Types.var_abstract_ty)
   val set: t -> key -> cell -> t
   val get: t -> key -> cell
   val lazy_copy : t -> int -> t list
@@ -45,13 +45,14 @@ struct
   }
 
   let empty = {
-    store=Store.make 0 (V.create V.TOP);
+    store=Store.make 0 (fst (V.top ()));
     delta=[] }
 
-  let extend data =
+  let extend ?ty data =
     let n = Store.length data.store in
-    let store = Store.init (n+1) (fun i -> if i < n then Store.get data.store i else (V.create V.TOP)) in
-    ({data with store}, n)
+    let v,aty = V.top ?ty () in
+    let store = Store.init (n+1) (fun i -> if i < n then Store.get data.store i else v) in
+    ({data with store}, n, aty)
 
   let set data k merge =
     let old = Store.get data.store k in

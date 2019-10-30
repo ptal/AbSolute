@@ -16,17 +16,17 @@ open Core.Bot
 open Core.Kleene
 open Vardom.Vardom_sig
 open Lang.Rewritting
-open Box_representation
+open Box_interpretation
 
-module type Box_closure_sig = functor (R: Box_rep_sig) ->
+module type Box_closure_sig = functor (R: Box_interpretation_sig) ->
 sig
-  module R: Box_rep_sig
+  module R: Box_interpretation_sig
   module Store = R.Store
   val incremental_closure: Store.t -> R.rconstraint -> Store.t * bool
   val entailment: Store.t -> R.rconstraint -> Kleene.t
 end with module R=R
 
-module Make(R: Box_rep_sig) =
+module Make(R: Box_interpretation_sig) =
 struct
   module R = R
   module Store = R.Store
@@ -55,7 +55,7 @@ struct
         expr.value <- r
       end
     | BVar v -> expr.value <- R.Store.get store v
-    | BCst v -> expr.value <- v
+    | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
       begin
         eval store e1;
@@ -128,7 +128,7 @@ struct
        let res = V.filter_fun name (List.map (fun e -> R.(e.value)) args) root in
        List.fold_left2 (fun acc res e -> refine acc res e.node) store (debot res) args
     | BVar v -> R.Store.set store v root
-    | BCst i -> ignore (debot (V.meet root i)); store
+    | BCst (i,_) -> ignore (debot (V.meet root i)); store
     | BUnary (op,e) ->
        let j = match op with
          | NEG -> V.filter_unop NEG e.value root
