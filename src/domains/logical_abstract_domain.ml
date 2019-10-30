@@ -24,12 +24,12 @@ sig
   (** Extract the interpretation structure. *)
   val interpretation: t -> I.t
 
-  (** Interpret a logic formula into an abstract element and directly call `weak_incremental_closure` on this new constraint.
+  (** Interpret an existentially quantified logical formula into an abstract element and directly call `weak_incremental_closure` on this new constraint.
       Existentially quantified variables are added into the abstract element if not already present.
       /!\ All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
       We return `None` if the constraint could not be interpreted.
       Raise `Not_found` if some free variables are not already in the abstract domain.
       Raise `Bot_found` if the constraint is detected unsatisfiable in constant time.
       See also `Interpretation_sig.interpret`. *)
-  val interpret: t -> approx_kind -> Ast.qformula -> t option
+  val qinterpret: t -> approx_kind -> Ast.qformula -> t option
 end

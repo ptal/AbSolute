@@ -40,7 +40,7 @@ sig
 
   type rconstraint = rexpr * cmpop * rexpr
 
-  val interpret: t -> formula -> approx_kind -> rconstraint list
+  val interpret: t -> approx_kind -> formula -> rconstraint list
   val to_qformula: t -> rconstraint list -> qformula
   val negate: rconstraint -> approx_kind -> rconstraint option
 
@@ -105,7 +105,7 @@ struct
        let vars = Variables.elements (get_vars_set_formula f) in
        List.for_all is_exact_approx vars
 
-  let interpret repr f approx =
+  let interpret repr approx f =
     if approx_typing repr f approx then
       let interpret_one (e1, op, e2) = [(interpret_expr repr e1, op, interpret_expr repr e2)] in
       try mapfold_conjunction interpret_one f

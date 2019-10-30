@@ -44,17 +44,17 @@ let init_bt_stats () = {
   depth=0;
 }
 
-module Transformer(Domain: Abstract_domain) =
+module Transformer(A: Abstract_domain) =
 struct
   type bab = {
     kind: cmpop;
-    objective: (Domain.I.var_id * var);
-    best: Domain.t option;
+    objective: (A.I.var_id * var);
+    best: A.t option;
   }
 
   type printer = {
-    print_node: (string -> int -> Domain.t -> unit);
-    print_sol: (Domain.t -> unit);
+    print_node: (string -> int -> A.t -> unit);
+    print_sol: (A.t -> unit);
   }
 
   type transformer =
@@ -73,8 +73,8 @@ struct
   }
 
   type bs = {
-    repr: Domain.I.t;
-    domain: Domain.t;
+    repr: A.I.t;
+    domain: A.t;
     bt_stats: bt_statistics
   }
 
@@ -101,12 +101,12 @@ struct
     match bab.best with
     | None -> (gs,bs)
     | Some best ->
-        let (_,ub) = Domain.project best (fst bab.objective) in
-        let ub = Cst (Domain.B.to_rat ub, Domain.B.concrete_ty) in
+        let (_,ub) = A.project best (fst bab.objective) in
+        let ub = Cst (A.B.to_rat ub, A.B.concrete_ty) in
         let formula = Cmp (Var (snd bab.objective), bab.kind, ub) in
-        let abstracts = Domain.I.interpret bs.repr formula OverApprox in
+        let abstracts = A.I.interpret bs.repr OverApprox formula in
         wrap_exception (gs,bs) (fun (gs,bs) ->
-          let domain = List.fold_left Domain.weak_incremental_closure bs.domain abstracts in
+          let domain = List.fold_left A.weak_incremental_closure bs.domain abstracts in
           (gs, {bs with domain}))
 
   let stop_if t = function
