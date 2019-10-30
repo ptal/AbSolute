@@ -26,8 +26,6 @@ struct
   let remove_tasks_not_using_resource rtasks =
     List.filter (fun t -> C.neq t.resources_usage C.zero) rtasks
 
-  let resource_ty = if C.is_continuous then Real else Int
-
   let make_sum terms =
     if List.length terms = 0 then zero
     else Tools.fold_left_hd (fun a b -> Binary (a, ADD, b)) terms
@@ -59,13 +57,13 @@ struct
         if t1.id = t2.id then []
         else
           let b = Var (make_name t2 t1) in
-          let r = Cst (C.to_rat t2.resources_usage, resource_ty) in
+          let r = Cst (C.to_rat t2.resources_usage, C.concrete_ty) in
           [(Binary (b, MUL, r))]
       ) tasks) in
       let sum = make_sum resources_profile in
       (* We subtract the resource used by `t1` to the capacity since it is already known. *)
       let remaining_capacity = Bound_rat.sub_up (C.to_rat capacity) (C.to_rat t1.resources_usage) in
-      Cmp (Cst (remaining_capacity, resource_ty), GEQ, sum)
+      Cmp (Cst (remaining_capacity, C.concrete_ty), GEQ, sum)
     ) tasks)
 end
 
@@ -89,10 +87,10 @@ struct
     conjunction (List.map (fun instant ->
       let resources_profile = List.map (fun t ->
         let b = Var (make_name t instant) in
-        let r = Cst (C.to_rat t.resources_usage, resource_ty) in
+        let r = Cst (C.to_rat t.resources_usage, C.concrete_ty) in
         Binary (b, MUL, r)
       ) rtasks in
       let sum = make_sum resources_profile in
-      Cmp (Cst (C.to_rat capacity, resource_ty), GEQ, sum)
+      Cmp (Cst (C.to_rat capacity, C.concrete_ty), GEQ, sum)
     ) (Tools.range 0 horizon))
 end

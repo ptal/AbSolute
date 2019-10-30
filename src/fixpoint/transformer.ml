@@ -48,7 +48,7 @@ module Transformer(Domain: Abstract_domain) =
 struct
   type bab = {
     kind: cmpop;
-    objective: (Domain.R.var_id * var);
+    objective: (Domain.I.var_id * var);
     best: Domain.t option;
   }
 
@@ -67,15 +67,13 @@ struct
   let minimize_bab = make_bab LT
   let maximize_bab = make_bab GT
 
-  let annot = if Domain.B.is_continuous then Real else Int
-
   type gs = {
     transformers: transformer list;
     stats: global_statistics;
   }
 
   type bs = {
-    repr: Domain.R.t;
+    repr: Domain.I.t;
     domain: Domain.t;
     bt_stats: bt_statistics
   }
@@ -104,9 +102,9 @@ struct
     | None -> (gs,bs)
     | Some best ->
         let (_,ub) = Domain.project best (fst bab.objective) in
-        let ub = Cst (Domain.B.to_rat ub, annot) in
-        let logic = Cmp (Var (snd bab.objective), bab.kind, ub) in
-        let abstracts = Domain.R.rewrite bs.repr logic in
+        let ub = Cst (Domain.B.to_rat ub, Domain.B.concrete_ty) in
+        let formula = Cmp (Var (snd bab.objective), bab.kind, ub) in
+        let abstracts = Domain.I.interpret bs.repr formula OverApprox in
         wrap_exception (gs,bs) (fun (gs,bs) ->
           let domain = List.fold_left Domain.weak_incremental_closure bs.domain abstracts in
           (gs, {bs with domain}))

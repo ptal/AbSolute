@@ -27,7 +27,7 @@ open Lang.Ast
       If you want to try to make it more extensible, see my trial on [combinators](https://github.com/ptal/AbSolute/tree/0332a5b6e66d8138ff86db43294298af6282ec97/src/combinators). *)
 
 (** Global statistics on the search process.
-    These are maintained by default. *)
+    These are computed by default. *)
 type global_statistics = {
   start: Mtime_clock.counter;
   elapsed: Mtime.span;
@@ -40,7 +40,7 @@ type global_statistics = {
 }
 
 (** Backtrackable statistics of the search process.
-    These are maintained by default. *)
+    These are computed by default. *)
 type bt_statistics = {
   depth: int;
 }
@@ -55,7 +55,7 @@ sig
       `best` contains the best solution so far, or `None` if none was found yet. *)
   type bab = {
     kind: cmpop;
-    objective: (Domain.R.var_id * var);
+    objective: (Domain.I.var_id * var);
     best: Domain.t option;
   }
 
@@ -76,9 +76,9 @@ sig
   | BoundSolutions of int
 
   (** See `type bab`. *)
-  val make_bab: cmpop -> (Domain.R.var_id * var) -> transformer
-  val minimize_bab: (Domain.R.var_id * var) -> transformer
-  val maximize_bab: (Domain.R.var_id * var) -> transformer
+  val make_bab: cmpop -> (Domain.I.var_id * var) -> transformer
+  val minimize_bab: (Domain.I.var_id * var) -> transformer
+  val maximize_bab: (Domain.I.var_id * var) -> transformer
 
   (** Global state which stays identical to the whole computation. *)
   type gs = {
@@ -88,7 +88,7 @@ sig
 
   (** Backtrackable state which is automatically backtracked with the search tree. *)
   type bs = {
-    repr: Domain.R.t;
+    repr: Domain.I.t;
     domain: Domain.t;
     bt_stats: bt_statistics
   }
@@ -107,7 +107,7 @@ sig
       Rational: It prevents losing information on `t` obtained so far (such as the node counter). *)
   val wrap_exception: t -> (t -> t) -> t
 
-  val init: Domain.R.t -> Domain.t -> transformer list -> t
+  val init: Domain.I.t -> Domain.t -> transformer list -> t
 
   (** Apply all the transformers modifying the current state when entering a node (before `closure`). *)
   val on_node: t -> t

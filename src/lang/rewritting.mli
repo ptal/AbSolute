@@ -51,7 +51,7 @@ val neg_bconstraint: bconstraint -> bconstraint
 val replace_cst_expr: (var * i) -> expr -> expr
 val replace_cst_formula: (var * i) -> formula -> formula
 
-module Variables: Set.S
+module Variables: Set.S with type elt = var
 
 val get_vars_expr: expr -> var list
 val get_vars_set_expr: expr -> Variables.t

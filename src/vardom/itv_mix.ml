@@ -29,14 +29,20 @@ struct
     Types.(match ty with
     | (Concrete ty) when ty=I.B.concrete_ty -> f_int ()
     | (Concrete ty) when ty=R.B.concrete_ty -> f_real ()
-    | (Abstract ty) when ty=I.B.abstract_ty -> f_int ()
-    | (Abstract ty) when ty=R.B.abstract_ty -> f_real ()
+    | (Abstract ty) when
+        (Types.less_precise_than ty I.B.abstract_ty)=Kleene.True -> f_int ()
+    | (Abstract ty) when
+        (Types.less_precise_than ty R.B.abstract_ty)=Kleene.True -> f_real ()
     | ty -> raise (Ast.Wrong_modelling ("Itv_mix does not support " ^ (string_of_ty ty))))
 
   let of_bounds ?(ty = Types.Concrete Types.Real) (l,u) =
     type_dispatch ty
-    (fun _ -> Int (I.of_bounds ~ty (I.B.of_rat_down l, I.B.of_rat_up u)))
-    (fun _ -> Real (R.of_bounds ~ty (R.B.of_rat_down l, R.B.of_rat_up u)))
+    (fun _ ->
+        let b, ty = I.of_bounds ~ty (I.B.of_rat_down l, I.B.of_rat_up u) in
+        (Int b), ty)
+    (fun _ ->
+        let b, ty = R.of_bounds ~ty (R.B.of_rat_down l, R.B.of_rat_up u) in
+        (Real b), ty)
 end
 
 open Itv_mix_of_bounds
@@ -48,8 +54,12 @@ let make_int x  = Int x
 
 let top ?(ty = Types.Concrete Types.Real) () =
   Itv_mix_of_bounds.type_dispatch ty
-  (fun _ -> Int (I.top ~ty ()))
-  (fun _ -> Real (R.top ~ty ()))
+  (fun _ ->
+     let b, ty = I.top ~ty () in
+     (Int b), ty)
+  (fun _ ->
+     let b, ty = R.top ~ty () in
+     (Real b), ty)
 
 (* maps empty intervals to explicit bottom *)
 let to_bot (x:t) : t bot =

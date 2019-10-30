@@ -20,8 +20,8 @@ open Core
 
 type t = unit
 
-let abstract_type = Types.VUnit
-let concrete_type = Types.Int
+let abstract_ty = Types.VUnit
+let concrete_ty = Types.Int
 
 let compare _ _ = 0
 let equal _ _ = true

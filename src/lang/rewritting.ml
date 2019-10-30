@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Ast
 open Bounds
 
@@ -79,7 +80,7 @@ let rec simplify_expr expr change =
      (match b with
       | ADD ->
          (match e1, e2 with
-          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.add a b),join_annot ant ant'), true)
+          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.add a b),Types.join_concrete_ty ant ant'), true)
           | Cst (z,_), e2 when is_zero z -> simplify_expr e2 change
           | e1, Cst (z,_) when is_zero z -> simplify_expr e1 change
           | e1 , Cst (c,annot) when is_neg c ->
@@ -92,7 +93,7 @@ let rec simplify_expr expr change =
          )
       | SUB ->
          (match e1, e2 with
-          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.sub a b),(join_annot ant ant')), true)
+          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.sub a b),Types.join_concrete_ty ant ant'), true)
           | Cst (c,_), _ when is_zero c->
              let (e, _) = simplify_expr e2 change in (Unary (NEG, e), true)
           | _, Cst (c,_) when is_zero c -> simplify_expr e1 change
@@ -104,7 +105,7 @@ let rec simplify_expr expr change =
          )
       | MUL ->
          (match e1, e2 with
-          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.mul a b),join_annot ant ant'), true)
+          | Cst (a,ant), Cst (b,ant') -> (Cst ((Bound_rat.mul a b),Types.join_concrete_ty ant ant'), true)
           | Cst (c,_), _ when is_zero c -> (zero, true)
           | _, Cst (c,_) when is_zero c -> (zero, true)
           | Cst (c,_), _ when Bound_rat.equal Bound_rat.one c -> simplify_expr e2 change

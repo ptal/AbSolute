@@ -18,13 +18,14 @@ sig
   module B: Bound_sig.S
   type bound = B.t
   type t
-  val of_bounds: ?ty:Types.var_ty -> (bound * bound) -> t
+  val of_bounds: ?ty:Types.var_ty -> (bound * bound) -> (t * Types.var_abstract_ty)
 end
 
 module type Vardom_factory_sig =
 sig
   include Vardom_of_bounds
 
+  val of_bounds': ?ty:Types.var_ty -> (bound * bound) -> t
   val of_bound: bound -> t
   val zero : t
   val one : t
@@ -47,20 +48,21 @@ module Make(V: Vardom_of_bounds) =
 struct
   include V
 
-  let of_bound x = of_bounds (x,x)
+  let of_bounds' ?ty b = fst (of_bounds ?ty b)
+  let of_bound x = of_bounds' (x,x)
   let zero = of_bound B.zero
   let one = of_bound B.one
   let minus_one = of_bound B.minus_one
-  let zero_one = of_bounds (B.zero, B.one)
-  let minus_one_zero = of_bounds (B.minus_one, B.zero)
-  let minus_one_one = of_bounds (B.minus_one, B.one)
-  let positive = of_bounds (B.zero, B.inf)
-  let negative = of_bounds (B.minus_inf, B.zero)
+  let zero_one = of_bounds' (B.zero, B.one)
+  let minus_one_zero = of_bounds' (B.minus_one, B.zero)
+  let minus_one_one = of_bounds' (B.minus_one, B.one)
+  let positive = of_bounds' (B.zero, B.inf)
+  let negative = of_bounds' (B.minus_inf, B.zero)
 
-  let of_ints l h = of_bounds ~ty:Types.(Concrete Int) ((B.of_int_down l),(B.of_int_up h))
+  let of_ints l h = of_bounds' ~ty:Types.(Concrete Int) ((B.of_int_down l),(B.of_int_up h))
   let of_int x = of_ints x x
-  let of_rats l h = of_bounds ~ty:Types.(Concrete Real) ((B.of_rat_down l),(B.of_rat_up h))
+  let of_rats l h = of_bounds' ~ty:Types.(Concrete Real) ((B.of_rat_down l),(B.of_rat_up h))
   let of_rat x = of_rats x x
-  let of_floats l h = of_bounds ~ty:Types.(Concrete Real) ((B.of_float_down l),(B.of_float_up h))
+  let of_floats l h = of_bounds' ~ty:Types.(Concrete Real) ((B.of_float_down l),(B.of_float_up h))
   let of_float x = of_floats x x
 end

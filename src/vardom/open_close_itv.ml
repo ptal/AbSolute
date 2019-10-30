@@ -63,8 +63,9 @@ module Make(B: Bound_sig.S) = struct
 
     let type_dispatch ty f =
       Types.(match ty with
-      | (Concrete ty) when ty=B.concrete_ty -> f ()
-      | (Abstract ty) when ty=B.abstract_ty -> f ()
+      | (Concrete ty) when ty=B.concrete_ty -> f (), B.abstract_ty
+      | (Abstract ty) when
+          (less_precise_than ty B.abstract_ty)=Kleene.True -> f (), B.abstract_ty
       | ty -> raise (Ast.Wrong_modelling (
           "Open_close_itv(" ^ (string_of_aty B.abstract_ty) ^ ") does not support " ^
           (string_of_ty ty))))
@@ -465,18 +466,18 @@ module Make(B: Bound_sig.S) = struct
 
   let tan (((kl, l), (kh, h) as itv):t) =
     let diam = range itv in
-    if B.geq diam (snd (fst i_pi)) then top ()
+    if B.geq diam (snd (fst i_pi)) then fst (top ())
     else
       let (l',h') = scale_to_two_pi_itv (l, h) in
       let diam = range itv
       and q_inf = quadrant l'
       and q_sup = quadrant h' in
-      if q_inf = q_sup && B.geq diam (snd (fst i_pi)) then top ()
+      if q_inf = q_sup && B.geq diam (snd (fst i_pi)) then fst (top ())
       else
         match q_inf, q_sup with
         | One,One | Two,Two | Three,Three | Four,Four | Two,Three | Four,One ->
             mon_incr (B.tan_down, B.tan_up) ((kl, l'), (kh, h'))
-        | (One | Two | Three | Four), (One | Two | Three | Four) -> top ()
+        | (One | Two | Three | Four), (One | Two | Three | Four) -> fst (top ())
   (*| _  -> (bfg B.min B.tan_down (kl, l') (kh, h'), bfg B.max B.tan_up (kl, l') (kh, h'))*)
 
   (* interval cot *)

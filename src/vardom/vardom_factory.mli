@@ -20,13 +20,14 @@ sig
   type t
 
   (** Same as `Vardom_sig.top` but with bounds. *)
-  val of_bounds: ?ty:Types.var_ty -> (bound * bound) -> t
+  val of_bounds: ?ty:Types.var_ty -> (bound * bound) -> (t * Types.var_abstract_ty)
 end
 
 module type Vardom_factory_sig =
 sig
   include Vardom_of_bounds
 
+  val of_bounds': ?ty:Types.var_ty -> (bound * bound) -> t
   val of_bound: bound -> t
   val zero : t
   val one : t

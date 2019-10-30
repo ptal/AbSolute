@@ -48,8 +48,9 @@ module Itv(B : Bound_sig.S) = struct
 
     let type_dispatch ty f =
       Types.(match ty with
-      | (Concrete ty) when ty=B.concrete_ty -> f ()
-      | (Abstract ty) when ty=B.abstract_ty -> f ()
+      | (Concrete ty) when ty=B.concrete_ty -> f (), B.abstract_ty
+      | (Abstract ty) when
+          (Types.less_precise_than ty B.abstract_ty) = Kleene.True -> f (), B.abstract_ty
       | ty -> raise (Ast.Wrong_modelling (
           "Itv(" ^ (string_of_aty B.abstract_ty) ^ ") does not support " ^
           (string_of_ty ty))))
@@ -72,9 +73,6 @@ module Itv(B : Bound_sig.S) = struct
 
   let top ?(ty = Types.Abstract B.abstract_ty) () =
     Itv_of_bounds.type_dispatch ty (fun () -> B.minus_inf, B.inf)
-
-  let top_real : t = top ~ty:Types.(Concrete Real) ()
-  let top_int : t = top ~ty:Types.(Concrete Int) ()
 
   let hull (x:bound) (y:bound) = B.min x y, B.max x y
 

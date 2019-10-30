@@ -32,7 +32,7 @@ module type Vardom_sig = sig
       In case of a concrete type, a suited abstract representation is picked,
       otherwise, the abstract type must be exactly the one supported in this vardom.
       Raise `Wrong_modelling` if the vardom cannot represent the given type. *)
-  val top: ?ty:Types.var_ty -> unit -> t
+  val top: ?ty:Types.var_ty -> unit -> (t * Types.var_abstract_ty)
 
   (** Convert a vardom to a possibly over-approximated floating point range. *)
   val to_float_range : t -> float * float
