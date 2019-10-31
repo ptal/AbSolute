@@ -63,7 +63,9 @@ sig
 
   (** `copy a` copies the element `a`.  This function is useful in
      "probe" algorithm where we perform computations that we do not
-     want to impact the current node. *)
+     want to impact the current node.
+     Note that this function is only useful because abstract domains
+     maintain imperative data structures. *)
   val copy: t -> t
 
   (** Closure of the abstract element: it tries to remove as much

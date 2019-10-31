@@ -100,9 +100,10 @@ struct
     let pengine, l = Pengine2D.fixpoint pengine L.consume_task l in
     {p with l; pengine}
 
-  let state_decomposition p =
-    if Pengine2D.num_active_tasks p.pengine = 0 then Kleene.True
-    else Kleene.Unknown
+  let state_decomposition _ = Kleene.True
+  let split _ = []
+  let volume _ = 1.
+  let print _ _ _ = ()
 
   (* This abstract domain is totally functional. *)
   let lazy_copy p n = List.init n (fun _ -> p)
@@ -115,7 +116,4 @@ struct
   let project _ _ = meta_exn "project"
   let weak_incremental_closure _ _ = meta_exn "weak_incremental_closure"
   let entailment _ _ = meta_exn "entailment"
-  let split _ = meta_exn "split"
-  let volume _ = 1.
-  let print _ _ _ = ()
 end

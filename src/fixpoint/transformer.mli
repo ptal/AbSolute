@@ -48,23 +48,23 @@ type bt_statistics = {
 val init_global_stats: unit -> global_statistics
 val init_bt_stats: unit -> bt_statistics
 
-module Transformer(Domain: Abstract_domain):
+module Make(A: Abstract_domain):
 sig
   (** `kind` is the type of BAB (minimization or maximization), see `minimize_bab` and `maximize_bab`.
       We keep the logical and abstract representation of the variable `objective` to optimize.
       `best` contains the best solution so far, or `None` if none was found yet. *)
   type bab = {
     kind: cmpop;
-    objective: (Domain.I.var_id * var);
-    best: Domain.t option;
+    objective: (A.I.var_id * var);
+    best: A.t option;
   }
 
   (** The arguments are as follows: `print_node status depth domain`.
       `print_node` is called in every node.
       `print_sol` is only called in solution nodes. *)
   type printer = {
-    print_node: (string -> int -> Domain.t -> unit);
-    print_sol: (Domain.t -> unit);
+    print_node: (string -> int -> A.t -> unit);
+    print_sol: (A.t -> unit);
   }
 
   (** These are the transformers supported.
@@ -76,9 +76,9 @@ sig
   | BoundSolutions of int
 
   (** See `type bab`. *)
-  val make_bab: cmpop -> (Domain.I.var_id * var) -> transformer
-  val minimize_bab: (Domain.I.var_id * var) -> transformer
-  val maximize_bab: (Domain.I.var_id * var) -> transformer
+  val make_bab: cmpop -> (A.I.var_id * var) -> transformer
+  val minimize_bab: (A.I.var_id * var) -> transformer
+  val maximize_bab: (A.I.var_id * var) -> transformer
 
   (** Global state which stays identical to the whole computation. *)
   type gs = {
@@ -88,8 +88,8 @@ sig
 
   (** Backtrackable state which is automatically backtracked with the search tree. *)
   type bs = {
-    repr: Domain.I.t;
-    domain: Domain.t;
+    repr: A.I.t;
+    domain: A.t;
     bt_stats: bt_statistics
   }
 
@@ -107,7 +107,7 @@ sig
       Rational: It prevents losing information on `t` obtained so far (such as the node counter). *)
   val wrap_exception: t -> (t -> t) -> t
 
-  val init: Domain.I.t -> Domain.t -> transformer list -> t
+  val init: A.I.t -> A.t -> transformer list -> t
 
   (** Apply all the transformers modifying the current state when entering a node (before `closure`). *)
   val on_node: t -> t

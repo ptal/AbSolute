@@ -12,11 +12,10 @@
 
 (** This module provides a customizable solving algorithm for abstract domain. *)
 open Domains.Abstract_domain
-open Transformer
 
-module Make(Domain: Abstract_domain):
+module Make(A: Abstract_domain):
 sig
-  module T: module type of(Transformer(Domain))
+  module T: module type of Transformer.Make(A)
 
   val solve: T.t -> T.t
 end

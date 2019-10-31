@@ -44,7 +44,7 @@ let init_bt_stats () = {
   depth=0;
 }
 
-module Transformer(A: Abstract_domain) =
+module Make(A: Abstract_domain) =
 struct
   type bab = {
     kind: cmpop;
@@ -104,10 +104,11 @@ struct
         let (_,ub) = A.project best (fst bab.objective) in
         let ub = Cst (A.B.to_rat ub, A.B.concrete_ty) in
         let formula = Cmp (Var (snd bab.objective), bab.kind, ub) in
-        let abstracts = A.I.interpret bs.repr OverApprox formula in
-        wrap_exception (gs,bs) (fun (gs,bs) ->
-          let domain = List.fold_left A.weak_incremental_closure bs.domain abstracts in
-          (gs, {bs with domain}))
+        match A.I.interpret bs.repr OverApprox formula with
+        | [] -> failwith "Abstract domain in BAB cannot interpret the optimisation constraint."
+        | constraints -> wrap_exception (gs,bs) (fun (gs,bs) ->
+            let domain = List.fold_left A.weak_incremental_closure bs.domain constraints in
+            (gs, {bs with domain}))
 
   let stop_if t = function
     | true -> raise (StopSearch t)

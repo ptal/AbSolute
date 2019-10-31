@@ -32,4 +32,7 @@ sig
       Raise `Bot_found` if the constraint is detected unsatisfiable in constant time.
       See also `Interpretation_sig.interpret`. *)
   val qinterpret: t -> approx_kind -> Ast.qformula -> t option
+
+  (** Simplified interface of `Abstract_domain.print`. *)
+  val print': Format.formatter -> t -> unit
 end
