@@ -16,6 +16,7 @@
 open Core
 open Bounds
 open Interpretation
+open Lang
 
 (** Exception raised whenever a failure is encountered.
     In addition to `Bot.Bot_found`, `Conflict n` forces the backtrack in the search tree to the level `n`. *)
@@ -23,11 +24,13 @@ exception Conflict of int
 
 type ad_uid = int
 
-module type Abstract_domain =
+(** A logical abstract domain is an abstract domain that internalizes its connection to the logical formula.
+    In practice, it often consists in a pair `(A.t, A.I.t)` of the abstract element and its interpretation.
+    The function `qinterpret` allows us to easily add constraints, the variables being added automatically if needed.
+    `Logical_abstract_domain` is included in the signature of `Abstract_domain`.
+    See also `Logical_wrapper`. *)
+module type Logical_abstract_domain =
 sig
-  (** The module of the bound handled by this abstract domain. *)
-  module B: Bound_sig.S
-
   (** The representation of the variables and constraints inside the
      abstract element.  It allows users to turn a logic specification
      into an abstract element. *)
@@ -35,6 +38,30 @@ sig
 
   (** The type of the abstract domain. *)
   type t
+
+  (** Read-only access to the interpretation structure. *)
+  val interpretation: t -> I.t
+
+  (** Allow to modify the interpretation.
+      Be careful using this function as it delegates to you the work to keep the interpretation and abstract domain consistent. *)
+  val map_interpretation: t -> (I.t -> I.t) -> t
+
+  (** Interpret an existentially quantified logical formula into an abstract element and directly call `weak_incremental_closure` on this new constraint.
+      Existentially quantified variables are added into the abstract element if not already present.
+      /!\ All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
+      We return `None` if the constraint could not be interpreted.
+      Raise `Not_found` if some free variables are not already in the abstract domain.
+      Raise `Bot_found` if the constraint is detected unsatisfiable in constant time.
+      See also `Interpretation_sig.interpret`. *)
+  val qinterpret: t -> approx_kind -> Ast.qformula -> t option
+end
+
+module type Abstract_domain =
+sig
+  include Logical_abstract_domain
+
+  (** The module of the bound handled by this abstract domain. *)
+  module B: Bound_sig.S
 
   (** An empty abstract element identified by a unique identifier (UID).
       See also `uid`. *)
@@ -112,5 +139,5 @@ sig
 
   (** Print the current element in the abstract element using the
       logical names of variables. *)
-  val print: I.t -> Format.formatter -> t -> unit
+  val print: Format.formatter -> t -> unit
 end

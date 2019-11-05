@@ -21,6 +21,7 @@ open Bounds
 open Vardom
 open Box_interpretation
 open Domains.Abstract_domain
+open Domains.Logical_abstract_domain
 open Event_loop.Event_abstract_domain
 
 module type Box_sig =
@@ -49,6 +50,7 @@ struct
 
   type t = {
     uid: ad_uid;
+    r: I.t;
     store: Store.t;
     constraints: I.rconstraint Parray.t;
     (* Store the new constraint's indices since last call to `drain_tasks`. *)
@@ -56,11 +58,15 @@ struct
     num_active_tasks: int;
   }
 
+  let interpretation box = box.r
+  let map_interpretation box f = {box with r=(f box.r)}
+
   (* Reexported functions from the parametrized modules. *)
   let entailment box = Closure.entailment box.store
 
   let empty uid = {
     uid;
+    r = I.empty;
     store=Store.empty;
     constraints = Tools.empty_parray ();
     new_tasks = [];
@@ -117,7 +123,7 @@ struct
       Format.fprintf fmt "%s=%a \n" (fst (I.to_logic_var repr idx)) V.print vardom in
     Store.iter print_entry store
 
-  let print repr fmt box =
+  let print fmt box =
     let open Lang.Pretty_print in
     let open Lang.Ast in
     let rec print_box_cons = function
@@ -125,8 +131,8 @@ struct
           Format.fprintf fmt "%a\n" print_formula f
       | Exists (_, _, f) -> print_box_cons f
     in
-    Format.fprintf fmt "%a\n" print_store (repr,box.store);
-    Parray.iter (fun c -> print_box_cons (I.to_qformula repr [c])) box.constraints
+    Format.fprintf fmt "%a\n" print_store (box.r,box.store);
+    Parray.iter (fun c -> print_box_cons (I.to_qformula box.r [c])) box.constraints
 
   let split box =
     let branches = Split.split box.store in
@@ -157,6 +163,16 @@ struct
       ((box.uid, c_idx), events)::acc in
     let tasks_events = List.fold_left drain_one [] box.new_tasks in
     ({ box with new_tasks=[] }, tasks_events)
+
+  type t' = t
+
+  include QInterpreter_base(struct
+    type t=t'
+    module I=I
+    let interpretation=interpretation
+    let map_interpretation=map_interpretation
+    let extend=extend
+    let weak_incremental_closure=weak_incremental_closure end)
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor =

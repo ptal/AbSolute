@@ -103,7 +103,10 @@ struct
   let state_decomposition _ = Kleene.True
   let split _ = []
   let volume _ = 1.
-  let print _ _ _ = ()
+  let interpretation _ = Unit_interpretation.empty
+  let map_interpretation x f = ignore(f Unit_interpretation.empty); x
+  let qinterpret _ _ _ = None
+  let print _ _ = ()
 
   (* This abstract domain is totally functional. *)
   let lazy_copy p n = List.init n (fun _ -> p)
