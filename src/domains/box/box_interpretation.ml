@@ -40,9 +40,9 @@ sig
 
   type rconstraint = rexpr * cmpop * rexpr
 
-  val interpret: t -> approx_kind -> formula -> rconstraint list
+  val interpret: t -> approx_kind -> formula -> (t * rconstraint list) option
   val to_qformula: t -> rconstraint list -> qformula
-  val negate: rconstraint -> approx_kind -> rconstraint option
+  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 
   val make_expr: node -> rexpr
   val vars_of_constraint: rconstraint -> var_id list
@@ -108,11 +108,11 @@ struct
   let interpret repr approx f =
     if approx_typing repr f approx then
       let interpret_one (e1, op, e2) = [(interpret_expr repr e1, op, interpret_expr repr e2)] in
-      try mapfold_conjunction interpret_one f
-      with Wrong_modelling _ -> []
-    else []
+      try Some(repr, mapfold_conjunction interpret_one f)
+      with Wrong_modelling _ -> None
+    else None
 
-  let negate (e1,op,e2) _ = Some (e1,neg op,e2)
+  let negate r (e1,op,e2) _ = Some (r, (e1,neg op,e2))
 
   let to_logic_expr repr expr =
     let rec aux expr =

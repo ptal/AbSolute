@@ -54,8 +54,9 @@ module type Interpretation_sig = sig
   (** Interpret a logic formula into an abstract element.
       It approximates the representation of the formula if needed according to `approx`.
       Existential variables must first be added with `extend`.
-      The returned list is empty if the formula cannot be approximated according to `approx` in the abstract domain. *)
-  val interpret: t -> approx_kind -> Ast.formula -> rconstraint list
+      We return `None` if the formula cannot be approximated according to `approx` in the abstract domain.
+      The list of constraints might be empty if the formula is detected to be a tautology. *)
+  val interpret: t -> approx_kind -> Ast.formula -> (t * rconstraint list) option
 
   (** Give a logical representation of an abstract element.
       This function is the reverse of `interpret`.
@@ -64,7 +65,7 @@ module type Interpretation_sig = sig
   val to_qformula: t -> rconstraint list -> Ast.qformula
 
   (** Negate the constraint according to the given approximation kind. *)
-  val negate: rconstraint -> approx_kind -> rconstraint option
+  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 end
 
 (* Many interpretations have the same underlying structure that we factorize in this module.

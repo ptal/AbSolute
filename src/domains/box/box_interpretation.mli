@@ -48,9 +48,9 @@ sig
   (** Over-approximation is always supported.
       No special effort is currently made for supporting under-approximations, it is considered equivalent to Exact representation.
       Exact representation is supported if the abstract types of the variables of `f` are all different from floating point numbers. *)
-  val interpret: t -> approx_kind -> formula -> rconstraint list
+  val interpret: t -> approx_kind -> formula -> (t * rconstraint list) option
   val to_qformula: t -> rconstraint list -> qformula
-  val negate: rconstraint -> approx_kind -> rconstraint option
+  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 
   (** Create an expression from a node.
       The vardom ref is initialized to TOP. *)

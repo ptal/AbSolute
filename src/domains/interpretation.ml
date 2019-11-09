@@ -26,9 +26,9 @@ module type Interpretation_sig = sig
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
-  val interpret: t -> approx_kind -> Ast.formula -> rconstraint list
+  val interpret: t -> approx_kind -> Ast.formula -> (t * rconstraint list) option
   val to_qformula: t -> rconstraint list -> Ast.qformula
-  val negate: rconstraint -> approx_kind -> rconstraint option
+  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 end
 
 module Interpretation_base(V_ID:sig type var_id end) =

@@ -21,7 +21,6 @@ open Bounds
 open Vardom
 open Box_interpretation
 open Domains.Abstract_domain
-open Domains.Logical_abstract_domain
 open Event_loop.Event_abstract_domain
 
 module type Box_sig =
@@ -83,8 +82,9 @@ struct
 
   let project box v = V.to_range (project_vardom box v)
 
+  type snapshot = t
   let lazy_copy box n = List.map (fun s -> { box with store=s }) (Store.lazy_copy box.store n)
-  let copy box = { box with store=Store.copy box.store }
+  let restore _ s = s
 
   let volume box =
     let range (l,h) =

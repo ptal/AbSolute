@@ -56,7 +56,7 @@ sig
   type bab = {
     kind: cmpop;
     objective: (A.I.var_id * var);
-    best: A.t option;
+    best: (A.snapshot * qformula) option;
   }
 
   (** The arguments are as follows: `print_node status depth domain`.
@@ -84,12 +84,12 @@ sig
   type gs = {
     transformers: transformer list;
     stats: global_statistics;
+    domain: A.t;
   }
 
   (** Backtrackable state which is automatically backtracked with the search tree. *)
   type bs = {
-    repr: A.I.t;
-    domain: A.t;
+    snapshot: A.snapshot;
     bt_stats: bt_statistics
   }
 
@@ -107,7 +107,7 @@ sig
       Rational: It prevents losing information on `t` obtained so far (such as the node counter). *)
   val wrap_exception: t -> (t -> t) -> t
 
-  val init: A.I.t -> A.t -> transformer list -> t
+  val init: A.t -> transformer list -> t
 
   (** Apply all the transformers modifying the current state when entering a node (before `closure`). *)
   val on_node: t -> t

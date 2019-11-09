@@ -109,8 +109,9 @@ struct
   let print _ _ = ()
 
   (* This abstract domain is totally functional. *)
+  type snapshot = t
   let lazy_copy p n = List.init n (fun _ -> p)
-  let copy p = p
+  let restore _ s = s
 
   let meta_exn s = raise (Wrong_modelling ("`Event_loop." ^ s ^ "` is a meta abstract domain that does not represent any kind of variable or constraint."))
 

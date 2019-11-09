@@ -49,7 +49,7 @@ struct
   type bab = {
     kind: cmpop;
     objective: (A.I.var_id * var);
-    best: A.t option;
+    best: (A.snapshot * qformula) option;
   }
 
   type printer = {
@@ -70,22 +70,22 @@ struct
   type gs = {
     transformers: transformer list;
     stats: global_statistics;
+    domain: A.t;
   }
 
   type bs = {
-    repr: A.I.t;
-    domain: A.t;
+    snapshot: A.snapshot;
     bt_stats: bt_statistics
   }
 
   type t = (gs * bs)
 
-  let init repr domain transformers = {
+  let init domain transformers = {
     transformers=transformers;
     stats=init_global_stats ();
-  },{
-    repr=repr;
     domain=domain;
+  },{
+    snapshot=List.hd (A.lazy_copy domain 1);
     bt_stats=init_bt_stats ();
   }
 
@@ -100,15 +100,11 @@ struct
   let optimize (gs,bs) bab =
     match bab.best with
     | None -> (gs,bs)
-    | Some best ->
-        let (_,ub) = A.project best (fst bab.objective) in
-        let ub = Cst (A.B.to_rat ub, A.B.concrete_ty) in
-        let formula = Cmp (Var (snd bab.objective), bab.kind, ub) in
-        match A.I.interpret bs.repr OverApprox formula with
-        | [] -> failwith "Abstract domain in BAB cannot interpret the optimisation constraint."
-        | constraints -> wrap_exception (gs,bs) (fun (gs,bs) ->
-            let domain = List.fold_left A.weak_incremental_closure bs.domain constraints in
-            (gs, {bs with domain}))
+    | Some (_,formula) ->
+        wrap_exception (gs,bs) (fun (gs, bs) ->
+          match A.qinterpret gs.domain OverApprox formula with
+          | None -> failwith "Abstract domain in BAB cannot interpret the optimisation constraint."
+          | Some domain -> ({gs with domain}, bs))
 
   let stop_if t = function
     | true -> raise (StopSearch t)
@@ -131,7 +127,7 @@ struct
     let gs = {gs with stats={gs.stats with fails}} in
     let apply (gs,bs) = function
       | Printer printer ->
-          printer.print_node "false'" bs.bt_stats.depth bs.domain;
+          printer.print_node "false'" bs.bt_stats.depth gs.domain;
           (gs,bs)
       | _ -> gs,bs in
     List.fold_left apply (gs,bs) gs.transformers
@@ -141,10 +137,15 @@ struct
     let gs = {gs with stats={gs.stats with sols}} in
     let apply (gs,bs) transformer =
       match transformer with
-      | BAB bab -> (gs,bs), BAB {bab with best=Some bs.domain}
+      | BAB bab ->
+          let (_,ub) = A.project gs.domain (fst bab.objective) in
+          let ub = Cst (A.B.to_rat ub, A.B.concrete_ty) in
+          let formula = QFFormula (Cmp (Var (snd bab.objective), bab.kind, ub)) in
+          let a = List.hd (A.lazy_copy gs.domain 1) in
+          (gs,bs), BAB {bab with best=Some (a, formula)}
       | Printer printer ->
-          printer.print_sol bs.domain;
-          printer.print_node "true" bs.bt_stats.depth bs.domain;
+          printer.print_sol gs.domain;
+          printer.print_node "true" bs.bt_stats.depth gs.domain;
           (gs,bs), transformer
       | BoundSolutions s when s == gs.stats.sols -> raise (StopSearch (gs,bs))
       | _ -> (gs,bs), transformer in
@@ -154,7 +155,7 @@ struct
   let on_unknown (gs,bs) =
     let apply (gs,bs) = function
       | Printer printer ->
-          printer.print_node "unknown" bs.bt_stats.depth bs.domain;
+          printer.print_node "unknown" bs.bt_stats.depth gs.domain;
           (gs,bs)
       | _ -> (gs,bs) in
     List.fold_left apply (gs,bs) gs.transformers
