@@ -24,11 +24,13 @@ type gconstraint = ad_uid * int
 
 module type Prod_combinator =
 sig
+  type init_t
   type t
   type var_id = gvar
   type rconstraint = gconstraint
   val count: int
 
+  val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
@@ -57,8 +59,9 @@ module Prod_atom(A: Abstract_domain) =
 struct
   module A = A
 
+  type init_t = A.t ref
   type t = {
-    a: A.t ref;
+    a: init_t;
     var_map: (A.I.var_id * int) list;
     constraint_map: A.I.rconstraint list;
   }
@@ -200,9 +203,13 @@ struct
   module Atom = Prod_atom(A)
   type var_id = gvar
   type rconstraint = gconstraint
+
+  type init_t = Atom.init_t * B.init_t
   type t = Atom.t * B.t
 
   let count = Atom.count + B.count
+
+  let init (a,b) = (Atom.init a, B.init b)
 
   let empty () = raise (Wrong_modelling
     "`Ordered_product.I.empty`: the interpretation must be created with `init`.")
@@ -315,10 +322,10 @@ struct
     prod: P.t
   }
 
-  let init uid prod = { uid; prod }
+  let init uid prod = { uid; prod=(P.init prod) }
   (* The UIDs of the product components are generated as follows `uid,...,uid+(n-1)`.
      The UID of the product is `uid+n`. *)
-  let empty uid = init (uid + P.count) (P.empty' uid)
+  let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}
   let uid p = p.uid
 
   let wrap p prod = {p with prod}

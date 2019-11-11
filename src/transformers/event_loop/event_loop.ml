@@ -96,7 +96,8 @@ struct
   let uid p = p.uid
 
   let closure p =
-    let l, pengine = L.produce_events p.l p.pengine in
+    let l, pengine = L.produce_tasks p.l p.pengine in
+    let l, pengine = L.produce_events l pengine in
     let pengine, l = Pengine2D.fixpoint pengine L.consume_task l in
     {p with l; pengine}
 

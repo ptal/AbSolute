@@ -26,7 +26,7 @@ module Store2D = Map.Make(
 type t = {
   (* Records the active tasks (those not yet entailed).
      This field is backtracked automatically. *)
-  actives: bool Store2D.t;
+  actives: unit Store2D.t;
   num_actives: int;
 
   (* `reactor.(e)` contains the set of tasks that reacts on the event `e`. *)
@@ -54,7 +54,7 @@ let subscribe pengine task events =
   let reactor = List.fold_left
     (fun reactor ev -> Store2D.update ev concat_task reactor)
     pengine.reactor events in
-  let actives = Store2D.add task true pengine.actives in
+  let actives = Store2D.add task () pengine.actives in
   let num_actives = pengine.num_actives + 1 in
   { pengine with reactor; actives; num_actives }
 
@@ -68,7 +68,7 @@ let get_inside_queue pengine i =
 (* Schedule a task if it is active and not already present in the scheduler. *)
 let schedule pengine task =
   let inside = get_inside_queue pengine (fst task) in
-  if Store2D.find task pengine.actives &&
+  if Store2D.mem task pengine.actives &&
      not (CCBV.get inside (snd task)) then
   begin
     CCDeque.push_back pengine.scheduler task;

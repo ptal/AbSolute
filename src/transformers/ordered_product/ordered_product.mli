@@ -27,11 +27,13 @@ type gconstraint = ad_uid * int
 
 module type Prod_combinator =
 sig
+  type init_t
   type t
   type var_id = gvar
   type rconstraint = gconstraint
   val count: int
 
+  val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
@@ -56,8 +58,16 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
-module Prod_atom(A: Abstract_domain) : Prod_combinator
+module Prod_atom(A: Abstract_domain) :
+  Prod_combinator with type init_t = A.t ref
+
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) :
-  Prod_combinator with type t = Prod_atom(A).t * B.t
+  Prod_combinator with
+    type t = Prod_atom(A).t * B.t and
+    type init_t = A.t ref * B.init_t
+
 module Ordered_product(P: Prod_combinator) :
-  Abstract_domain with module B=Bound_rat
+sig
+  include Abstract_domain
+  val init: ad_uid -> P.init_t -> t
+end with module B=Bound_rat
