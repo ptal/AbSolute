@@ -15,6 +15,7 @@
 open Core
 open Bounds
 open Lang.Ast
+open Lang.Rewritting
 
 module Make(B: Bound_sig.S) =
 struct

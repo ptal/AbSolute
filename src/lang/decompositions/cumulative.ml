@@ -13,6 +13,7 @@
 open Core
 open Bounds
 open Lang.Ast
+open Lang.Rewritting
 
 module Generic(T: Bound_sig.S)(C: Bound_sig.S) =
 struct

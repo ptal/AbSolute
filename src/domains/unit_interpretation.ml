@@ -17,7 +17,7 @@ type var_id = unit
 type rconstraint = unit
 
 let no_variable_exn () = raise (Wrong_modelling "`Unit_representation` does not allow to represent variables.")
-let empty = ()
+let empty () = ()
 let extend _ _ = no_variable_exn ()
 let to_logic_var _ _ = no_variable_exn ()
 let to_abstract_var _ _ = no_variable_exn ()

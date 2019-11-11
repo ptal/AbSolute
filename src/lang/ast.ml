@@ -47,11 +47,6 @@ let two  = Cst (Bound_rat.two, Int)
 let truef = Cmp (zero, LEQ, zero)
 let falsef = Cmp (one, LEQ, zero)
 
-let rec conjunction = function
-  | [] -> truef
-  | c::[] -> c
-  | c1::l -> And (c1, conjunction l)
-
 let rec has_variable = function
   | Funcall(_, args) -> List.exists has_variable args
   | Unary (_, e) -> has_variable e

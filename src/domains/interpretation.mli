@@ -40,7 +40,7 @@ module type Interpretation_sig = sig
   type rconstraint
 
   (** An empty interpretation. *)
-  val empty: t
+  val empty: unit -> t
 
   (** Add a mapping between a logical variable and its representation
      in the abstract domain. *)
@@ -75,7 +75,7 @@ sig
   type var_id = V_ID.var_id
   type t
 
-  val empty: t
+  val empty: unit -> t
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)

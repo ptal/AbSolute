@@ -78,7 +78,8 @@ sig
       of the given type. *)
   val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
 
-  (** Project the lower and upper bounds of a single variable. *)
+  (** Project the lower and upper bounds of a single variable.
+      Raise `Wrong_modelling` if the variable is not in the current abstract element. *)
   val project: t -> I.var_id -> (B.t * B.t)
 
   (** A snapshot is a copy of the state of the abstract domain at some point in time. *)
@@ -115,7 +116,8 @@ sig
   val entailment: t -> I.rconstraint -> Kleene.t
 
   (** Divide the abstract element into sub-elements.
-      For exhaustiveness, the union of `split t` should be equal to `t`. *)
+      For exhaustiveness, the union of `split t` should be equal to `t`.
+      The list is empty if the abstract element cannot be split anymore (i.e. `state a != unknown`). *)
   val split: t -> snapshot list
 
   (** The volume is crucial to get information on the current state of

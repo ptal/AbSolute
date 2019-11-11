@@ -69,8 +69,6 @@ val two: expr
 val truef: formula
 val falsef: formula
 
-val conjunction: formula list -> formula
-
 (** Checks if an expression contains a variable. *)
 val has_variable: expr -> bool
 

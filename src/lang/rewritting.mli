@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Ast
 
 (** Every atoms `a` in `expr` is transformed to `a binop expr'`. *)
@@ -69,3 +70,10 @@ val replace_var_in_expr: (var -> expr) -> expr -> expr
 
 (** Traverse the formula `f` and raise `Wrong_modelling` if we meet a formula containing something else than conjunctions or predicates. *)
 val mapfold_conjunction: (bconstraint -> 'a list) -> formula -> 'a list
+
+(* [quantify env f] Given a variable environment `env`, existentially quantify the formula `f`.
+   It adds `Exists` in front of `f` for each variable occuring in `f`. *)
+val quantify: (var * Types.var_ty) list -> formula -> qformula
+
+val conjunction: formula list -> formula
+val qf_conjunction: qformula -> qformula -> qformula

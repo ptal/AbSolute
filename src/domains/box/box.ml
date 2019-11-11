@@ -65,7 +65,7 @@ struct
 
   let empty uid = {
     uid;
-    r = I.empty;
+    r = I.empty ();
     store=Store.empty;
     constraints = Tools.empty_parray ();
     new_tasks = [];

@@ -1,0 +1,9 @@
+(library
+  (name ordered_product)
+  (public_name absolute.ordered_product)
+  (libraries absolute.core absolute.bounds absolute.vardom absolute.lang absolute.fixpoint absolute.domains)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)

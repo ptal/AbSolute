@@ -22,7 +22,7 @@ module type Interpretation_sig = sig
   type t
   type var_id
   type rconstraint
-  val empty: t
+  val empty: unit -> t
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
@@ -46,7 +46,7 @@ struct
     renv: (Ast.var * Types.var_abstract_ty) REnv.t;
   }
 
-  let empty = {env=Env.empty; renv=REnv.empty}
+  let empty () = {env=Env.empty; renv=REnv.empty}
   let extend repr (v,idx,ty) = {
     env=(Env.add v (idx,ty) repr.env);
     renv=(REnv.add idx (v,ty) repr.renv);

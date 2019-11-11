@@ -285,3 +285,23 @@ let rec mapfold_conjunction f = function
   | Imply _ -> raise (Wrong_modelling "unsupported implication")
   | Or _ -> raise (Wrong_modelling "unsupported disjunction")
   | Not _ -> raise (Wrong_modelling "unsupported negation")
+
+let quantify env f =
+  let vars = Variables.elements (get_vars_set_formula f) in
+  let rec aux = function
+  | [] -> QFFormula f
+  | v::vars ->
+      let ty = List.assoc v env in
+      Exists (v, ty, aux vars)
+  in aux vars
+
+let rec conjunction = function
+  | [] -> truef
+  | c::[] -> c
+  | c1::l -> And (c1, conjunction l)
+
+let qf_conjunction qf1 qf2 =
+  let rec aux next = function
+  | QFFormula f -> next f
+  | Exists (v,ty,f) -> Exists (v, ty, aux next f) in
+  aux (fun f1 -> aux (fun f2 -> QFFormula (And(f1, f2))) qf2) qf1
