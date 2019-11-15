@@ -62,6 +62,9 @@ module Make(B: Bound_sig.S) = struct
     let strict_large (x:B.t) (y:B.t) : t = validate ((Strict,x),(Large,y))
 
     let type_dispatch ty f =
+      if B.concrete_ty=Int then
+        raise (Ast.Wrong_modelling "Open_close_itv is only relevant when applied to continuous variable domain.\n\
+               For integers interval, it makes more sense to use `Itv`.");
       Types.(match ty with
       | (Concrete ty) when ty=B.concrete_ty -> f (), B.abstract_ty
       | (Abstract ty) when

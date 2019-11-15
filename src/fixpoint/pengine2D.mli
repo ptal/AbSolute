@@ -13,7 +13,7 @@
 (** This module is similar to `Pengine` but provides support for events and tasks described by two integers (instead of one).
     This slight difference actually changes many of the internal structures.
   Rational:
-    This engine was designed to propagate globally across abstract domains.
+    This engine is designed to propagate globally across abstract domains.
     The first integer is the UID of the abstract domain and the second its task ID or event. *)
 
 type t

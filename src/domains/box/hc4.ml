@@ -48,12 +48,6 @@ struct
   let rec eval store expr =
     let open R in
     match expr.node with
-    | BFuncall(name, args) ->
-      begin
-        List.iter (eval store) args;
-        let r = debot (V.eval_fun name (exprs_val args)) in
-        expr.value <- r
-      end
     | BVar v -> expr.value <- R.Store.get store v
     | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
@@ -79,6 +73,12 @@ struct
           else r
         | POW -> V.binop POW v1 v2 in
         expr.value <- v
+      end
+    | BFuncall(name, args) ->
+      begin
+        List.iter (eval store) args;
+        let r = debot (V.eval_fun name (exprs_val args)) in
+        expr.value <- r
       end
 
   (* II. Refine part

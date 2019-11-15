@@ -40,13 +40,14 @@ sig
   val default_name_factory: name_factory
 
   (** Create constraints that are shared among the task-RD cumulative decomposition.
-      `cumulative_task_RD` suppose these constraints are available.
+      `MakeTaskRD.cumulative` suppose these constraints are available.
+      Any `resources_usage` in tasks can be used since it is not used to generate these constraints.
       `forall(t1 <> t2) task_<t2.id>_runs_when_<t1.id>_starts <=> overlap_before(t1,t2). *)
   val shared_constraints: rtask list -> name_factory -> formula
 
   (** Task-resource decomposition of cumulative.
       You must also retrieve the constraints of `shared_constraints`.
-      Tasks not using the resource are automatically discarded.
+      Tasks not using any resource are automatically discarded.
       `name_factory` helps to share new Boolean variables created by the decomposition across all cumulatives.
       The decomposition is `forall(t1),
         capacity - t1.resource_usage >= sum(t2 where t1 <> t2) (task_<t2.id>_runs_when_<t1.id>_starts * t2.resource_usage)` *)

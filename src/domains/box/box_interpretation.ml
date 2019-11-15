@@ -105,10 +105,16 @@ struct
        let vars = Variables.elements (get_vars_set_formula f) in
        List.for_all is_exact_approx vars
 
+  let interpret_bconstraint repr (e1, op, e2) = [(interpret_expr repr e1, op, interpret_expr repr e2)]
+
   let interpret repr approx f =
+    let rec aux = function
+      | And (f1, f2) -> (aux f1)@(aux f2)
+      | FVar x -> interpret_bconstraint repr (Var x, EQ, one)
+      | _ -> raise (Wrong_modelling "Logical constraints should be handled in the `Propositional_logic` domain.")
+    in
     if approx_typing repr f approx then
-      let interpret_one (e1, op, e2) = [(interpret_expr repr e1, op, interpret_expr repr e2)] in
-      try Some(repr, mapfold_conjunction interpret_one f)
+      try Some(repr, aux f)
       with Wrong_modelling _ -> None
     else None
 

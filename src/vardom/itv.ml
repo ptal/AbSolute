@@ -72,7 +72,11 @@ module Itv(B : Bound_sig.S) = struct
   (************************************************************************)
 
   let top ?(ty = Types.Abstract B.abstract_ty) () =
-    Itv_of_bounds.type_dispatch ty (fun () -> B.minus_inf, B.inf)
+    let make_bounds () =
+      match ty with
+      | Types.Abstract Types.Bool -> B.zero, B.one
+      | _ -> B.minus_inf, B.inf
+    in Itv_of_bounds.type_dispatch ty make_bounds
 
   let hull (x:bound) (y:bound) = B.min x y, B.max x y
 

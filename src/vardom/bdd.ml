@@ -62,8 +62,9 @@ let default_depth = 6
 let top ?(ty = Types.Concrete Types.Int) ()=
   match ty with
  | Types.Concrete Types.Int -> complete_bdd default_depth
+ | Types.Abstract (Types.Bool) -> complete_bdd 1
  | Types.Abstract (Types.BDD i) -> complete_bdd i
- | _ -> raise (Ast.Wrong_modelling "BDD.top is only possible with a `Concrete(Int)` or `Abstract (BDD _)`.")
+ | _ -> raise (Ast.Wrong_modelling "BDD.top is only possible with a `Concrete(Int)`, `Abstract (BDD _)` and `Abstract Bool`.")
 
 let of_bounds _ _ = raise (Ast.Wrong_modelling "BDD.of_bounds is not yet supported in BDD.")
 

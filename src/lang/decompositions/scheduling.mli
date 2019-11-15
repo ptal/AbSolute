@@ -16,6 +16,7 @@ open Lang.Ast
 module Make(B: Bound_sig.S):
 sig
   type task = {
+    (* Name of the variable representing the starting date. *)
     start: string;
     duration: B.t;
   }

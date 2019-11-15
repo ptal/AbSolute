@@ -12,7 +12,8 @@
 
 (** This module implements a propagation engine.
     For efficiency reasons, most of its internal structure is imperative.
-    Nevertheless, it is safe to use this structure in a backtracking algorithm. *)
+    Nevertheless, it is safe to use this structure in a backtracking algorithm.
+    The design of this engine is formally described in "Constraint Propagation – Models, Techniques, Implementation" (Tack, 2009). *)
 
 module type Pengine_sig =
 sig
