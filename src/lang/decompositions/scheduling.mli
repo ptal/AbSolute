@@ -13,8 +13,9 @@
 open Bounds
 open Lang.Ast
 
-module Make(B: Bound_sig.S):
-sig
+module type S = sig
+  module B: Bound_sig.S
+
   type task = {
     (* Name of the variable representing the starting date. *)
     start: string;
@@ -39,3 +40,5 @@ sig
       The resulting constraint is `s1 + d1 <= s2` that we rewrite to `s1 - s2 <= -d1`. *)
   val precedence: string -> string -> B.t -> formula
 end
+
+module Make(B: Bound_sig.S): S with module B=B

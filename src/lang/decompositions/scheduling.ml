@@ -17,8 +17,22 @@ open Bounds
 open Lang.Ast
 open Lang.Rewritting
 
+module type S = sig
+  module B: Bound_sig.S
+  type task = {
+    start: string;
+    duration: B.t;
+  }
+  val non_overlap: task -> task -> formula
+  val overlap_before: task -> task -> formula
+  val disjunctive: task list -> formula
+  val at_instant: task -> B.t -> formula
+  val precedence: string -> string -> B.t -> formula
+end
+
 module Make(B: Bound_sig.S) =
 struct
+  module B=B
   type task = {
     start: string;
     duration: B.t;

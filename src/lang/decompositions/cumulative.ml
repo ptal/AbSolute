@@ -15,9 +15,25 @@ open Bounds
 open Lang.Ast
 open Lang.Rewritting
 
+module type Cumulative_decomposition =
+sig
+  include Scheduling.S
+  module C: Bound_sig.S
+  type rtask = {
+    task: task;
+    id: int;
+    resources_usage: C.t
+  }
+  type name_factory
+  val default_name_factory: name_factory
+  val shared_constraints: rtask list -> int -> name_factory -> qformula
+  val cumulative: rtask list -> int -> C.t -> name_factory -> formula
+end
+
 module Generic(T: Bound_sig.S)(C: Bound_sig.S) =
 struct
   module S = Scheduling.Make(T)
+  module C = C
   type rtask = {
     task: S.task;
     id: int;
@@ -32,6 +48,11 @@ struct
     else Tools.fold_left_hd (fun a b -> Binary (a, ADD, b)) terms
 end
 
+let quantify_boolean formula vars =
+  List.fold_left (fun f v ->
+    Exists(v, Types.(Abstract Bool), f)
+  ) formula (List.rev vars)
+
 module MakeTaskRD(T: Bound_sig.S)(C: Bound_sig.S) =
 struct
   include Generic(T)(C)
@@ -41,15 +62,17 @@ struct
   let default_name_factory t1 t2 =
     "task_" ^ (string_of_int t1.id) ^ "_runs_when_" ^ (string_of_int t2.id) ^ "_starts"
 
-  let shared_constraints rtasks make_name =
+  let shared_constraints rtasks _ make_name =
     let tasks = remove_tasks_not_using_resource rtasks in
-    conjunction (
+    let formula = QFFormula (conjunction (
       Tools.for_all_distinct_pairs tasks (fun t1 t2 ->
         let b = FVar (make_name t1 t2) in
         [Equiv (b, S.overlap_before t1.task t2.task)]
-    ))
+    ))) in
+    let vars = Tools.for_all_distinct_pairs tasks (fun t1 t2 -> [make_name t1 t2]) in
+    quantify_boolean formula vars
 
-  let cumulative rtasks capacity make_name =
+  let cumulative rtasks _ capacity make_name =
     let tasks = remove_tasks_not_using_resource rtasks in
     conjunction (List.map (fun t1 ->
       (* Given the task `t1`, we retrieve the quantity of resource used by all other tasks `t2` during the execution of `t1`.
@@ -78,11 +101,14 @@ struct
     "task_" ^ (string_of_int rtask.id) ^ "_runs_at_" ^ (string_of_int instant)
 
   let shared_constraints rtasks horizon make_name =
-    conjunction (List.flatten (List.map (fun i ->
+    let formula = QFFormula (conjunction (List.flatten (List.map (fun i ->
       List.map (fun t ->
         Equiv (FVar (make_name t i), S.at_instant t.task i)
       ) rtasks
-    ) (Tools.range 0 horizon)))
+    ) (Tools.range 0 horizon)))) in
+    let vars = List.flatten (List.map (fun i -> List.map (fun t ->
+      make_name t i) rtasks) (Tools.range 0 horizon)) in
+    quantify_boolean formula vars
 
   let cumulative rtasks horizon capacity make_name =
     conjunction (List.map (fun instant ->
