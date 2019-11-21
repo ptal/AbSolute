@@ -1,9 +1,0 @@
-(library
-  (name box_octagon)
-  (public_name absolute.box_octagon)
-  (libraries absolute.core absolute.bounds absolute.vardom absolute.lang absolute.domains absolute.box absolute.octagon)
-  (flags :standard)
-  (ocamlopt_flags (:standard -O3))
-  ;(ocamlopt_flags (:standard -p))
-  (modules :standard)
-)

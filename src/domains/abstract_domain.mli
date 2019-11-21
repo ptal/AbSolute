@@ -105,7 +105,8 @@ sig
       Being entailed means that the constraint is redundant in comparison to the information already in `a`.
       To test for disentailment, you must call `entailment` on the negation of the constraint.
       It is not possible to return a `Kleene` value due to over-approximation of constraint.
-      Indeed, `c` might be an over-approximation of its logical constraint `l`, and therefore the disentailment of `c` does not imply the disentailment of `l`. *)
+      Indeed, `c` might be an over-approximation of its logical constraint `l`, and therefore the disentailment of `c` does not imply the disentailment of `l`.
+      This is explained in more depth in the paper "Combining Constraint Languages via Abstract Interpretation" (Talbot and al., 2019). *)
   val entailment: t -> I.rconstraint -> bool
 
   (** Divide the abstract element into sub-elements.
