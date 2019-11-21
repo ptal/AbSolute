@@ -42,7 +42,6 @@ sig
 
   val interpret: t -> approx_kind -> formula -> (t * rconstraint list) option
   val to_qformula: t -> rconstraint list -> qformula
-  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 
   val make_expr: node -> rexpr
   val vars_of_constraint: rconstraint -> var_id list
@@ -117,8 +116,6 @@ struct
       try Some(repr, aux f)
       with Wrong_modelling _ -> None
     else None
-
-  let negate r (e1,op,e2) _ = Some (r, (e1,neg op,e2))
 
   let to_logic_expr repr expr =
     let rec aux expr =

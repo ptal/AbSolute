@@ -71,9 +71,25 @@ val replace_var_in_expr: (var -> expr) -> expr -> expr
 (** Traverse the formula `f` and raise `Wrong_modelling` if we meet a formula containing something else than conjunctions or predicates. *)
 val mapfold_conjunction: (bconstraint -> 'a list) -> formula -> 'a list
 
-(* [quantify env f] Given a variable environment `env`, existentially quantify the formula `f`.
-   It adds `Exists` in front of `f` for each variable occuring in `f`. *)
+(** [quantify env f] Given a variable environment `env`, existentially quantify the formula `f`.
+    It adds `Exists` in front of `f` for each variable occuring in `f`. *)
 val quantify: (var * Types.var_ty) list -> formula -> qformula
 
+(** [quantifiers qf] extracts all the existentially quantified variables from `qf`.
+    Duplicated quantifiers are removed.
+    `Wrong_modelling` is raised if two identical variable's names have two distinct types. *)
+val quantifiers: qformula -> (var * Types.var_ty) list
+
+(** [quantifier_free_of qf] removes the quantifiers from the formula `qf`. *)
+val quantifier_free_of: qformula -> formula
+
 val conjunction: formula list -> formula
-val qf_conjunction: qformula -> qformula -> qformula
+val q_conjunction: qformula list -> qformula
+
+(** [map_formula f qf] applies the function `f` on `qf` bypassing the quantifiers. *)
+val map_formula: (formula -> formula) -> qformula -> qformula
+
+(** [merge_formula make f1 f2].
+    Given two quantified formulas, merge their quantifier-free part using `make`.
+    The existential binders of identical names are merged together. *)
+val merge_formula: (formula -> formula -> formula) -> qformula -> qformula -> qformula

@@ -27,7 +27,7 @@ sig
   module Vardom: Vardom_sig.Vardom_sig
   type vardom = Vardom.t
 
-  include Event_abstract_domain
+  include Schedulable_abstract_domain
 
   (** `project_vardom box v` projects the interval of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom

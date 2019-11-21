@@ -295,13 +295,41 @@ let quantify env f =
       Exists (v, ty, aux vars)
   in aux vars
 
+let rec quantifiers = function
+  | QFFormula _ -> []
+  | Exists(v,ty,f) ->
+      let vars = quantifiers f in
+      match List.find_opt (fun (v',_) -> v = v') vars with
+      | Some (_, ty') when ty = ty' -> vars
+      | None -> (v,ty)::vars
+      | Some (_, ty') -> raise (Wrong_modelling
+          ("Two quantifiers on variable `" ^ v ^ "` with two distinct types (`"
+          ^ (Types.string_of_ty ty) ^ "` and `" ^ (Types.string_of_ty ty') ^ "`."))
+
+let rec quantifier_free_of = function
+  | QFFormula f -> f
+  | Exists(_,_,qf) -> quantifier_free_of qf
+
 let rec conjunction = function
   | [] -> truef
   | c::[] -> c
   | c1::l -> And (c1, conjunction l)
 
-let qf_conjunction qf1 qf2 =
-  let rec aux next = function
-  | QFFormula f -> next f
-  | Exists (v,ty,f) -> Exists (v, ty, aux next f) in
-  aux (fun f1 -> aux (fun f2 -> QFFormula (And(f1, f2))) qf2) qf1
+let rec map_formula next = function
+  | QFFormula f -> QFFormula (next f)
+  | Exists (v,ty,f) -> Exists (v, ty, map_formula next f)
+
+let merge_formula make qf1 qf2 =
+  let qf =
+    map_formula (fun f1 ->
+      quantifier_free_of (
+        map_formula (fun f2 -> make f1 f2) qf2)) qf1
+  in
+    quantify (quantifiers qf) (quantifier_free_of qf)
+
+let rec q_conjunction = function
+  | [] -> QFFormula (truef)
+  | qf::[] -> qf
+  | qf1::qfs ->
+      let qf2 = q_conjunction qfs in
+      merge_formula (fun f1 f2 -> And(f1,f2)) qf1 qf2

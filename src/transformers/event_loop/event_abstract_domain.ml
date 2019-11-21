@@ -19,15 +19,24 @@ module type Event_abstract_domain =
 sig
   include Abstract_domain
 
+  (** [drain_events t] returns the events produced since the last call.
+      The events are removed from `t`, so an immediate next call will return an empty list. *)
+  val drain_events: t -> (t * event list)
+
+  (** [events_of t c] returns the events of the constraints `c`. *)
+  val events_of: t -> I.rconstraint -> event list
+end
+
+module type Schedulable_abstract_domain =
+sig
+  include Event_abstract_domain
+
   (** [exec_task t task] executes the `task` inside the abstract domain `t`.
+      It maps to `true` if the task is entailed, `false` otherwise.
       Precondition:
         - The UID of the task corresponds to the one of the abstract element.
         - The task ID was obtained through `drain_tasks`. *)
   val exec_task: t -> task -> (t * bool)
-
-  (** [drain_events t] returns the events produced since the last call.
-      The events are removed from `t`, so an immediate next call will return an empty list. *)
-  val drain_events: t -> (t * event list)
 
   (** [drain_tasks t] returns the list of tasks of `t` that need to be register in `Event_loop` for scheduling.
       Each task is executed whenever one of the events in the list occurs. *)

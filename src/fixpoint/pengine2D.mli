@@ -40,6 +40,7 @@ val num_active_tasks: t -> int
 
 (** `fixpoint engine f acc` iterates over the scheduled tasks until no task are scheduled anymore.
     `f acc t` performs the task `t` over `acc` and returns the new `(acc, is_entailed, events)` where
-      `acc` is the new accumulator, `is_entailed` is true if the task reached its solutions space, and `events` is a list of events to further react on. *)
-val fixpoint: t -> ('a -> task -> ('a * bool * event list)) -> 'a -> (t * 'a)
+      `acc` is the new accumulator, `is_entailed` is true if the task reached its solutions space, and `events` is a list of events to further react on.
+     It returns the new engine and accumulator, as well as a Boolean sets to `true` if at least an event was generated.*)
+val fixpoint: t -> ('a -> task -> ('a * bool * event list)) -> 'a -> (t * 'a * bool)
 

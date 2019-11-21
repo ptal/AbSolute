@@ -11,9 +11,7 @@
    Lesser General Public License for more details. *)
 
 open Lang.Ast
-open Core
 open Core.Bot
-open Core.Kleene
 open Vardom.Vardom_sig
 open Lang.Rewritting
 open Box_interpretation
@@ -23,7 +21,7 @@ sig
   module R: Box_interpretation_sig
   module Store = R.Store
   val incremental_closure: Store.t -> R.rconstraint -> Store.t * bool
-  val entailment: Store.t -> R.rconstraint -> Kleene.t
+  val entailment: Store.t -> R.rconstraint -> bool
 end with module R=R
 
 module Make(R: Box_interpretation_sig) =
@@ -180,12 +178,8 @@ struct
     try
       eval store e1;
       eval store e2;
-      ignore(hc4_revise store (e1,op,e2));
-      try
-        ignore(hc4_revise store (e1,neg op,e2));
-        Unknown
-      with
-      | Bot_found -> True
+      ignore(hc4_revise store (e1,neg op,e2));
+      false
     with
-    | Bot_found -> False
+    | Bot_found -> true
 end

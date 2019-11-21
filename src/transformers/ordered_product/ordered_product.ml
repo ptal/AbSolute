@@ -18,7 +18,6 @@ open Core
 open Core.Types
 open Bounds
 
-(** Generic variables and constraints. *)
 type gvar = ad_uid * int
 type gconstraint = ad_uid * int
 
@@ -37,7 +36,6 @@ sig
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
   val interpret: t -> approx_kind -> formula -> (t * gconstraint list) option
   val to_qformula: t -> gconstraint list -> qformula
-  val negate: t -> gconstraint -> approx_kind -> (t * gconstraint) option
   val qinterpret: t -> approx_kind -> qformula -> t option
 
   val empty': ad_uid -> t
@@ -46,12 +44,12 @@ sig
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list
-  val closure: t -> t
+  val closure: t -> (t * bool)
   val weak_incremental_closure: t -> gconstraint -> t
-  val entailment: t -> gconstraint -> Kleene.t
+  val entailment: t -> gconstraint -> bool
   val split: t -> snapshot list
   val volume: t -> float
-  val state_decomposition: t -> Kleene.t
+  val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
 end
 
@@ -83,7 +81,7 @@ struct
 
   let get_constraint pa (uid', c_id) =
     if uid pa != uid' then raise
-      (Wrong_modelling "`Ordered_product.entailment`: this constraint does not belong to this ordered product.")
+      (Wrong_modelling "This constraint does not belong to this ordered product.")
     else
       List.nth pa.constraint_map c_id
 
@@ -151,22 +149,10 @@ struct
     | [] -> A.I.to_qformula (interpretation pa) constraints
     | _ -> do_not_belong_exn "qformula"
 
-  let negate' pa c approx =
-    let c = to_abstract_constraint pa c in
-      match A.I.negate (interpretation pa) c approx with
-      | None -> None
-      | Some (i, negated_c) ->
-        begin
-          let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
-          let pa, gcons = to_generic_constraint pa negated_c in
-          Some (pa, gcons)
-        end
+  let closure pa =
+    let (a, has_changed) = A.closure !(pa.a) in
+    wrap pa a, has_changed
 
-  let negate pa c approx =
-    if (uid pa) != (fst c) then do_not_belong_exn "negate"
-    else negate' pa c approx
-
-  let closure pa = wrap pa (A.closure !(pa.a))
   let extend' ?ty pa =
     let (a, v_a, aty) = A.extend ?ty !(pa.a) in
     let v_id = List.length pa.var_map in
@@ -186,7 +172,7 @@ struct
       let a = A.weak_incremental_closure !(pa.a) c_a in
       wrap pa a
 
-  let state_decomposition pa = A.state_decomposition !(pa.a)
+  let state pa = A.state !(pa.a)
   let entailment pa c = A.entailment !(pa.a) (get_constraint pa c)
   let split pa = List.map (make_snapshot pa) (A.split !(pa.a))
   let volume pa = A.volume !(pa.a)
@@ -257,15 +243,12 @@ struct
   let to_qformula (a,b) constraints =
     let constraints, others = Atom.to_qformula' a constraints in
     let qformula = Atom.A.I.to_qformula (Atom.interpretation a) constraints in
-    qf_conjunction qformula (B.to_qformula b others)
+    q_conjunction [qformula; (B.to_qformula b others)]
 
-  let negate (a,b) c approx =
-    if (Atom.uid a) != (fst c) then
-      option1 a (B.negate b c approx)
-    else
-      option2 b (Atom.negate a c approx)
-
-  let closure (a,b) = (Atom.closure a, B.closure b)
+  let closure (a,b) =
+    let a, has_changed = Atom.closure a in
+    let b, has_changed' = B.closure b in
+    (a,b), has_changed || has_changed'
 
   let extend' ?ty (a,b) =
     try
@@ -283,8 +266,8 @@ struct
     if (Atom.uid a) != (fst c) then (a, B.weak_incremental_closure b c)
     else (Atom.weak_incremental_closure a c, b)
 
-  let state_decomposition (a,b) =
-    Kleene.and_kleene (Atom.state_decomposition a) (B.state_decomposition b)
+  let state (a,b) =
+    Kleene.and_kleene (Atom.state a) (B.state b)
 
   let entailment (a,b) c =
     if (Atom.uid a) != (fst c) then B.entailment b c
@@ -330,8 +313,11 @@ struct
 
   let wrap p prod = {p with prod}
 
-  let closure p = wrap p (P.closure p.prod)
-  let state_decomposition p = P.state_decomposition p.prod
+  let closure p =
+    let prod, has_changed = P.closure p.prod in
+    wrap p prod, has_changed
+
+  let state p = P.state p.prod
 
   type snapshot = P.snapshot
 

@@ -22,30 +22,29 @@ type ad_uid = int
 
 module type Logical_abstract_domain =
 sig
-  module I: Interpretation_sig
-  type t
-  val interpretation: t -> I.t
-  val map_interpretation: t -> (I.t -> I.t) -> t
-  val qinterpret: t -> approx_kind -> Ast.qformula -> t option
 end
 
 module type Abstract_domain =
 sig
-  include Logical_abstract_domain
+  module I: Interpretation_sig
+  type t
   module B: Bound_sig.S
   val empty: ad_uid -> t
   val uid: t -> ad_uid
+  val interpretation: t -> I.t
+  val map_interpretation: t -> (I.t -> I.t) -> t
+  val qinterpret: t -> approx_kind -> Ast.qformula -> t option
   val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
   val project: t -> I.var_id -> (B.t * B.t)
   type snapshot
   val lazy_copy: t -> int -> snapshot list
   val restore: t -> snapshot -> t
-  val closure: t -> t
+  val closure: t -> (t * bool)
   val weak_incremental_closure: t -> I.rconstraint -> t
-  val entailment: t -> I.rconstraint -> Kleene.t
+  val entailment: t -> I.rconstraint -> bool
   val split: t -> snapshot list
   val volume: t -> float
-  val state_decomposition: t -> Kleene.t
+  val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
 end
 

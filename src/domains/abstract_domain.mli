@@ -24,20 +24,31 @@ exception Conflict of int
 
 type ad_uid = int
 
-(** A logical abstract domain is an abstract domain that internalizes its connection to the logical formula.
+(** We require that abstract domains internalize their connection to the logical formula.
     In practice, it often consists in a pair `(A.t, A.I.t)` of the abstract element and its interpretation.
     The function `qinterpret` allows us to easily add constraints, the variables being added automatically if needed.
-    `Logical_abstract_domain` is included in the signature of `Abstract_domain`.
-    See also `Logical_wrapper`. *)
-module type Logical_abstract_domain =
+    See also `Interpretation.Interpretation_base`. *)
+module type Abstract_domain =
 sig
   (** The representation of the variables and constraints inside the
-     abstract element.  It allows users to turn a logic specification
-     into an abstract element. *)
+   abstract element.  It allows users to turn a logic specification
+   into an abstract element. *)
   module I: Interpretation_sig
 
   (** The type of the abstract domain. *)
   type t
+
+  (** The module of the bound handled by this abstract domain. *)
+  module B: Bound_sig.S
+
+  (** An empty abstract element identified by a unique identifier (UID).
+      See also `uid`. *)
+  val empty: ad_uid -> t
+
+  (** Retrieve the UID of this abstract element.
+      UIDs are mainly useful to perform event-based propagation and associate event and task to a specific abstract domain.
+      See also `Transformers.Event_loop`. *)
+  val uid: t -> ad_uid
 
   (** Read-only access to the interpretation structure. *)
   val interpretation: t -> I.t
@@ -54,23 +65,6 @@ sig
       Raise `Bot_found` if the constraint is detected unsatisfiable in constant time.
       See also `Interpretation_sig.interpret`. *)
   val qinterpret: t -> approx_kind -> Ast.qformula -> t option
-end
-
-module type Abstract_domain =
-sig
-  include Logical_abstract_domain
-
-  (** The module of the bound handled by this abstract domain. *)
-  module B: Bound_sig.S
-
-  (** An empty abstract element identified by a unique identifier (UID).
-      See also `uid`. *)
-  val empty: ad_uid -> t
-
-  (** Retrieve the UID of this abstract element.
-      UIDs are mainly useful to perform event-based propagation and associate event and task to a specific abstract domain.
-      See also `Transformers.Event_loop`. *)
-  val uid: t -> ad_uid
 
   (** Extend the abstract element with a variable of the given type.
       The ID of the fresh variable is returned along with its abstract type.
@@ -96,28 +90,28 @@ sig
   val restore: t -> snapshot -> t
 
   (** Closure of the abstract element: it tries to remove as much
-     inconsistent values as possible from the abstract element
-     according to the constraints encapsulated. *)
-  val closure: t -> t
+      inconsistent values as possible from the abstract element
+      according to the encapsulated constraints (added through `weak_incremental_closure`).
+      Returns `true` if a change on this abstract domain (or subdomain) occur, `false` otherwise (in this case `closure(t)=t`). *)
+  val closure: t -> (t * bool)
 
-  (** Weak incremental closure add the constraint into the abstract
-     element.  This operation is in constant time and must not perform
-     any closure algorithm.  It can however raise `Bot_found` if the
-     constraint is detected disentailed in constant time.
-     Precondition: The variables in `c` must all belong to the abstract element. *)
+  (** Weak incremental closure add the constraint into the abstract element.
+      This operation should be of low time complexity.
+      Raise `Bot_found` if the constraint is detected disentailed (but it is not required).
+      Precondition: The variables in `c` must all belong to the abstract element. *)
   val weak_incremental_closure: t -> I.rconstraint -> t
 
-  (** `entailment a c` returns `True` if the constraint `c` is
-     entailed by the abstract element `a`.  Being entailed means that
-     the constraint is redundant in comparison to the information
-     already in `a`.  It returns `False` if adding `c` to `a` would
-     make the element inconsistent.  If `c` can become either `True`
-     or `False` in the future, then `Unknown` is returned. *)
-  val entailment: t -> I.rconstraint -> Kleene.t
+  (** [entailment a c] returns is `true` if the constraint `c` is entailed by the abstract element `a`.
+      Being entailed means that the constraint is redundant in comparison to the information already in `a`.
+      To test for disentailment, you must call `entailment` on the negation of the constraint.
+      It is not possible to return a `Kleene` value due to over-approximation of constraint.
+      Indeed, `c` might be an over-approximation of its logical constraint `l`, and therefore the disentailment of `c` does not imply the disentailment of `l`. *)
+  val entailment: t -> I.rconstraint -> bool
 
   (** Divide the abstract element into sub-elements.
-      For exhaustiveness, the union of `split t` should be equal to `t`.
-      The list is empty if the abstract element cannot be split anymore (i.e. `state a != unknown`). *)
+      For exhaustiveness, the union of `split a` should be equal to `a`.
+      The list is empty if the abstract element cannot be split (either
+      because `state a != unknown` or because it does not provide a split operator). *)
   val split: t -> snapshot list
 
   (** The volume is crucial to get information on the current state of
@@ -130,13 +124,10 @@ sig
        expected precision of the abstract element. *)
   val volume: t -> float
 
-  (** An element belongs to one category: failed, satisfiable and
-     unknown.  Note that this function cannot be recovered from
-     `volume` because `state_decomposition` can return satisfiable
-     even if `volume t > 1`.
-     Normally, `False` is never returned because `Bot_found` is raised
-     in case of unsatisfiability in `incremental_closure` or `closure`. *)
-  val state_decomposition: t -> Kleene.t
+  (** An element belongs to one category: failed, satisfiable and unknown.
+      Note that this function cannot be recovered from `volume` because `state` can return satisfiable even if `volume t > 1`.
+      Normally, `False` is never returned because `Bot_found` is raised in case of unsatisfiability in `weak_incremental_closure` or `closure`. *)
+  val state: t -> Kleene.t
 
   (** Print the current element in the abstract element using the
       logical names of variables. *)

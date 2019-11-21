@@ -10,7 +10,6 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core
 open Box_interpretation
 
 module type Box_closure_sig = functor (R: Box_interpretation_sig) ->
@@ -21,7 +20,7 @@ sig
   (** Perform the filtering of the constraint.
       Returns `(store, b)` where `store` is the resulting store and `b` is true if the constraint is entailed. *)
   val incremental_closure: Store.t -> R.rconstraint -> (Store.t * bool)
-  val entailment: Store.t -> R.rconstraint -> Kleene.t
+  val entailment: Store.t -> R.rconstraint -> bool
 
 end with module R=R
 

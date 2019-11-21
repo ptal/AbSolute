@@ -40,7 +40,6 @@ sig
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
   val interpret: t -> approx_kind -> formula -> (t * gconstraint list) option
   val to_qformula: t -> gconstraint list -> qformula
-  val negate: t -> gconstraint -> approx_kind -> (t * gconstraint) option
   val qinterpret: t -> approx_kind -> qformula -> t option
 
   val empty': ad_uid -> t
@@ -49,12 +48,12 @@ sig
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list
-  val closure: t -> t
+  val closure: t -> (t * bool)
   val weak_incremental_closure: t -> gconstraint -> t
-  val entailment: t -> gconstraint -> Kleene.t
+  val entailment: t -> gconstraint -> bool
   val split: t -> snapshot list
   val volume: t -> float
-  val state_decomposition: t -> Kleene.t
+  val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
 end
 

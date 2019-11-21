@@ -25,19 +25,19 @@ sig
   val produce_tasks: t -> Pengine2D.t -> (t * Pengine2D.t)
 end
 
-module Event_atom(A: Event_abstract_domain) :
+module Event_atom(A: Schedulable_abstract_domain) :
 sig
   type t = A.t ref
   include Event_combinator with type t := t
 end
 
-module Event_cons(A: Event_abstract_domain)(B: Event_combinator) :
+module Event_cons(A: Schedulable_abstract_domain)(B: Event_combinator) :
 sig
   type t = (A.t ref * B.t)
   include Event_combinator with type t := t
 end
 
-(** `Event_loop` is a product of `Event_abstract_domain`.
+(** `Event_loop` is a product of `Schedulable_abstract_domain`.
     The main role of `Event_loop` is to schedule the tasks given by these domains. *)
 module Event_loop(L: Event_combinator) :
 sig

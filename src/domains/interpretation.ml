@@ -18,6 +18,11 @@ type approx_kind =
 | UnderApprox
 | OverApprox
 
+let neg_approx = function
+  | Exact -> Exact
+  | UnderApprox -> OverApprox
+  | OverApprox -> UnderApprox
+
 module type Interpretation_sig = sig
   type t
   type var_id
@@ -28,7 +33,6 @@ module type Interpretation_sig = sig
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
   val interpret: t -> approx_kind -> Ast.formula -> (t * rconstraint list) option
   val to_qformula: t -> rconstraint list -> Ast.qformula
-  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 end
 
 module Interpretation_base(V_ID:sig type var_id end) =

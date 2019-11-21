@@ -28,7 +28,7 @@ sig
   val produce_tasks: t -> Pengine2D.t -> (t * Pengine2D.t)
 end
 
-module Event_atom(A: Event_abstract_domain) =
+module Event_atom(A: Schedulable_abstract_domain) =
 struct
   type t = A.t ref
 
@@ -52,7 +52,7 @@ struct
     a, pengine
 end
 
-module Event_cons(A: Event_abstract_domain)(B: Event_combinator) =
+module Event_cons(A: Schedulable_abstract_domain)(B: Event_combinator) =
 struct
   type t = (A.t ref * B.t)
 
@@ -98,10 +98,10 @@ struct
   let closure p =
     let l, pengine = L.produce_tasks p.l p.pengine in
     let l, pengine = L.produce_events l pengine in
-    let pengine, l = Pengine2D.fixpoint pengine L.consume_task l in
-    {p with l; pengine}
+    let pengine, l, has_changed = Pengine2D.fixpoint pengine L.consume_task l in
+    {p with l; pengine}, has_changed
 
-  let state_decomposition _ = Kleene.True
+  let state _ = Kleene.True
   let split _ = []
   let volume _ = 1.
   let interpretation _ = Unit_interpretation.empty ()

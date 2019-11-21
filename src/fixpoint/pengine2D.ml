@@ -95,9 +95,9 @@ let num_active_tasks pengine = pengine.num_actives
 
 (* An invariant is that the scheduler is empty at the end of this function, thus it is idempotent. *)
 let fixpoint pengine f acc =
-  let rec aux pengine acc =
+  let rec aux pengine acc has_changed =
     if CCDeque.is_empty pengine.scheduler then
-      pengine, acc
+      pengine, acc, has_changed
     else
     begin
       let task = pop pengine in
@@ -107,11 +107,11 @@ let fixpoint pengine f acc =
           deactivate_task pengine task
         else pengine in
       react pengine events;
-      aux pengine acc
+      aux pengine acc (has_changed || (List.length events > 0))
     end
   in
   try
-    aux pengine acc
+    aux pengine acc false
   with e -> begin
     CCDeque.clear pengine.scheduler;
     CCVector.iter (fun x -> CCBV.clear x) pengine.inside_queue;

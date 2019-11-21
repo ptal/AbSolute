@@ -27,7 +27,7 @@ module type Box_sig =
 sig
   module Vardom: Vardom_sig.Vardom_sig
   type vardom = Vardom.t
-  include Event_abstract_domain
+  include Schedulable_abstract_domain
   val project_vardom: t -> I.var_id -> vardom
 end
 
@@ -98,7 +98,7 @@ struct
       vol
 
   (* Closure is performed by `Event_loop` calling `exec_task`. *)
-  let closure box = box
+  let closure box = box, false
 
   (* We propagate the constraint immediately.
      If the constraint is not entailed, it is added into the box. *)
@@ -114,7 +114,7 @@ struct
           num_active_tasks=box.num_active_tasks+1 }
 
   (* Entailed constraints are automatically deactivated by `Event_loop`. *)
-  let state_decomposition box =
+  let state box =
     if box.num_active_tasks = 0 then True
     else Unknown
 
@@ -155,11 +155,14 @@ struct
     let store, deltas = Store.delta box.store in
     { box with store }, (make_events box deltas)
 
+  let events_of box c =
+    let vars = List.sort_uniq compare (I.vars_of_constraint c) in
+    make_events box vars
+
   let drain_tasks box =
     let drain_one acc c_idx =
       let c = Parray.get box.constraints c_idx in
-      let vars = List.sort_uniq compare (I.vars_of_constraint c) in
-      let events = make_events box vars in
+      let events = events_of box c in
       ((box.uid, c_idx), events)::acc in
     let tasks_events = List.fold_left drain_one [] box.new_tasks in
     ({ box with new_tasks=[] }, tasks_events)

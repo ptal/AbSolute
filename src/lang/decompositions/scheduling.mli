@@ -14,12 +14,12 @@ open Bounds
 open Lang.Ast
 
 module type S = sig
-  module B: Bound_sig.S
+  module D: Bound_sig.S
 
   type task = {
     (* Name of the variable representing the starting date. *)
     start: string;
-    duration: B.t;
+    duration: D.t;
   }
 
   (** Ensure two tasks do not overlap.
@@ -34,11 +34,11 @@ module type S = sig
   val disjunctive: task list -> formula
 
   (** Ensure that a task is running at the instant `i`. *)
-  val at_instant: task -> B.t -> formula
+  val at_instant: task -> D.t -> formula
 
   (** Given two tasks name `s1,s2`, and a duration `d`, ensure that `s2` starts at least `d` units after the start of `s1`.
       The resulting constraint is `s1 + d1 <= s2` that we rewrite to `s1 - s2 <= -d1`. *)
-  val precedence: string -> string -> B.t -> formula
+  val precedence: string -> string -> D.t -> formula
 end
 
-module Make(B: Bound_sig.S): S with module B=B
+module Make(D: Bound_sig.S): S with module D=D

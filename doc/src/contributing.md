@@ -16,7 +16,7 @@ make build
 make test
 ```
 
-You might also be interested by cloning the following repositories which all relevant to the AbSolute project:
+You might also be interested by cloning the following repositories which are all relevant to the AbSolute project:
 
 ```sh
 git clone https://github.com/ptal/kobe

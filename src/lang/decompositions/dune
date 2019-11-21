@@ -1,6 +1,6 @@
 (library
-  (name decomposition)
-  (public_name absolute.lang.decomposition)
+  (name lang_decompositions)
+  (public_name absolute.lang.decompositions)
   (libraries absolute.core absolute.bounds absolute.lang)
   (flags :standard)
   (ocamlopt_flags (:standard -O3))

@@ -50,7 +50,6 @@ sig
       Exact representation is supported if the abstract types of the variables of `f` are all different from floating point numbers. *)
   val interpret: t -> approx_kind -> formula -> (t * rconstraint list) option
   val to_qformula: t -> rconstraint list -> qformula
-  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 
   (** Create an expression from a node.
       The vardom ref is initialized to TOP. *)

@@ -23,8 +23,11 @@ struct
       let gs = T.{gs with domain=(A.restore gs.domain bs.snapshot)} in
       let (gs,bs) = T.on_node (gs,bs) in
       let (gs,bs) = T.wrap_exception (gs,bs) (fun (gs,bs) ->
-        ({gs with domain=A.closure gs.domain}, bs)) in
-      match A.state_decomposition gs.domain with
+        let rec fixpoint_closure (domain, has_changed) =
+          if has_changed then fixpoint_closure (A.closure domain)
+          else domain in
+        ({gs with domain=(fixpoint_closure (gs.domain,true))}, bs)) in
+      match A.state gs.domain with
       | Kleene.False -> T.on_fail (gs,bs)
       | Kleene.True -> T.on_solution (gs,bs)
       | Kleene.Unknown ->
@@ -33,6 +36,6 @@ struct
           let bss = List.map (fun snapshot -> {bs with snapshot}) branches in
           List.fold_left (fun (gs,_) bs -> solve (gs,bs)) (gs,bs) bss
     with
-    | T.Backjump (0, t) -> t
+    | T.Backjump (0, t) -> T.on_fail t
     | T.Backjump (n, t) -> raise (T.Backjump ((n-1), t))
 end

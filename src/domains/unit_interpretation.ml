@@ -23,4 +23,3 @@ let to_logic_var _ _ = no_variable_exn ()
 let to_abstract_var _ _ = no_variable_exn ()
 let interpret _ _ _ = None
 let to_qformula _ _ = QFFormula truef
-let negate _ _ _ = Some ((),())

@@ -29,16 +29,16 @@ sig
   }
   type name_factory
   val default_name_factory: name_factory
-  val shared_constraints: rtask list -> int -> name_factory -> qformula
-  val cumulative: rtask list -> int -> C.t -> name_factory -> formula
+  val shared_constraints: rtask list -> D.t -> name_factory -> qformula
+  val cumulative: rtask list -> D.t -> C.t -> name_factory -> formula
 end
 
 module Generic(T: Bound_sig.S)(C: Bound_sig.S) :
 sig
-  module S : (module type of Scheduling.Make(T))
+  include (module type of Scheduling.Make(T))
   module C : Bound_sig.S
   type rtask = {
-    task: S.task;
+    task: task;
     id: int;
     resources_usage: C.t
   }
@@ -67,7 +67,7 @@ sig
       `name_factory` helps to share new Boolean variables created by the decomposition across all cumulatives.
       The decomposition is `forall(t1),
         capacity - t1.resource_usage >= sum(t2 where t1 <> t2) (task_<t2.id>_runs_when_<t1.id>_starts * t2.resource_usage)` *)
-  val cumulative: rtask list -> int -> C.t -> name_factory -> formula
+  val cumulative: rtask list -> D.t -> C.t -> name_factory -> formula
 end
 
 (** Time-resource decomposition of cumulative.
@@ -86,7 +86,7 @@ sig
   (** Similar to `MakeTaskRD.shared_constraints`.
       Here the decomposition is:
         `forall(i,t) task_<t.id>_runs_at_<i> <=> at_instant(t.task, i). *)
-  val shared_constraints: rtask list -> int -> name_factory -> qformula
+  val shared_constraints: rtask list -> D.t -> name_factory -> qformula
 
   (** Time-resource decomposition of cumulative.
       Similar to `MakeTaskRD.cumulative`.
@@ -94,5 +94,5 @@ sig
       The decomposition is `forall(i in 0..horizon)
         capacity >= sum(t) task_<t.id>_runs_at_<i> * t.resource_usage
   *)
-  val cumulative: rtask list -> int -> C.t -> name_factory -> formula
+  val cumulative: rtask list -> D.t -> C.t -> name_factory -> formula
 end

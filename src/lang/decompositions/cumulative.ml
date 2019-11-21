@@ -26,16 +26,16 @@ sig
   }
   type name_factory
   val default_name_factory: name_factory
-  val shared_constraints: rtask list -> int -> name_factory -> qformula
-  val cumulative: rtask list -> int -> C.t -> name_factory -> formula
+  val shared_constraints: rtask list -> D.t -> name_factory -> qformula
+  val cumulative: rtask list -> D.t -> C.t -> name_factory -> formula
 end
 
 module Generic(T: Bound_sig.S)(C: Bound_sig.S) =
 struct
-  module S = Scheduling.Make(T)
+  include Scheduling.Make(T)
   module C = C
   type rtask = {
-    task: S.task;
+    task: task;
     id: int;
     resources_usage: C.t
   }
@@ -63,13 +63,12 @@ struct
     "task_" ^ (string_of_int t1.id) ^ "_runs_when_" ^ (string_of_int t2.id) ^ "_starts"
 
   let shared_constraints rtasks _ make_name =
-    let tasks = remove_tasks_not_using_resource rtasks in
     let formula = QFFormula (conjunction (
-      Tools.for_all_distinct_pairs tasks (fun t1 t2 ->
+      Tools.for_all_distinct_pairs rtasks (fun t1 t2 ->
         let b = FVar (make_name t1 t2) in
-        [Equiv (b, S.overlap_before t1.task t2.task)]
+        [Equiv (b, overlap_before t1.task t2.task)]
     ))) in
-    let vars = Tools.for_all_distinct_pairs tasks (fun t1 t2 -> [make_name t1 t2]) in
+    let vars = Tools.for_all_distinct_pairs rtasks (fun t1 t2 -> [make_name t1 t2]) in
     quantify_boolean formula vars
 
   let cumulative rtasks _ capacity make_name =
@@ -103,7 +102,7 @@ struct
   let shared_constraints rtasks horizon make_name =
     let formula = QFFormula (conjunction (List.flatten (List.map (fun i ->
       List.map (fun t ->
-        Equiv (FVar (make_name t i), S.at_instant t.task i)
+        Equiv (FVar (make_name t i), at_instant t.task i)
       ) rtasks
     ) (Tools.range 0 horizon)))) in
     let vars = List.flatten (List.map (fun i -> List.map (fun t ->

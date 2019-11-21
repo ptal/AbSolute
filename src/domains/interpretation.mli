@@ -22,6 +22,9 @@ type approx_kind =
   | UnderApprox
   | OverApprox
 
+(** Over-approximation becomes under-approximation, and vice-versa. *)
+val neg_approx: approx_kind -> approx_kind
+
 (** Every abstract domain may have a different variable and constraint representation according to their internal implementation.
   We ask every abstract domain to provide an interpretation module in order to connect the logic specification (`Ast.qformula`) and the representation of the abstract domain.
   This module can also interpret a logic constraint into a more suited representation of the abstract domain.
@@ -63,9 +66,6 @@ module type Interpretation_sig = sig
       Note that we do not need to approximate the result as a formula should always be able to represent exactly an element.
       The free variables in the formula obtained should be considered existentially quantified. *)
   val to_qformula: t -> rconstraint list -> Ast.qformula
-
-  (** Negate the constraint according to the given approximation kind. *)
-  val negate: t -> rconstraint -> approx_kind -> (t * rconstraint) option
 end
 
 (* Many interpretations have the same underlying structure that we factorize in this module.

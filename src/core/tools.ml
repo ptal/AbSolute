@@ -101,16 +101,19 @@ let fold_map f a l =
   let (a, l') = List.fold_left f (a, []) l in
   (a, List.rev l')
 
+let contain_string s sub extract =
+  let s = String.trim s in
+  let sub = String.trim sub in
+  let sub_len = String.length sub in
+  if String.length s >= sub_len then
+    (extract s sub_len) = sub
+  else
+    false
+
 (** True if `s` starts with `head`.
     `start_with` trims `s` and `head`. *)
 let start_with s head =
-  let s = String.trim s in
-  let head = String.trim head in
-  let head_len = String.length head in
-  if String.length s >= head_len then
-    (String.sub s 0 head_len) = head
-  else
-    false
+  contain_string s head (fun s head_len -> String.sub s 0 head_len)
 
 (* val for_all_pairs: 'a list -> ('a -> 'a -> 'b list) -> 'b list *)
 let for_all_pairs l f =
