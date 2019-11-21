@@ -74,6 +74,8 @@ struct
 
   let uid box = box.uid
 
+  let name = "Box(" ^ V.name ^ ")"
+
   let extend ?ty box =
     let (store, idx, aty) = Store.extend ?ty box.store in
     ({ box with store }, idx, aty)
@@ -172,6 +174,7 @@ struct
   include QInterpreter_base(struct
     type t=t'
     module I=I
+    let name=name
     let interpretation=interpretation
     let map_interpretation=map_interpretation
     let extend=extend

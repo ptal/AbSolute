@@ -31,9 +31,10 @@ sig
   module B: Bound_sig.S
   val empty: ad_uid -> t
   val uid: t -> ad_uid
+  val name: string
   val interpretation: t -> I.t
   val map_interpretation: t -> (I.t -> I.t) -> t
-  val qinterpret: t -> approx_kind -> Ast.qformula -> t option
+  val qinterpret: t -> approx_kind -> Ast.qformula -> t
   val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
   val project: t -> I.var_id -> (B.t * B.t)
   type snapshot
@@ -52,6 +53,7 @@ module type Small_abstract_domain =
 sig
   type t
   module I: Interpretation_sig
+  val name: string
   val interpretation: t -> I.t
   val map_interpretation: t -> (I.t -> I.t) -> t
   val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
@@ -61,22 +63,23 @@ end
 module QInterpreter_base(A: Small_abstract_domain) =
 struct
   module I = A.I
-  let rec qinterpret a approx = function
+  let qinterpret a approx f =
+    let rec aux a approx = function
     | QFFormula f ->
-      begin
-        match I.interpret (A.interpretation a) approx f with
-        | None -> None
-        | Some(i, cs) ->
-            let a = A.map_interpretation a (fun _ -> i) in
-            Some(List.fold_left A.weak_incremental_closure a cs)
-      end
+        let (i, cs) = I.interpret (A.interpretation a) approx f in
+        let a = A.map_interpretation a (fun _ -> i) in
+        List.fold_left A.weak_incremental_closure a cs
     | Exists (v, ty, qf) ->
         try
           (* Check if the variable `v` is or not in the abstract element yet. *)
           ignore(I.to_abstract_var (A.interpretation a) v);
-          qinterpret a approx qf
+          aux a approx qf
         with Not_found ->
           let a, v_id, aty = A.extend ~ty a in
           let a = A.map_interpretation a (fun r -> A.I.extend r (v, v_id, aty)) in
-          qinterpret a approx qf
+          aux a approx qf
+    in
+      try aux a approx f
+      with Wrong_modelling msg ->
+        raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg))
 end

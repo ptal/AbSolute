@@ -15,6 +15,9 @@
 module type S = sig
   type t
 
+  (** Short name of the bound. *)
+  val name: string
+
   val abstract_ty: Core.Types.var_abstract_ty
   val concrete_ty: Core.Types.var_concrete_ty
 

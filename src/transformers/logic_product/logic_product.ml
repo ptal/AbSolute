@@ -49,7 +49,7 @@ sig
   val extend: t -> (var * gvar * var_abstract_ty) -> t
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
-  val interpret: t -> approx_kind -> formula -> (t * qfp_formula list) option
+  val interpret: t -> approx_kind -> formula -> t * qfp_formula list
   val to_qformula: t -> qfp_formula list -> qformula
 end
 
@@ -109,8 +109,6 @@ struct
   let to_logic_var _ _ = no_variable_exn "Logic_prod_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_prod_interpretation.to_abstract_var"
 
-  exception Not_interpretable
-
   (** The formula is not rewritten and is represented as such. *)
   let interpret p approx f =
     let rec make_approx_formula p approx f =
@@ -124,11 +122,8 @@ struct
     and aux p approx f =
       match f with
       | FVar _ | Cmp _ ->
-        begin
-          match P.interpret p approx f with
-          | None -> raise Not_interpretable
-          | Some (p, fs) -> (p, Atom fs)
-        end
+          let p, fs = P.interpret p approx f in
+          p, Atom fs
       | Not(f1) ->
           let p, f1 = make_pn_formula p approx f1 in
           p, PNot f1
@@ -148,7 +143,7 @@ struct
           p, f1@f2
       | _ -> let p, f = aux p approx f in p, [f]
     in
-      try Some(top_aux p approx f) with Not_interpretable -> None
+      top_aux p approx f
 
   let to_qformula p fs =
     let open Rewritting in
@@ -190,6 +185,8 @@ struct
   }
 
   let uid qp = qp.uid
+
+  let name = "Logic_product(" ^ P.name ^ ")"
 
   (* Entailed constraints are automatically deactivated by `Event_loop`. *)
   let state qp =
@@ -344,8 +341,10 @@ struct
 
   let qinterpret qp approx qf =
     let f = Rewritting.quantifier_free_of qf in
-    match I.interpret qp.prod approx f with
-    | None -> None
-    | Some(prod, fs) ->
-        Some (List.fold_left weak_incremental_closure {qp with prod} fs)
+    try
+      let (prod, fs) = I.interpret qp.prod approx f in
+      List.fold_left weak_incremental_closure {qp with prod} fs
+    with Wrong_modelling msg ->
+      raise (Wrong_modelling (
+        "[" ^ name ^ "] None of the subdomains of this product could interpret the constraint:\n" ^ (Tools.indent msg)))
 end

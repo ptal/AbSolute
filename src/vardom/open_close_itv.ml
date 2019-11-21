@@ -77,6 +77,8 @@ module Make(B: Bound_sig.S) = struct
       type_dispatch ty (fun _ -> large l u)
   end
 
+  let name = "ItvOC(" ^ B.name ^ ")"
+
   open OC_itv_of_bounds
 
   include Vardom_factory.Make(OC_itv_of_bounds)

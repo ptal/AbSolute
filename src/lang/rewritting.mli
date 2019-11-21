@@ -72,7 +72,8 @@ val replace_var_in_expr: (var -> expr) -> expr -> expr
 val mapfold_conjunction: (bconstraint -> 'a list) -> formula -> 'a list
 
 (** [quantify env f] Given a variable environment `env`, existentially quantify the formula `f`.
-    It adds `Exists` in front of `f` for each variable occuring in `f`. *)
+    It adds `Exists` in front of `f` for each variable occuring in `f` and `env`.
+    Variables not in `env` are ignored. *)
 val quantify: (var * Types.var_ty) list -> formula -> qformula
 
 (** [quantifiers qf] extracts all the existentially quantified variables from `qf`.

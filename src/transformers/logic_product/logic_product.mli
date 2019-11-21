@@ -61,7 +61,7 @@ sig
   val extend: t -> (var * gvar * var_abstract_ty) -> t
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
-  val interpret: t -> approx_kind -> formula -> (t * qfp_formula list) option
+  val interpret: t -> approx_kind -> formula -> t * qfp_formula list
   val to_qformula: t -> qfp_formula list -> qformula
 end
 
@@ -77,9 +77,13 @@ module Logic_prod_interpretation(P: LProd_combinator):
     type t = P.t and
     type init_t = P.init_t
 
-module LProd_atom(A: Event_abstract_domain) : LProd_combinator
+module LProd_atom(A: Event_abstract_domain):
+  LProd_combinator with type init_t = A.t ref
 
-module LProd_cons(A: Event_abstract_domain)(B: LProd_combinator) : LProd_combinator
+module LProd_cons(A: Event_abstract_domain)(B: LProd_combinator):
+  LProd_combinator with
+    type t = Prod_atom(A).t * B.t and
+    type init_t = A.t ref * B.init_t
 
 module Logic_product(P: LProd_combinator):
 sig

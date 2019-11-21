@@ -20,6 +20,7 @@ open Core
 
 type t = unit
 
+let name = "unit"
 let abstract_ty = Types.VUnit
 let concrete_ty = Types.Int
 

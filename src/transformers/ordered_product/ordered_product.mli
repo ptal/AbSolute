@@ -32,15 +32,16 @@ sig
   type var_id = gvar
   type rconstraint = gconstraint
   val count: int
+  val name: string
 
   val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
-  val interpret: t -> approx_kind -> formula -> (t * gconstraint list) option
+  val interpret: t -> approx_kind -> formula -> t * gconstraint list
   val to_qformula: t -> gconstraint list -> qformula
-  val qinterpret: t -> approx_kind -> qformula -> t option
+  val qinterpret: t -> approx_kind -> qformula -> t
 
   val empty': ad_uid -> t
   val extend': ?ty:var_ty -> t -> (t * gvar * var_abstract_ty)
@@ -58,7 +59,13 @@ sig
 end
 
 module Prod_atom(A: Abstract_domain) :
-  Prod_combinator with type init_t = A.t ref
+sig
+  include Prod_combinator
+  val unwrap: t -> A.t
+  val wrap: t -> A.t -> t
+  val get_constraint: t -> rconstraint -> A.I.rconstraint
+  val uid: t -> ad_uid
+end with type init_t = A.t ref
 
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) :
   Prod_combinator with

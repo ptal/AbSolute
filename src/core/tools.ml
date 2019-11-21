@@ -75,6 +75,12 @@ let pp_print_mpqf fmt (m:Mpqf.t) =
   if Mpqf.of_float f = m then pp_print_float fmt f
   else Mpqf.print fmt m
 
+(** Start each new line with a two spaces indentation. *)
+let indent s =
+  let lines = String.split_on_char '\n' s in
+  let lines = List.map (fun s -> "  " ^ s) lines in
+  String.concat "\n" lines
+
 (******************************)
 (** {2} Conveniency functions *)
 (******************************)

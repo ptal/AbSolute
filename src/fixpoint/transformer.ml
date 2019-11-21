@@ -89,6 +89,20 @@ struct
     bt_stats=init_bt_stats ();
   }
 
+  let unwrap_best gs =
+    let rec aux = function
+      | [] -> raise Not_found
+      | BAB bab::_ ->
+          begin match bab.best with
+          | Some (_, (QFFormula (Cmp (Var _, _, Cst (best,_))))) ->
+              Some best
+          | Some (_,_) -> failwith
+              "[Transformer.unwrap_best] Best formula is suppose to be formatted as `v <op> best` where best is a constant."
+          | None -> None
+          end
+      | _::l -> aux l
+    in aux gs.transformers
+
   exception StopSearch of t
   exception Backjump of (int * t)
 
@@ -102,9 +116,8 @@ struct
     | None -> (gs,bs)
     | Some (_,formula) ->
         wrap_exception (gs,bs) (fun (gs, bs) ->
-          match A.qinterpret gs.domain OverApprox formula with
-          | None -> failwith "Abstract domain in BAB cannot interpret the optimisation constraint."
-          | Some domain -> ({gs with domain}, bs))
+          let domain = A.qinterpret gs.domain OverApprox formula in
+          ({gs with domain}, bs))
 
   let stop_if t = function
     | true -> raise (StopSearch t)

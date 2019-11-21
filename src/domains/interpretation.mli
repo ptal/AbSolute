@@ -25,6 +25,9 @@ type approx_kind =
 (** Over-approximation becomes under-approximation, and vice-versa. *)
 val neg_approx: approx_kind -> approx_kind
 
+(** Past participle form of the verb representing the approximation (i.e. "under-approximated"). *)
+val string_of_approx: approx_kind -> string
+
 (** Every abstract domain may have a different variable and constraint representation according to their internal implementation.
   We ask every abstract domain to provide an interpretation module in order to connect the logic specification (`Ast.qformula`) and the representation of the abstract domain.
   This module can also interpret a logic constraint into a more suited representation of the abstract domain.
@@ -54,12 +57,13 @@ module type Interpretation_sig = sig
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
 
-  (** Interpret a logic formula into an abstract element.
+  (** Interpret a logic formula into a list of abstract constraints.
       It approximates the representation of the formula if needed according to `approx`.
-      Existential variables must first be added with `extend`.
-      We return `None` if the formula cannot be approximated according to `approx` in the abstract domain.
-      The list of constraints might be empty if the formula is detected to be a tautology. *)
-  val interpret: t -> approx_kind -> Ast.formula -> (t * rconstraint list) option
+      The list of constraints might be empty if the formula is detected to be a tautology.
+      Raise `Wrong_modelling` if:
+        1. the formula cannot be approximated according to `approx` in the abstract domain.
+        2. a variable of the formula does not belong to the interpretation. *)
+  val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
 
   (** Give a logical representation of an abstract element.
       This function is the reverse of `interpret`.
@@ -83,4 +87,7 @@ sig
   (** Conveniency version of `to_logic_var` without the type of the variable. *)
   val to_logic_var': t -> var_id -> Ast.var
   val to_abstract_var': t -> Ast.var -> var_id
+
+  (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
+  val to_abstract_var_wm: t -> Ast.var -> (var_id * Types.var_abstract_ty)
 end

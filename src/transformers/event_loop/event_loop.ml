@@ -23,6 +23,7 @@ open Event_abstract_domain
 module type Event_combinator =
 sig
   type t
+  val name: string
   val consume_task: t -> task -> (t * bool * event list)
   val produce_events: t -> Pengine2D.t -> (t * Pengine2D.t)
   val produce_tasks: t -> Pengine2D.t -> (t * Pengine2D.t)
@@ -31,6 +32,8 @@ end
 module Event_atom(A: Schedulable_abstract_domain) =
 struct
   type t = A.t ref
+
+  let name = A.name
 
   let consume_task a task =
     let a', fixpoint = A.exec_task !a task in
@@ -57,6 +60,8 @@ struct
   type t = (A.t ref * B.t)
 
   module Atom = Event_atom(A)
+
+  let name = Atom.name ^ "," ^ B.name
 
   let consume_task ((a, b) as this) ((uid, task_id) as task) =
     if A.uid !a = uid then
@@ -95,6 +100,8 @@ struct
 
   let uid p = p.uid
 
+  let name = "Event_loop(" ^ L.name ^ ")"
+
   let closure p =
     let l, pengine = L.produce_tasks p.l p.pengine in
     let l, pengine = L.produce_events l pengine in
@@ -106,7 +113,6 @@ struct
   let volume _ = 1.
   let interpretation _ = Unit_interpretation.empty ()
   let map_interpretation x f = ignore(f (Unit_interpretation.empty ())); x
-  let qinterpret _ _ _ = None
   let print _ _ = ()
 
   (* This abstract domain is totally functional. *)
@@ -114,11 +120,12 @@ struct
   let lazy_copy p n = List.init n (fun _ -> p)
   let restore _ s = s
 
-  let meta_exn s = raise (Wrong_modelling ("`Event_loop." ^ s ^ "` is a meta abstract domain that does not represent any kind of variable or constraint."))
+  let meta_exn () = raise (Wrong_modelling ("[" ^ name ^ "] Event_loop is a meta abstract domain that does not represent any kind of variable or constraint."))
 
   let empty _ = raise (Wrong_modelling "`Event_loop.empty` is not supported, you should first create the abstract domains and then pass their references to `Event_loop.init`.")
-  let extend ?ty:_ _ = meta_exn "extend"
-  let project _ _ = meta_exn "project"
-  let weak_incremental_closure _ _ = meta_exn "weak_incremental_closure"
-  let entailment _ _ = meta_exn "entailment"
+  let extend ?ty:_ _ = meta_exn ()
+  let project _ _ = meta_exn ()
+  let weak_incremental_closure _ _ = meta_exn ()
+  let entailment _ _ = meta_exn ()
+  let qinterpret _ _ _ = meta_exn ()
 end

@@ -291,8 +291,11 @@ let quantify env f =
   let rec aux = function
   | [] -> QFFormula f
   | v::vars ->
-      let ty = List.assoc v env in
-      Exists (v, ty, aux vars)
+      let f = aux vars in
+      try
+        let ty = List.assoc v env in
+        Exists (v, ty, f)
+      with Not_found -> f
   in aux vars
 
 let rec quantifiers = function

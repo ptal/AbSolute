@@ -9,6 +9,7 @@
    Lesser General Public License for more details. *)
 
 type t
+val name: string
 val abstract_ty: Core.Types.var_abstract_ty
 val concrete_ty: Core.Types.var_concrete_ty
 val succ: t -> t

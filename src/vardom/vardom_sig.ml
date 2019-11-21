@@ -28,6 +28,10 @@ module type Vardom_sig = sig
 
   include Vardom_factory_sig
 
+  (** Name of the Vardom.
+      See also `Abstract_domain.name`. *)
+  val name: string
+
   (** Top element (the less precise element) of the Vardom.
       In case of a concrete type, a suited abstract representation is picked,
       otherwise, the abstract type must be exactly the one supported in this vardom.

@@ -13,6 +13,7 @@ open Core
 (* We encode -infinity and infinity as `-1/0` and `1/0`. *)
 type t = Mpqf.t
 
+let name = "Q"
 let abstract_ty = Types.Rational
 let concrete_ty = Types.Real
 

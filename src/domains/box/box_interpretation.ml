@@ -40,7 +40,7 @@ sig
 
   type rconstraint = rexpr * cmpop * rexpr
 
-  val interpret: t -> approx_kind -> formula -> (t * rconstraint list) option
+  val interpret: t -> approx_kind -> formula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> qformula
 
   val make_expr: node -> rexpr
@@ -80,7 +80,7 @@ struct
         | Funcall(x, exprs) -> BFuncall(x, List.map aux exprs)
         | Unary(NEG, e) -> BUnary(NEG, aux e)
         | Binary(e1, op, e2) -> BBinary (aux e1, op, aux e2)
-        | Var(x) -> BVar(fst (to_abstract_var repr x))
+        | Var(x) -> BVar(fst (to_abstract_var_wm repr x))
         | Cst(v, cty) ->
             let l, u = ((Vardom.B.of_rat_down v),(Vardom.B.of_rat_up v)) in
             let v, aty = Vardom.of_bounds ~ty:(Types.Concrete cty) (l,u) in
@@ -90,32 +90,31 @@ struct
 
   (* We check that the approximation is possible with the current variables and formula `f`.
      See `interpret` documentation. *)
-  let approx_typing repr f approx =
+  let check_approx_typing repr f approx =
     let is_exact_approx v =
-      let _, aty = to_abstract_var repr v in
+      let _, aty = to_abstract_var_wm repr v in
       (* We list the variants explicitly because it must be considered if we add a new abstract type. *)
       match aty with
-      | VUnit | Bool | Integer | Rational | BDD _ -> true
-      | Float -> false
+      | VUnit | Bool | Integer | Rational | BDD _ -> ()
+      | Float -> raise (Wrong_modelling ("Variable `" ^ v ^ "` cannot be `" ^ (string_of_approx approx) ^ "` in the current abstract domain."))
     in
     match approx with
-    | OverApprox -> true
+    | OverApprox -> ()
     | UnderApprox | Exact ->
        let vars = Variables.elements (get_vars_set_formula f) in
-       List.for_all is_exact_approx vars
+       List.iter is_exact_approx vars
 
-  let interpret_bconstraint repr (e1, op, e2) = [(interpret_expr repr e1, op, interpret_expr repr e2)]
+  let interpret_bconstraint repr (e1, op, e2) =
+    [(interpret_expr repr e1, op, interpret_expr repr e2)]
 
   let interpret repr approx f =
     let rec aux = function
       | And (f1, f2) -> (aux f1)@(aux f2)
       | FVar x -> interpret_bconstraint repr (Var x, EQ, one)
-      | _ -> raise (Wrong_modelling "Logical constraints should be handled in the `Propositional_logic` domain.")
+      | _ -> raise (Wrong_modelling "Logical constraints should be handled in the `Logic_product` domain.")
     in
-    if approx_typing repr f approx then
-      try Some(repr, aux f)
-      with Wrong_modelling _ -> None
-    else None
+    check_approx_typing repr f approx;
+    (repr, aux f)
 
   let to_logic_expr repr expr =
     let rec aux expr =

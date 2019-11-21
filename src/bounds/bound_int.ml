@@ -15,6 +15,7 @@ open Core
 (* We encode -infinity and infinity as `min_int` and `max_int`. *)
 type t = int
 
+let name = "Z"
 let abstract_ty = Types.Integer
 let concrete_ty = Types.Int
 

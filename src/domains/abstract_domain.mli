@@ -50,6 +50,10 @@ sig
       See also `Transformers.Event_loop`. *)
   val uid: t -> ad_uid
 
+  (** Name of the abstract domain.
+      This is particularly useful to print `Wrong_modelling` messages. *)
+  val name: string
+
   (** Read-only access to the interpretation structure. *)
   val interpretation: t -> I.t
 
@@ -59,12 +63,13 @@ sig
 
   (** Interpret an existentially quantified logical formula into an abstract element and directly call `weak_incremental_closure` on this new constraint.
       Existentially quantified variables are added into the abstract element if not already present.
-      /!\ All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
-      We return `None` if the constraint could not be interpreted.
-      Raise `Not_found` if some free variables are not already in the abstract domain.
+      All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
+      Raise `Wrong_modelling` if:
+        1. the constraint could not be interpreted, or
+        2. some free variables are not already in the abstract domain.
       Raise `Bot_found` if the constraint is detected unsatisfiable in constant time.
       See also `Interpretation_sig.interpret`. *)
-  val qinterpret: t -> approx_kind -> Ast.qformula -> t option
+  val qinterpret: t -> approx_kind -> Ast.qformula -> t
 
   (** Extend the abstract element with a variable of the given type.
       The ID of the fresh variable is returned along with its abstract type.
@@ -140,6 +145,7 @@ module type Small_abstract_domain =
 sig
   type t
   module I: Interpretation_sig
+  val name: string
   val interpretation: t -> I.t
   val map_interpretation: t -> (I.t -> I.t) -> t
   val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
@@ -150,5 +156,5 @@ end
     It can be included in the abstract domains. *)
 module QInterpreter_base(A: Small_abstract_domain) :
 sig
-  val qinterpret: A.t -> approx_kind -> Ast.qformula -> A.t option
+  val qinterpret: A.t -> approx_kind -> Ast.qformula -> A.t
 end

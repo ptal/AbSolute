@@ -28,6 +28,8 @@ type t = T | F | N of t*t
 module B = Bound_int
 type bound = B.t
 
+let name = "BDD"
+
 (* Functions on BDDs *)
 
 let bdd_of =

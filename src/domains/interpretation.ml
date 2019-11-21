@@ -23,6 +23,11 @@ let neg_approx = function
   | UnderApprox -> OverApprox
   | OverApprox -> UnderApprox
 
+let string_of_approx = function
+  | Exact -> "exactly approximated"
+  | UnderApprox -> "under-approximated"
+  | OverApprox -> "over-approximated"
+
 module type Interpretation_sig = sig
   type t
   type var_id
@@ -31,7 +36,7 @@ module type Interpretation_sig = sig
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
-  val interpret: t -> approx_kind -> Ast.formula -> (t * rconstraint list) option
+  val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> Ast.qformula
 end
 
@@ -61,4 +66,8 @@ struct
 
   let to_logic_var' repr idx = fst (to_logic_var repr idx)
   let to_abstract_var' repr v = fst (to_abstract_var repr v)
+
+  let to_abstract_var_wm repr v =
+    try to_abstract_var repr v
+    with Not_found -> raise (Ast.Wrong_modelling ("Variable `" ^ v ^ "` does not belong to the current abstract element."))
 end

@@ -20,6 +20,7 @@ open Event_abstract_domain
 module type Event_combinator =
 sig
   type t
+  val name: string
   val consume_task: t -> task -> (t * bool * event list)
   val produce_events: t -> Pengine2D.t -> (t * Pengine2D.t)
   val produce_tasks: t -> Pengine2D.t -> (t * Pengine2D.t)

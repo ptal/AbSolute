@@ -18,6 +18,7 @@ let _ = init ()
 
 type t = float
 
+let name = "F"
 let abstract_ty = Types.Float
 let concrete_ty = Types.Real
 

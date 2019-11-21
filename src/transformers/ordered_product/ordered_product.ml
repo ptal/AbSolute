@@ -28,15 +28,16 @@ sig
   type var_id = gvar
   type rconstraint = gconstraint
   val count: int
+  val name: string
 
   val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
-  val interpret: t -> approx_kind -> formula -> (t * gconstraint list) option
+  val interpret: t -> approx_kind -> formula -> t * gconstraint list
   val to_qformula: t -> gconstraint list -> qformula
-  val qinterpret: t -> approx_kind -> qformula -> t option
+  val qinterpret: t -> approx_kind -> qformula -> t
 
   val empty': ad_uid -> t
   val extend': ?ty:var_ty -> t -> (t * gvar * var_abstract_ty)
@@ -67,7 +68,9 @@ struct
   type rconstraint = gconstraint
 
   let count = 1
+  let name = A.name
 
+  let unwrap pa = !(pa.a)
   let wrap pa a = pa.a := a; pa
 
   let init a = { a; var_map=[]; constraint_map=[] }
@@ -126,15 +129,19 @@ struct
     {pa with constraint_map}, (uid pa, num_cons)
 
   let interpret pa approx f =
-    let interpreted_f = A.I.interpret (interpretation pa) approx f in
-    match interpreted_f with
-    | None -> None
-    | Some (i, constraints) ->
-        let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
-        let pa, gconstraints = List.fold_left
-          (fun (pa, gcons) c -> let pa, c = to_generic_constraint pa c in pa, c::gcons)
-          (pa, []) constraints in
-        Some (pa, gconstraints)
+    try
+      let (i, constraints) = A.I.interpret (interpretation pa) approx f in
+      let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
+      let pa, gconstraints = List.fold_left
+        (fun (pa, gcons) c -> let pa, c = to_generic_constraint pa c in pa, c::gcons)
+        (pa, []) constraints in
+      pa, gconstraints
+    with Wrong_modelling msg ->
+      raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg ^ "\n"))
+
+  let qinterpret pa approx formula =
+    let a = A.qinterpret !(pa.a) approx formula in
+    wrap pa a
 
   let to_qformula' pa constraints =
     let these, others = List.partition (fun c -> (uid pa) = (fst c)) constraints in
@@ -177,11 +184,6 @@ struct
   let split pa = List.map (make_snapshot pa) (A.split !(pa.a))
   let volume pa = A.volume !(pa.a)
   let print fmt pa = Format.fprintf fmt "%a" A.print !(pa.a)
-
-  let qinterpret pa approx formula =
-    match A.qinterpret !(pa.a) approx formula with
-    | Some a -> Some (wrap pa a)
-    | None -> None
 end
 
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) =
@@ -194,6 +196,7 @@ struct
   type t = Atom.t * B.t
 
   let count = Atom.count + B.count
+  let name = A.name ^ "," ^ B.name
 
   let init (a,b) = (Atom.init a, B.init b)
 
@@ -227,18 +230,27 @@ struct
     with Not_found ->
       B.to_abstract_var b var
 
-  let option1 x = function
-  | None -> None
-  | Some (y,c) -> Some ((x,y), c)
-
-  let option2 y = function
-  | None -> None
-  | Some (x,c) -> Some ((x,y), c)
+  let wrap_wrong_modelling f1 f2 =
+    try f1 ()
+    with Wrong_modelling msg1 ->
+      begin try f2 ()
+      with Wrong_modelling msg2 ->
+        raise (Wrong_modelling (msg1 ^ "\n" ^ msg2))
+      end
 
   let interpret (a,b) approx f =
-    match option2 b (Atom.interpret a approx f) with
-    | None -> option1 a (B.interpret b approx f)
-    | x -> x
+    wrap_wrong_modelling
+      (fun () ->
+        let (a, cs) = Atom.interpret a approx f in
+        (a,b), cs)
+      (fun () ->
+         let (b, cs) = B.interpret b approx f in
+         (a,b), cs)
+
+  let qinterpret (a,b) approx formula =
+    wrap_wrong_modelling
+      (fun () -> (Atom.qinterpret a approx formula), b)
+      (fun () -> a, (B.qinterpret b approx formula))
 
   let to_qformula (a,b) constraints =
     let constraints, others = Atom.to_qformula' a constraints in
@@ -285,14 +297,6 @@ struct
 
   let print fmt (a,b) =
     Format.fprintf fmt "%a\n%a" Atom.print a B.print b
-
-  let qinterpret (a,b) approx formula =
-    match Atom.qinterpret a approx formula with
-    | Some a -> Some (a,b)
-    | None ->
-        match B.qinterpret b approx formula with
-        | Some b -> Some(a,b)
-        | None -> None
 end
 
 module Ordered_product(P: Prod_combinator) =
@@ -304,6 +308,8 @@ struct
     uid: ad_uid;
     prod: P.t
   }
+
+  let name = "Ordered_product(" ^ P.name ^ ")"
 
   let init uid prod = { uid; prod=(P.init prod) }
   (* The UIDs of the product components are generated as follows `uid,...,uid+(n-1)`.
@@ -341,18 +347,47 @@ struct
       Each sub-formula `fi` is then added into an abstract domain supporting this formula.
       The abstract domains are tried in sequential order until one supporting the formula is found. *)
   let qinterpret p approx formula =
-    let rec aux p vars = function
-    | Exists (v, ty, qf) -> aux p ((v,ty)::vars) qf
-    | QFFormula (And (f1, f2)) ->
-      begin
-        match aux p vars (QFFormula f1) with
-        | Some p -> aux p vars (QFFormula f2)
-        | None -> None
-      end
-    | QFFormula formula ->
-        let qf = quantify vars formula in
-        match P.qinterpret p.prod approx qf with
-        | None -> None
-        | Some prod -> Some (wrap p prod)
-    in aux p [] formula
+    (* Collect top-level conjunctive constraints. *)
+    let rec collect p vars = function
+      | Exists (v, ty, qf) -> collect p ((v,ty)::vars) qf
+      | QFFormula (And (f1, f2)) ->
+          (collect p vars (QFFormula f1))@
+          (collect p vars (QFFormula f2))
+      | QFFormula formula ->
+          [quantify vars formula]
+    in
+    (* Try to interpret all formulas in the list, returns those remaining. *)
+    let rec aux prod = function
+      | [] -> prod, []
+      | qf::remaining ->
+          try
+            let prod = P.qinterpret prod approx qf in
+            aux prod remaining
+          with Wrong_modelling _ ->
+            let (prod, remaining) = aux prod remaining in
+            prod, qf::remaining
+    in
+    (* Generate a Wrong_modelling exception on the first constraint we cannot interpret. *)
+    let gen_wrong_modelling prod remaining =
+      try
+        P.qinterpret prod approx (List.hd remaining)
+      with Wrong_modelling msg ->
+        raise (Wrong_modelling ("[" ^ name ^ "] None of the subdomains of this product could interpret the constraint:\n" ^ (Tools.indent msg)))
+    in
+    (* The reason we need to call `aux` several times is due to the following scenario.
+       A logical constraint `x < y \/ z < x` relies on the variables `x,y,z`, but those might not have been added to an abstract domain yet, depending on the order of the constraints in the list.
+       Note that a variable is added into an abstract element if it can handle a constraint in which the variable occurs.
+    *)
+    let rec fixpoint prod remaining =
+      let len = List.length remaining in
+      if len = 0 then prod
+      else
+        let prod, remaining = aux prod remaining in
+        if len = (List.length remaining) then
+          gen_wrong_modelling prod remaining
+        else
+          fixpoint prod remaining
+    in
+      let prod = fixpoint p.prod (collect p [] formula) in
+      wrap p prod
 end

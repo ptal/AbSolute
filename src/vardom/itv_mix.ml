@@ -45,6 +45,8 @@ struct
         (Real b), ty)
 end
 
+let name = "ItvMix"
+
 open Itv_mix_of_bounds
 
 include Vardom_factory.Make(Itv_mix_of_bounds)

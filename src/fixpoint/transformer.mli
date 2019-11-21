@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Bounds
 open Domains.Abstract_domain
 open Lang.Ast
 
@@ -94,6 +95,10 @@ sig
   }
 
   type t = (gs * bs)
+
+  (** Traverses the transformer stack and returns the best solution found so far, if any.
+      Raises `Not_found` if no BAB transformer is found. *)
+  val unwrap_best: gs -> Bound_rat.t option
 
   (** Any of the event functions `on_*` can raise this exception to stop the search. *)
   exception StopSearch of t
