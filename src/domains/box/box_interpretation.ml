@@ -109,8 +109,10 @@ struct
 
   let interpret repr approx f =
     let rec aux = function
-      | And (f1, f2) -> (aux f1)@(aux f2)
+      | Cmp c -> interpret_bconstraint repr c
       | FVar x -> interpret_bconstraint repr (Var x, EQ, one)
+      | Not (FVar x) -> interpret_bconstraint repr (Var x, EQ, zero)
+      | And (f1, f2) -> (aux f1)@(aux f2)
       | _ -> raise (Wrong_modelling "Logical constraints should be handled in the `Logic_product` domain.")
     in
     check_approx_typing repr f approx;

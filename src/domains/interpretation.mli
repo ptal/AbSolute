@@ -52,6 +52,11 @@ module type Interpretation_sig = sig
      in the abstract domain. *)
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
 
+  (** `True` if the variable `v` exists in the abstract element.
+      Note that it does not necessarily implies that a mapping exists.
+      This is convenient for abstract domain that are defined on top of others domains such as `Logic_product`. *)
+  val exists: t -> Ast.var -> bool
+
   (** Conversions utilities between logical variables and their
      representations. *)
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
@@ -81,6 +86,7 @@ sig
 
   val empty: unit -> t
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
+  val exists: t -> Ast.var -> bool
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
 

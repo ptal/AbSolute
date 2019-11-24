@@ -45,7 +45,9 @@ val inv: cmpop -> cmpop
 (** Negate the comparison operator. *)
 val neg: cmpop -> cmpop
 
-(** Negate a logic formula. *)
+(** Negate a logic formula.
+    NOT are pushed inwards such that it only occur over FVar.
+    The size of the formula does not increase. *)
 val neg_formula: formula -> formula
 val neg_bconstraint: bconstraint -> bconstraint
 

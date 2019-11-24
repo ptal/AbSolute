@@ -20,10 +20,6 @@ exception Conflict of int
 
 type ad_uid = int
 
-module type Logical_abstract_domain =
-sig
-end
-
 module type Abstract_domain =
 sig
   module I: Interpretation_sig
@@ -63,6 +59,14 @@ end
 module QInterpreter_base(A: Small_abstract_domain) =
 struct
   module I = A.I
+
+  let extend_var a (v, ty) =
+    if I.exists (A.interpretation a) v then
+      a, false
+    else
+      let a, v_id, aty = A.extend ~ty a in
+      A.map_interpretation a (fun r -> I.extend r (v, v_id, aty)), true
+
   let qinterpret a approx f =
     let rec aux a approx = function
     | QFFormula f ->
@@ -70,14 +74,8 @@ struct
         let a = A.map_interpretation a (fun _ -> i) in
         List.fold_left A.weak_incremental_closure a cs
     | Exists (v, ty, qf) ->
-        try
-          (* Check if the variable `v` is or not in the abstract element yet. *)
-          ignore(I.to_abstract_var (A.interpretation a) v);
-          aux a approx qf
-        with Not_found ->
-          let a, v_id, aty = A.extend ~ty a in
-          let a = A.map_interpretation a (fun r -> A.I.extend r (v, v_id, aty)) in
-          aux a approx qf
+        let a = fst (extend_var a (v, ty)) in
+        aux a approx qf
     in
       try aux a approx f
       with Wrong_modelling msg ->

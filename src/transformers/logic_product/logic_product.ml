@@ -47,6 +47,7 @@ sig
   val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
+  val exists: t -> var -> bool
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
   val interpret: t -> approx_kind -> formula -> t * qfp_formula list
@@ -55,7 +56,7 @@ end
 
 (* We do not support variable in this product to avoid overlap with `Ordered_product` in functionalities. *)
 let no_variable_exn from = raise (Wrong_modelling
-  ("[" ^ from ^ "] Logic_product abstract domain does not support variable.\n\
+  (from ^ " abstract domain does not support variable. \
    Variables should be manipulated directly in the corresponding subdomain or through another product such as `Ordered_product`."))
 
 module type LProd_combinator =
@@ -82,10 +83,6 @@ struct
   include Prod_cons(A)(B)
   module Atom = LProd_atom(A)
 
-  let extend (a,b) ((_, (uid, _), _) as vmap) =
-    if Atom.uid a != uid then a, B.extend b vmap
-    else Atom.extend a vmap, b
-
   let drain_events (a,b) =
     let a, events = Atom.drain_events a in
     let b, events' = B.drain_events b in
@@ -105,6 +102,7 @@ struct
 
   let init = P.init
   let empty = P.empty
+  let exists = P.exists
   let extend _ _ = no_variable_exn "Logic_prod_interpretation.extend"
   let to_logic_var _ _ = no_variable_exn "Logic_prod_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_prod_interpretation.to_abstract_var"
@@ -121,7 +119,8 @@ struct
       p, { positive; negative }
     and aux p approx f =
       match f with
-      | FVar _ | Cmp _ ->
+      (* Literals and constraints are the base cases. *)
+      | Not(FVar _) | FVar _ | Cmp _ ->
           let p, fs = P.interpret p approx f in
           p, Atom fs
       | Not(f1) ->
@@ -275,7 +274,7 @@ struct
   let closure qf = qf, false
 
   (* We propagate the constraint immediately.
-     If the constraint is not entailed, it is added into the abstract domain. *)
+     If the constraint is not entailed, it is added into the abstract element. *)
   let weak_incremental_closure qf c =
     let qp, c' = incremental_closure qf c in
     match c' with

@@ -156,5 +156,8 @@ end
     It can be included in the abstract domains. *)
 module QInterpreter_base(A: Small_abstract_domain) :
 sig
+  (** Extends the abstract element with a fresh variable.
+      Returns `true` if the variable has been added, and `false` if it was already present. *)
+  val extend_var: A.t -> (Ast.var * Types.var_ty) -> A.t * bool
   val qinterpret: A.t -> approx_kind -> Ast.qformula -> A.t
 end

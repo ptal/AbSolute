@@ -26,6 +26,7 @@ val must_parenthesis_right: expr -> expr -> bool
    error over very large constraints. *)
 val print_expr: formatter -> expr -> unit
 val print_formula: formatter -> formula -> unit
+val print_qformula: formatter -> qformula -> unit
 val print_constraint: formatter -> bconstraint -> unit
 
 val output_constraints: bconstraint list -> unit

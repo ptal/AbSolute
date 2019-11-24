@@ -31,9 +31,9 @@ module Itv(B : Bound_sig.S) = struct
     module B = B
     type bound = B.t
 
-    (* an interval is a pair of bounds (lower,upper);
-       intervals are always non-empty: lower <= upper;
-       functions that can return an empty interval return it as Bot
+    (* An interval is a pair of bounds (lower,upper).
+       Intervals are always non-empty: lower <= upper.
+       Functions that can return an empty interval return it as Bot.
      *)
     type t = bound * bound
 

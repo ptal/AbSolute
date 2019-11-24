@@ -83,7 +83,10 @@ let pop pengine =
 
 let react pengine events =
   let react_on_event pengine ev =
-    List.iter (schedule pengine) (Store2D.find ev pengine.reactor) in
+    try
+      List.iter (schedule pengine) (Store2D.find ev pengine.reactor)
+    with Not_found -> ()
+  in
   List.iter (react_on_event pengine) events
 
 let deactivate_task pengine task =

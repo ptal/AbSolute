@@ -204,10 +204,9 @@ let rec map_constraint f = function
 
 let rec neg_formula = function
   | Cmp (e1,op,e2) -> Cmp(e1,neg op,e2)
-  (* Trivial negation for equiv and imply in order to keep the structure of the formula (we do not rewrite the formula into AND and OR here). *)
   | FVar v -> Not (FVar v)
-  | Equiv (b1,b2) -> Not (Equiv (b1, b2))
-  | Imply (b1,b2) -> Not (Imply (b1, b2))
+  | Equiv (b1,b2) -> Equiv (neg_formula b1, b2)
+  | Imply (b1,b2) -> And (b1, neg_formula b2)
   | And (b1,b2) -> Or (neg_formula b1, neg_formula b2)
   | Or (b1,b2) -> And (neg_formula b1, neg_formula b2)
   | Not b -> b
@@ -323,12 +322,13 @@ let rec map_formula next = function
   | Exists (v,ty,f) -> Exists (v, ty, map_formula next f)
 
 let merge_formula make qf1 qf2 =
+  let vars = (quantifiers qf1)@(quantifiers qf2) in
   let qf =
     map_formula (fun f1 ->
       quantifier_free_of (
         map_formula (fun f2 -> make f1 f2) qf2)) qf1
   in
-    quantify (quantifiers qf) (quantifier_free_of qf)
+    quantify vars (quantifier_free_of qf)
 
 let rec q_conjunction = function
   | [] -> QFFormula (truef)

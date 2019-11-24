@@ -34,6 +34,7 @@ module type Interpretation_sig = sig
   type rconstraint
   val empty: unit -> t
   val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
+  val exists: t -> Ast.var -> bool
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
   val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
@@ -63,6 +64,7 @@ struct
 
   let to_logic_var repr idx = REnv.find idx repr.renv
   let to_abstract_var repr v = Env.find v repr.env
+  let exists repr v = Env.mem v repr.env
 
   let to_logic_var' repr idx = fst (to_logic_var repr idx)
   let to_abstract_var' repr v = fst (to_abstract_var repr v)

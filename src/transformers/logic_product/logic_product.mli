@@ -59,6 +59,7 @@ sig
   val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
+  val exists: t -> var -> bool
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
   val interpret: t -> approx_kind -> formula -> t * qfp_formula list

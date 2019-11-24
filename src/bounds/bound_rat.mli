@@ -63,7 +63,7 @@ val to_rat : 'a -> 'a
 val output : out_channel -> t -> unit
 val sprint : unit -> t -> string
 val bprint : Buffer.t -> t -> unit
-val pp_print : Format.formatter -> t -> unit
+val pp_print: Format.formatter -> t -> unit
 val neg : t -> t
 val abs : t -> t
 val wrap2 : (t -> t -> t) -> (float -> float -> float) -> t -> t -> t

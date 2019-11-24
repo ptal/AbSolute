@@ -138,7 +138,7 @@ let to_int_down x = (int_of_float (floor (to_float_down x)))
 let output chan x = output_string chan (to_string x)
 let sprint () x = to_string x
 let bprint b x = Buffer.add_string b (to_string x)
-let pp_print = Tools.pp_print_mpqf
+let pp_print fmt x = Format.fprintf fmt "%s" (to_string x)
 
 (* exact operators *)
 let neg x = wrap Mpqf.neg minus_inf inf rat_nan x

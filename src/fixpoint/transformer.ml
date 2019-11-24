@@ -131,6 +131,7 @@ struct
       | BAB bab -> (optimize (gs,bs) bab)
       | Timeout timeout ->
           let elapsed = Mtime_clock.count gs.stats.start in
+          let gs = {gs with stats={gs.stats with elapsed}} in
           stop_if (gs,bs) ((Mtime.Span.compare timeout elapsed) <= 0)
       | _ -> gs,bs in
     List.fold_left apply (gs,bs) gs.transformers
@@ -151,8 +152,10 @@ struct
     let apply (gs,bs) transformer =
       match transformer with
       | BAB bab ->
-          let (_,ub) = A.project gs.domain (fst bab.objective) in
-          let ub = Cst (A.B.to_rat ub, A.B.concrete_ty) in
+          let v = fst bab.objective in
+          let (_, ty) = A.I.to_logic_var (A.interpretation gs.domain) v in
+          let (_,ub) = A.project gs.domain v in
+          let ub = Cst (A.B.to_rat ub, Types.abstract_to_concrete_ty ty) in
           let formula = QFFormula (Cmp (Var (snd bab.objective), bab.kind, ub)) in
           let a = List.hd (A.lazy_copy gs.domain 1) in
           (gs,bs), BAB {bab with best=Some (a, formula)}

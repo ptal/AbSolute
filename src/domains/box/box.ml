@@ -17,6 +17,7 @@ module Var_store = Var_store
 
 open Core
 open Core.Kleene
+open Lang
 open Bounds
 open Vardom
 open Box_interpretation
@@ -99,12 +100,27 @@ struct
     else
       vol
 
-  (* Closure is performed by `Event_loop` calling `exec_task`. *)
+  let print_store fmt (repr,store) =
+    let print_entry idx vardom =
+      Format.fprintf fmt "%s=%a \n" (fst (I.to_logic_var repr idx)) V.print vardom in
+    Store.iter print_entry store
+
+  let print_box_cons fmt f =
+    Format.fprintf fmt "%a\n" Pretty_print.print_formula
+      (Rewritting.quantifier_free_of f)
+
+  let print fmt box =
+    Format.fprintf fmt "%a\n" print_store (box.r,box.store);
+    Parray.iter (fun c -> print_box_cons fmt (I.to_qformula box.r [c])) box.constraints
+
+  (** Closure is performed by `Event_loop` calling `exec_task`. *)
   let closure box = box, false
 
-  (* We propagate the constraint immediately.
-     If the constraint is not entailed, it is added into the box. *)
+  (** We propagate the constraint immediately.
+      If the constraint is not entailed, it is added into the box. *)
   let weak_incremental_closure box c =
+    (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula box.r [c]); flush_all () in *)
+    (* Format.fprintf Format.std_formatter "%a\n" print_store (box.r,box.store); *)
     let store, entailed = Closure.incremental_closure box.store c in
     let box = { box with store } in
     if entailed then box
@@ -119,22 +135,6 @@ struct
   let state box =
     if box.num_active_tasks = 0 then True
     else Unknown
-
-  let print_store fmt (repr,store) =
-    let print_entry idx vardom =
-      Format.fprintf fmt "%s=%a \n" (fst (I.to_logic_var repr idx)) V.print vardom in
-    Store.iter print_entry store
-
-  let print fmt box =
-    let open Lang.Pretty_print in
-    let open Lang.Ast in
-    let rec print_box_cons = function
-      | QFFormula f ->
-          Format.fprintf fmt "%a\n" print_formula f
-      | Exists (_, _, f) -> print_box_cons f
-    in
-    Format.fprintf fmt "%a\n" print_store (box.r,box.store);
-    Parray.iter (fun c -> print_box_cons (I.to_qformula box.r [c])) box.constraints
 
   let split box =
     let branches = Split.split box.store in

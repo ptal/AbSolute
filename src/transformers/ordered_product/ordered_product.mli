@@ -37,11 +37,13 @@ sig
   val init: init_t -> t
   val empty: unit -> t
   val extend: t -> (var * gvar * var_abstract_ty) -> t
+  val exists: t -> var -> bool
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
   val interpret: t -> approx_kind -> formula -> t * gconstraint list
   val to_qformula: t -> gconstraint list -> qformula
   val qinterpret: t -> approx_kind -> qformula -> t
+  val extend_var: t -> (var * var_ty) -> t * bool
 
   val empty': ad_uid -> t
   val extend': ?ty:var_ty -> t -> (t * gvar * var_abstract_ty)

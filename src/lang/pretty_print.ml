@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Core.Tools
 open Ast
 open Bounds
@@ -87,12 +88,18 @@ let print_formula fmt e =
     | Cmp (e1,c,e2) -> Format.fprintf fmt "%a %a %a"
         print_expr e1 print_cmpop c print_expr e2
     | FVar v -> Format.fprintf fmt "%s" v
-    | Equiv (b1,b2) -> Format.fprintf fmt "%a <=> %a" aux b1 aux b2
-    | Imply (b1,b2) -> Format.fprintf fmt "%a => %a" aux b1 aux b2
-    | And (b1,b2) -> Format.fprintf fmt "%a && %a" aux b1 aux b2
-    | Or (b1,b2) -> Format.fprintf fmt "%a || %a" aux b1 aux b2
+    | Equiv (b1,b2) -> Format.fprintf fmt "(%a <=> %a)" aux b1 aux b2
+    | Imply (b1,b2) -> Format.fprintf fmt "(%a => %a)" aux b1 aux b2
+    | And (b1,b2) -> Format.fprintf fmt "(%a && %a)" aux b1 aux b2
+    | Or (b1,b2) -> Format.fprintf fmt "(%a || %a)" aux b1 aux b2
     | Not b -> Format.fprintf fmt "not %a" aux b in
   aux fmt e
+
+let rec print_qformula fmt = function
+  | Exists(v,ty,qf) ->
+      Format.fprintf fmt "(%s:%s)%a"
+        v (Types.string_of_ty ty) print_qformula qf
+  | QFFormula f -> Format.fprintf fmt "%a" print_formula f
 
 let print_constraint fmt c =
   Format.fprintf fmt "%a" print_formula (Cmp c)
