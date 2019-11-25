@@ -44,6 +44,7 @@
    Elements such that j/2 > i/2 are retreived by coherence: (i,j) = (j^1,i^1)
 *)
 
+open Core
 open Bounds
 
 (** A variable is represented by its position in the DBM (line, column). *)
@@ -77,6 +78,9 @@ val as_interval: dbm_var -> dbm_interval
 (** `true` if the variable is in a rotated plane. *)
 val is_rotated: dbm_var -> bool
 
+(** Retrieve the event index of a variable. *)
+val event_of_var: dbm_var -> int
+
 module type Fold_interval_sig =
 sig
   val fold: ('a -> dbm_interval -> 'a) -> 'a -> int -> 'a
@@ -100,7 +104,7 @@ sig
 
   (** Increase the dimension of the DBM by one.
       We return the interval of the canonical interval in this dimension. *)
-  val extend: t -> (t * dbm_interval)
+  val extend: ?ty:Types.var_ty -> t -> (t * dbm_var * Types.var_abstract_ty)
 
   (** Low level access to a cell of the DBM where `get m l c` returns DBM[l][c].
       Precondition: `c/2 <= l/2` (always ensured if `dbm_var` is built with `make_var`). *)
@@ -128,6 +132,9 @@ sig
 
   (** See `DBM.print`. *)
   val print: Format.formatter -> t -> unit
+
+  (** The events returned correspond to the position of the variables in the DBM. *)
+  val delta: t -> t * int list
 end
 
 module Make(B:Bound_sig.S) : DBM_sig

@@ -1,7 +1,8 @@
 (library
   (name octagon)
   (public_name absolute.octagon)
-  (libraries absolute.core absolute.bounds absolute.vardom absolute.lang absolute.domains)
+  (libraries absolute.core absolute.bounds absolute.vardom absolute.lang
+      absolute.fixpoint absolute.domains absolute.transformers absolute.event_loop)
   (flags :standard)
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))

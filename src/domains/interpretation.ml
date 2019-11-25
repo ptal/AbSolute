@@ -66,6 +66,12 @@ struct
   let to_abstract_var repr v = Env.find v repr.env
   let exists repr v = Env.mem v repr.env
 
+  let equantify repr f =
+    Rewritting.quantify (List.map
+      (fun (_,(x,aty)) -> x, Types.Abstract aty)
+      (REnv.bindings repr.renv)
+    ) f
+
   let to_logic_var' repr idx = fst (to_logic_var repr idx)
   let to_abstract_var' repr v = fst (to_abstract_var repr v)
 

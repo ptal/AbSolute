@@ -75,7 +75,12 @@ val has_variable: expr -> bool
 (** Checks if an expression is linear. *)
 val is_linear: expr -> bool
 
-(** Checks if a constraints is linear. *)
+(** Checks if a constraint is linear. *)
 val is_cons_linear: formula -> bool
 
 val is_cst: expr -> bool
+
+(** [type_dispatch B from ty f].
+    Given bound signature that is supported by an abstract domain, verify that the type is compatible with that signature, and call `f ()`.
+    Raise `Wrong_modelling` in case of an incompatibility with a message including the name of the abstract domain `from`. *)
+val type_dispatch: (module Bound_sig.S) -> string -> var_ty -> (unit -> 'a) -> 'a

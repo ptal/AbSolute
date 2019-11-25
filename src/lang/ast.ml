@@ -11,6 +11,7 @@
    Lesser General Public License for more details. *)
 
 open Bounds
+open Core
 open Core.Types
 
 exception Wrong_modelling of string
@@ -75,3 +76,12 @@ let rec is_cons_linear = function
 let is_cst = function
   | Cst _ -> true
   | _ -> false
+
+let type_dispatch (module B: Bound_sig.S) from ty f =
+  match ty with
+  | (Concrete ty) when ty=B.concrete_ty -> f ()
+  | (Abstract ty) when
+      (less_precise_than ty B.abstract_ty) = Kleene.True -> f ()
+  | ty -> raise (Wrong_modelling (
+      from ^ "(" ^ (string_of_aty B.abstract_ty) ^ ") does not support " ^
+      (string_of_ty ty)))

@@ -65,13 +65,7 @@ module Make(B: Bound_sig.S) = struct
       if B.concrete_ty=Int then
         raise (Ast.Wrong_modelling "Open_close_itv is only relevant when applied to continuous variable domain.\n\
                For integers interval, it makes more sense to use `Itv`.");
-      Types.(match ty with
-      | (Concrete ty) when ty=B.concrete_ty -> f (), B.abstract_ty
-      | (Abstract ty) when
-          (less_precise_than ty B.abstract_ty)=Kleene.True -> f (), B.abstract_ty
-      | ty -> raise (Ast.Wrong_modelling (
-          "Open_close_itv(" ^ (string_of_aty B.abstract_ty) ^ ") does not support " ^
-          (string_of_ty ty))))
+      (Ast.type_dispatch (module B) "Open_close_itv" ty f), B.abstract_ty
 
     let of_bounds ?(ty = Types.Concrete B.concrete_ty) (l,u) =
       type_dispatch ty (fun _ -> large l u)

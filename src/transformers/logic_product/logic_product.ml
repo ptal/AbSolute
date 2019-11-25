@@ -41,7 +41,7 @@ module type Logic_prod_interpretation_sig =
 sig
   type t
   type init_t
-  type var_id = ()
+  type var_id = unit
   type rconstraint = qfp_formula
 
   val init: init_t -> t
@@ -97,7 +97,7 @@ module Logic_prod_interpretation(P: LProd_combinator) =
 struct
   type init_t = P.init_t
   type t = P.t
-  type var_id = ()
+  type var_id = unit
   type rconstraint = qfp_formula
 
   let init = P.init

@@ -53,7 +53,7 @@ module type Logic_prod_interpretation_sig =
 sig
   type t
   type init_t
-  type var_id = ()
+  type var_id = unit
   type rconstraint = qfp_formula
 
   val init: init_t -> t

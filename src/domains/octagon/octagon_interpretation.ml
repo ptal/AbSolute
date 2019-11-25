@@ -15,6 +15,7 @@ open Lang
 open Lang.Ast
 open Bounds
 open Dbm
+open Domains.Interpretation
 
 let rec normalize_expr e =
   let neg e = Unary (NEG, e) in
@@ -39,61 +40,33 @@ let rec generic_rewrite c =
   | e1, EQ, e2 -> (generic_rewrite (e1, LEQ, e2))@(generic_rewrite (e1, GEQ, e2))
   | c -> [c]
 
-module type Octagon_rep_sig =
+module type Octagon_interpretation_sig =
 sig
   module B: Bound_sig.S
-  type t
-  type var_kind = unit
-  type var_id = dbm_interval
   type rconstraint = B.t dbm_constraint
-  val empty: t
-  val extend: t -> (var * var_id) -> t
-  val to_logic_var: t -> var_id -> var
-  val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> formula -> rconstraint list
-  val relax: t -> formula -> rconstraint list
-  val negate: rconstraint -> rconstraint
+  include module type of (Interpretation_base(struct type var_id=dbm_var end))
+
+  val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
+  val to_qformula: t -> rconstraint list -> Ast.qformula
 end
 
-module Octagon_rep(B: Bound_sig.S) =
+module Octagon_interpretation(B: Bound_sig.S) =
 struct
-  type var_id = dbm_interval
-  type var_kind = unit
+  module B = B
+  include Interpretation_base(struct type var_id=dbm_var end)
   type rconstraint = B.t dbm_constraint
 
-  module B = B
-  module Env = Tools.VarMap
-  module REnv = Mapext.Make(struct
-    type t=var_id
-    let compare = compare end)
-
-  type t = {
-    (* maps each variable name to its DBM interval. *)
-    env: var_id Env.t;
-    (* reversed mapping of `env`. *)
-    renv: var REnv.t;
-  }
-
-  let empty = {env=Env.empty; renv=REnv.empty}
-  let extend repr (v,itv) = {
-    env=(Env.add v itv repr.env);
-    renv=(REnv.add itv v repr.renv);
-  }
-
-  let to_logic_var repr itv = REnv.find itv repr.renv
-  let to_abstract_var repr v = Env.find v repr.env
-
   let dim_of_var repr v =
-    let itv = to_abstract_var repr v in
-    let k1, k2 = (itv.lb.l / 2), (itv.lb.c / 2) in
-    if k1 <> k2 then failwith "Octagon_rep.dim_of_var: only variable with a canonical plane are defined on a single dimension."
+    let (v,_) = to_abstract_var repr v in
+    let k1, k2 = (v.l / 2), (v.c / 2) in
+    if k1 <> k2 then failwith "Octagon_interpretation.dim_of_var: only variable with a canonical plane are defined on a single dimension."
     else k1
 
   (** If the bound is discrete, it reformulates strict inequalities `<` into the inequality `<=` (dual `>` is handled by `generic_rewrite`).
-      Contrarily to `relax`, the rewritten constraint is logically equivalent to the initial constraint.
+      It is not an over-approximation because the rewritten constraint is logically equivalent to the initial constraint.
       For example, it rewrites `x - y < d` into `x - y <= d - 1`. *)
   let reformulate c =
-    if B.is_continuous then c
+    if Types.is_continuous B.abstract_ty then c
     else
       match c with
       | e1, LT, Cst (d, a) -> normalize (e1, LEQ, Cst (Bound_rat.sub_up d Bound_rat.one, a))
@@ -121,17 +94,18 @@ struct
   let minus_x_minus_y_leq_d x y d = {v=make_var y (x+1); d=d}
 
   let map_to_dim r f x d = f ((dim_of_var r x)*2) (B.of_rat_up d)
-  let map2_to_dim r f x y d = f ((dim_of_var r x)*2) ((dim_of_var r y)*2) (B.of_rat_up d)
+  let map2_to_dim r f x y d =
+    f ((dim_of_var r x)*2) ((dim_of_var r y)*2) (B.of_rat_up d)
 
-  (* Try creating an octagonal constraint from a normalized form.
+  (* Try interpreting exactly an octagonal constraint from a normalized form.
      The constraint should be processed by `generic_rewrite` first. *)
   let try_create r = function
     | Var x, LEQ, Cst (d, _) -> Some (map_to_dim r x_leq_d x d)
     | Unary (NEG, Var x), LEQ, Cst (d, _) -> Some (map_to_dim r minus_x_leq_d x d)
-    | Binary (Var x, ADD, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_plus_y_leq_d x y d)
-    | Binary (Var x, SUB, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r x_minus_y_leq_d x y d)
-    | Binary (Unary (NEG, Var x), ADD, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_plus_y_leq_d x y d)
-    | Binary (Unary (NEG, Var x), SUB, Var y), LEQ, Cst (d, _) ->  Some (map2_to_dim r minus_x_minus_y_leq_d x y d)
+    | Binary (Var x, ADD, Var y), LEQ, Cst (d, _) -> Some (map2_to_dim r x_plus_y_leq_d x y d)
+    | Binary (Var x, SUB, Var y), LEQ, Cst (d, _) -> Some (map2_to_dim r x_minus_y_leq_d x y d)
+    | Binary (Unary (NEG, Var x), ADD, Var y), LEQ, Cst (d, _) -> Some (map2_to_dim r minus_x_plus_y_leq_d x y d)
+    | Binary (Unary (NEG, Var x), SUB, Var y), LEQ, Cst (d, _) -> Some (map2_to_dim r minus_x_minus_y_leq_d x y d)
     | _ -> None
 
   let unwrap_all constraints =
@@ -139,29 +113,72 @@ struct
       List.map Tools.unwrap constraints
     else []
 
-  let rewrite_atom repr c =
-    generic_rewrite c |>
-    List.map (fun c -> try_create repr (reformulate c)) |>
-    unwrap_all
+  let cannot_interpret approx c =
+    raise (Wrong_modelling
+      ("Cannot interpret the formula " ^ (Pretty_print.string_of_constraint c)
+     ^ " with an " ^ approx ^ "approximation in the octagon domain."))
 
-  let rewrite repr formula =
-    try Rewritting.mapfold_conjunction (rewrite_atom repr) formula
-    with Wrong_modelling _ -> []
+  let interpret_one_exact from repr c =
+    let oc =
+      generic_rewrite c |>
+      List.map (fun c -> try_create repr (reformulate c)) |>
+      unwrap_all in
+    match oc with
+    | [] -> cannot_interpret from c
+    | oc -> oc
 
-  let relax_atom repr c =
+  let interpret_one_over_approx repr c =
     List.flatten (List.map (fun c ->
       match c with
-      | e1, LT, e2 -> rewrite_atom repr (e1, LEQ, e2)
-      | _ -> []
+      | e1, LT, e2 -> interpret_one_exact "over-" repr (e1, LEQ, e2)
+      | _ -> cannot_interpret "over-" c
     ) (generic_rewrite c))
 
-  let relax repr formula =
-    try Rewritting.mapfold_conjunction (relax_atom repr) formula
-    with Wrong_modelling _ -> []
+  let interpret_one_under_approx repr c =
+    List.flatten (List.map (fun c ->
+      match c with
+      (* transform `d` into `w` where `w` is the first floating point number coming before `d`.
+         It means that solutions between `w` and `d` are possibly lost. *)
+      | e1, LT, Cst (d,ty) ->
+          let w = Bound_float.of_rat_up d in
+          let w = Float.pred w in
+          let w = Cst (Bound_rat.of_float w, ty) in
+          interpret_one_exact "under-" repr (e1, LEQ, w)
+      | _ -> cannot_interpret "under-" c
+    ) (generic_rewrite c))
 
-  let negate c =
+  let interpret_one repr approx c =
+    try
+      interpret_one_exact "exact " repr c
+    with Wrong_modelling msg ->
+      match approx with
+      | Exact -> raise (Wrong_modelling msg)
+      | UnderApprox -> interpret_one_under_approx repr c
+      | OverApprox -> interpret_one_over_approx repr c
+
+  let interpret repr approx formula =
+    let constraints = try Rewritting.mapfold_conjunction (fun c -> [c]) formula
+      with Wrong_modelling msg ->
+        raise (Wrong_modelling ("Octagon only supports conjunction of constraints (" ^ msg ^ ")")) in
+    repr, List.flatten (List.map (interpret_one repr approx) constraints)
+
+  (* let negate c =
     if is_rotated c.v then
       { v=(Dbm.inv c.v); d=B.neg (B.succ c.d) }
     else
       { v=(Dbm.inv c.v); d=B.mul_up (B.neg (B.succ (B.div_down c.d B.two))) B.two }
+ *)
+
+  let to_formula_one _ _ =
+    failwith "to_qformula not implemented yet."
+(*     let x,y = oc.v.l, oc.v.c in
+    let x,y = make_var x x, make_var y y in
+    let (x,_), (y,_) = to_logic_var x, to_logic_var y in
+ *)
+  let rec to_formula repr = function
+    | [] -> truef
+    | [c] -> to_formula_one repr c
+    | c::cs -> And (to_formula_one repr c, to_formula repr cs)
+
+  let to_qformula repr cs = equantify repr (to_formula repr cs)
 end

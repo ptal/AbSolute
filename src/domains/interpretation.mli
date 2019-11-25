@@ -90,6 +90,9 @@ sig
   val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
   val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
 
+  (** Add existential quantifiers to the variables occuring in the formula. *)
+  val equantify: t -> Ast.formula -> Ast.qformula
+
   (** Conveniency version of `to_logic_var` without the type of the variable. *)
   val to_logic_var': t -> var_id -> Ast.var
   val to_abstract_var': t -> Ast.var -> var_id

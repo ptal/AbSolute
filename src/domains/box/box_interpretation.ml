@@ -137,7 +137,7 @@ struct
     | [c] -> to_formula_one repr c
     | c::cs -> And (to_formula_one repr c, to_formula repr cs)
 
-  let to_qformula repr cs = QFFormula (to_formula repr cs)
+  let to_qformula repr cs = equantify repr (to_formula repr cs)
 
   let rec vars_of_expr expr =
     match expr.node with
