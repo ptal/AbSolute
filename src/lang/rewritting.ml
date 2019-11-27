@@ -313,9 +313,9 @@ let rec quantifier_free_of = function
   | Exists(_,_,qf) -> quantifier_free_of qf
 
 let rec conjunction = function
-  | [] -> truef
-  | c::[] -> c
+  | c1::[] -> c1
   | c1::l -> And (c1, conjunction l)
+  | [] -> truef
 
 let rec map_formula next = function
   | QFFormula f -> QFFormula (next f)
@@ -331,8 +331,8 @@ let merge_formula make qf1 qf2 =
     quantify vars (quantifier_free_of qf)
 
 let rec q_conjunction = function
-  | [] -> QFFormula (truef)
-  | qf::[] -> qf
+  | qf1::[] -> qf1
   | qf1::qfs ->
       let qf2 = q_conjunction qfs in
       merge_formula (fun f1 f2 -> And(f1,f2)) qf1 qf2
+  | [] -> QFFormula (truef)

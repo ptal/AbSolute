@@ -138,11 +138,13 @@ struct
 
   let split box =
     let branches = Split.split box.store in
+    (* Printf.printf "Box.Split %d\n" (List.length branches); flush_all (); *)
     let boxes = lazy_copy box (List.length branches) in
     (* We remove the branch that are unsatisfiable. *)
     List.flatten (List.map2 (fun box branch ->
+      (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula box.r [branch]); flush_all () in *)
       try [weak_incremental_closure box branch]
-      with Bot.Bot_found -> []) boxes branches)
+      with Bot.Bot_found -> (* Printf.printf "unsat\n"; flush_all (); *) []) boxes branches)
 
   let exec_task box (_,c_idx) =
     let store, entailed = Closure.incremental_closure box.store

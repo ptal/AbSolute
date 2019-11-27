@@ -21,7 +21,10 @@ module type Octagon_interpretation_sig =
 sig
   module B: Bound_sig.S
   type rconstraint = B.t dbm_constraint
-  include module type of (Interpretation_base(struct type var_id=dbm_var end))
+  include module type of (Interpretation_base(
+    struct type
+      var_id=dbm_var (** A logic variable is identified by the DBM variable representing the lower bound of the interval. *)
+    end))
 
   (** Create octagonal constraints from a formula.
       Multiple constraints mean the formula has been decomposed into several octagonal constraints.

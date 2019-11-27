@@ -32,14 +32,6 @@ let rec normalize_expr e =
 
 let normalize (e1, op, e2) = ((normalize_expr e1), op, (normalize_expr e2))
 
-let rec generic_rewrite c =
-  match normalize c with
-  | e1, GEQ, e2 -> generic_rewrite (Unary (NEG, e1), LEQ, Unary (NEG, e2))
-  | e1, GT, e2 -> generic_rewrite (Unary (NEG, e1), LT, Unary (NEG, e2))
-  | Var x, op, Var y -> generic_rewrite (Binary (Var x, SUB, Var y), op, Cst (Bound_rat.zero, Int))
-  | e1, EQ, e2 -> (generic_rewrite (e1, LEQ, e2))@(generic_rewrite (e1, GEQ, e2))
-  | c -> [c]
-
 module type Octagon_interpretation_sig =
 sig
   module B: Bound_sig.S
@@ -53,8 +45,30 @@ end
 module Octagon_interpretation(B: Bound_sig.S) =
 struct
   module B = B
-  include Interpretation_base(struct type var_id=dbm_var end)
+  (* include Interpretation_base(struct type var_id=dbm_var end) *)
   type rconstraint = B.t dbm_constraint
+
+
+  module IB = Interpretation_base(struct type var_id=dbm_var end)
+
+  type var_id = IB.var_id
+  type t = IB.t
+
+  let empty = IB.empty
+  let extend repr (v,idx,ty) = (* Printf.printf "Octagon add %s\n" v; flush_all ();  *)IB.extend repr (v,idx,ty)
+  let exists = IB.exists
+  let to_logic_var = IB.to_logic_var
+  let to_abstract_var = IB.to_abstract_var
+
+  (** Add existential quantifiers to the variables occuring in the formula. *)
+  let equantify = IB.equantify
+
+  (** Conveniency version of `to_logic_var` without the type of the variable. *)
+  let to_logic_var' = IB.to_logic_var'
+  let to_abstract_var' = IB.to_abstract_var'
+
+  (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
+  let to_abstract_var_wm = IB.to_abstract_var_wm
 
   let dim_of_var repr v =
     let (v,_) = to_abstract_var repr v in
@@ -108,6 +122,20 @@ struct
     | Binary (Unary (NEG, Var x), SUB, Var y), LEQ, Cst (d, _) -> Some (map2_to_dim r minus_x_minus_y_leq_d x y d)
     | _ -> None
 
+  let rec generic_rewrite c =
+    match normalize c with
+    | e1, EQ, e2 -> (generic_rewrite (e1, LEQ, e2))@(generic_rewrite (e1, GEQ, e2))
+    | e1, GEQ, e2 -> generic_rewrite (Unary (NEG, e1), LEQ, Unary (NEG, e2))
+    | e1, GT, e2 -> generic_rewrite (Unary (NEG, e1), LT, Unary (NEG, e2))
+    | Var x, op, Var y -> generic_rewrite (Binary (Var x, SUB, Var y), op, Cst (Bound_rat.zero, B.concrete_ty))
+    | Unary (NEG, Var x), op, Var y ->
+        generic_rewrite (Binary (Unary (NEG, Var x), SUB, Var y), op, Cst (Bound_rat.zero, B.concrete_ty))
+    | Var x, op, Unary (NEG, Var y) ->
+        generic_rewrite (Binary (Var x, ADD, Var y), op, Cst (Bound_rat.zero, B.concrete_ty))
+    | Unary (NEG, Var x), op, Unary (NEG, Var y) ->
+        generic_rewrite (Binary (Unary (NEG, Var x), ADD, Var y), op, Cst (Bound_rat.zero, B.concrete_ty))
+    | c -> [c]
+
   let unwrap_all constraints =
     if List.for_all Tools.is_some constraints then
       List.map Tools.unwrap constraints
@@ -139,10 +167,10 @@ struct
       match c with
       (* transform `d` into `w` where `w` is the first floating point number coming before `d`.
          It means that solutions between `w` and `d` are possibly lost. *)
-      | e1, LT, Cst (d,ty) ->
+      | e1, LT, Cst (d, Real) ->
           let w = Bound_float.of_rat_up d in
           let w = Float.pred w in
-          let w = Cst (Bound_rat.of_float w, ty) in
+          let w = Cst (Bound_rat.of_float w, Real) in
           interpret_one_exact "under-" repr (e1, LEQ, w)
       | _ -> cannot_interpret "under-" c
     ) (generic_rewrite c))
@@ -169,16 +197,25 @@ struct
       { v=(Dbm.inv c.v); d=B.mul_up (B.neg (B.succ (B.div_down c.d B.two))) B.two }
  *)
 
-  let to_formula_one _ _ =
-    failwith "to_qformula not implemented yet."
-(*     let x,y = oc.v.l, oc.v.c in
-    let x,y = make_var x x, make_var y y in
-    let (x,_), (y,_) = to_logic_var x, to_logic_var y in
- *)
-  let rec to_formula repr = function
-    | [] -> truef
-    | [c] -> to_formula_one repr c
-    | c::cs -> And (to_formula_one repr c, to_formula repr cs)
+  let ty = B.concrete_ty
+
+  let to_formula_one repr oc =
+    let d = B.to_rat oc.d in
+    let k1, k2 = oc.v.c / 2, oc.v.l / 2 in
+    let x,y = Dbm.make_canonical_var k1, Dbm.make_canonical_var k2 in
+    let (x,_), (y,_) = to_logic_var repr x, to_logic_var repr y in
+    if k1 = k2 then
+      if oc.v.l > oc.v.c then
+        Cmp (Var x, LEQ, Cst (d, ty))
+      else
+        Cmp (Var x, GEQ, Cst (d, ty))
+    else
+      let x = if oc.v.c = k1 * 2 then Var x else Unary (NEG, Var x) in
+      let y = if oc.v.l = k2 * 2 then Var y else Unary (NEG, Var y) in
+      Cmp (Binary (x, SUB, y), LEQ, Cst (d, ty))
+
+  let to_formula repr cs =
+    Rewritting.conjunction (List.map (to_formula_one repr) cs)
 
   let to_qformula repr cs = equantify repr (to_formula repr cs)
 end

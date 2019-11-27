@@ -295,12 +295,15 @@ struct
     if qp.num_active_tasks = 0 then 1.
     else float_of_int qp.num_active_tasks
 
-  let print fmt p =
-    let qf = I.to_qformula p.prod (Parray.to_list p.constraints) in
+  let print fmt qp =
+    let qf = I.to_qformula qp.prod (Parray.to_list qp.constraints) in
     Pretty_print.print_formula fmt (Rewritting.quantifier_free_of qf)
 
   let exec_task qp (_,c_idx) =
+    (* let _ = Printf.printf "exec_task %d remaining\n" qp.num_active_tasks; flush_all () in *)
     let f = Parray.get qp.constraints c_idx in
+    (* if qp.num_active_tasks = 1 then
+      (Pretty_print.print_qformula Format.std_formatter (I.to_qformula qp.prod [f]); flush_all ()); *)
     let qp, f' = incremental_closure qp f in
     let constraints, entailed =
       match f' with

@@ -68,6 +68,9 @@ type dbm_interval = {
 (** Create a variable position in the DBM by taking into account the coherence. *)
 val make_var: int -> int -> dbm_var
 
+(** Given a dimension `k`, it gives a canonical representation of this variable in the DBM (which is arbitrarily the lower bound of the interval). *)
+val make_canonical_var: int -> dbm_var
+
 (** If `v` is the position of a lower bound, it returns the position of its associated upper bound, and conversly.
     For example given `x - y`, it returns the variable representing `-x + y` which is represented by the element in its diagonal on the same plane. *)
 val inv: dbm_var -> dbm_var

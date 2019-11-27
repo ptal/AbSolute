@@ -150,6 +150,8 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.S) = struct
   let empty = {dim=0; m=A.make 0 B.inf; delta=[]}
 
   let extend ?(ty=Types.Abstract B.abstract_ty) dbm =
+    if ty=(Abstract Bool) then
+      raise (Ast.Wrong_modelling "Octagon should not handled Boolean variables, it is too inefficient.");
     Ast.type_dispatch (module B) "Octagon" ty (fun () ->
       let rec size n = if n = 0 then 0 else (n*2*2) + size (n-1) in
       let n = size dbm.dim in

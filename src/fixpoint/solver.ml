@@ -33,8 +33,11 @@ struct
       | Kleene.Unknown ->
           let (gs,bs) = T.on_unknown (gs,bs) in
           let branches = A.split gs.domain in
-          let bss = List.map (fun snapshot -> {bs with snapshot}) branches in
-          List.fold_left (fun (gs,_) bs -> solve (gs,bs)) (gs,bs) bss
+          (* In an `unknown` setting, an empty set of branches means that all the children nodes were detected inconsistent. *)
+          if branches = [] then T.on_fail (gs,bs)
+          else
+            let bss = List.map (fun snapshot -> {bs with snapshot}) branches in
+            List.fold_left (fun (gs,_) bs -> solve (gs,bs)) (gs,bs) bss
     with
     | T.Backjump (0, t) -> T.on_fail t
     | T.Backjump (n, t) -> raise (T.Backjump ((n-1), t))

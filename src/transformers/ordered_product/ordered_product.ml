@@ -10,6 +10,10 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+(* Important note: This module is not functional due to the references to the abstract domains.
+   It means that whenever an exception is raised, we must restored `pa`.
+   Hence, for every function modifying the abstract domain, use `safe_wrap`. *)
+
 open Domains.Abstract_domain
 open Domains.Interpretation
 open Lang.Ast
@@ -69,11 +73,38 @@ struct
   type var_id = gvar
   type rconstraint = gconstraint
 
+  type snapshot = {
+    a_bt: A.snapshot;
+    var_map_bt: (A.I.var_id * int) list;
+    constraint_map_bt: A.I.rconstraint list;
+  }
+
   let count = 1
   let name = A.name
 
   let unwrap pa = !(pa.a)
   let wrap pa a = pa.a := a; pa
+
+  let restore pa snapshot =
+    pa.a := A.restore !(pa.a) snapshot.a_bt;
+    {pa with
+      var_map=snapshot.var_map_bt;
+      constraint_map=snapshot.constraint_map_bt }
+
+  let make_snapshot pa a_bt =
+    {a_bt; var_map_bt=pa.var_map; constraint_map_bt=pa.constraint_map}
+
+  let lazy_copy pa n =
+    List.map (make_snapshot pa) (A.lazy_copy !(pa.a) n)
+
+  let safe_wrap pa f =
+    let snapshots = lazy_copy pa 2 in
+    try
+      let pa = restore pa (List.hd snapshots) in
+      f pa
+    with e ->
+      (ignore(restore pa (List.nth snapshots 1)); (* To restore mutable effects. *)
+      raise e)
 
   let init a = { a; var_map=[]; constraint_map=[] }
   let empty' uid = init (ref (A.empty uid))
@@ -89,24 +120,6 @@ struct
       (Wrong_modelling "This constraint does not belong to this ordered product.")
     else
       List.nth pa.constraint_map c_id
-
-  type snapshot = {
-    a_bt: A.snapshot;
-    var_map_bt: (A.I.var_id * int) list;
-    constraint_map_bt: A.I.rconstraint list;
-  }
-
-  let restore pa snapshot =
-    pa.a := A.restore !(pa.a) snapshot.a_bt;
-    {pa with
-      var_map=snapshot.var_map_bt;
-      constraint_map=snapshot.constraint_map_bt }
-
-  let make_snapshot pa a_bt =
-    {a_bt; var_map_bt=pa.var_map; constraint_map_bt=pa.constraint_map}
-
-  let lazy_copy pa n =
-    List.map (make_snapshot pa) (A.lazy_copy !(pa.a) n)
 
   let extend pa (v, (_, var_id), ty) =
     let v_a = fst (List.nth pa.var_map var_id) in
@@ -179,15 +192,16 @@ struct
   let print fmt pa = Format.fprintf fmt "%a" A.print !(pa.a)
 
   let interpret pa approx f =
-    try
-      let (i, constraints) = A.I.interpret (interpretation pa) approx f in
-      let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
-      let pa, gconstraints = List.fold_left
-        (fun (pa, gcons) c -> let pa, c = to_generic_constraint pa c in pa, c::gcons)
-        (pa, []) constraints in
-      pa, gconstraints
-    with Wrong_modelling msg ->
-      raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg))
+    safe_wrap pa (fun pa ->
+      try
+        let (i, constraints) = A.I.interpret (interpretation pa) approx f in
+        let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
+        let pa, gconstraints = List.fold_left
+          (fun (pa, gcons) c -> let pa, c = to_generic_constraint pa c in pa, c::gcons)
+          (pa, []) constraints in
+        pa, gconstraints
+      with Wrong_modelling msg ->
+        raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg)))
 
   type t' = t
   type var_id' = var_id
@@ -214,7 +228,30 @@ struct
     let extend=extend'
     let weak_incremental_closure=weak_incremental_closure end)
 
-  include Base_interpreter
+  module BI = Base_interpreter
+
+  let extend_var pa (v, ty) =
+    safe_wrap pa (fun pa ->
+    (* Printf.printf "Add %s into %s: " v name; *)
+    (* try *)
+      let (pa,changed) = BI.extend_var pa (v,ty) in
+      (* (if changed then
+        (Printf.printf " was not already present\n"; flush_all ())
+      else
+        (Printf.printf " was already present\n"; flush_all ())); *)
+      (pa,changed))
+    (* with Wrong_modelling msg ->
+      (Printf.printf " wrong_modelling %s\n" msg; flush_all (); raise (Wrong_modelling msg))) *)
+
+  let qinterpret pa approx f =
+    (* try *)
+      let x = safe_wrap pa (fun pa -> BI.qinterpret pa approx f) in
+      (* Printf.printf "successfully interpreted f in %s\n" name; flush_all (); *)
+      x
+    (* with
+    | Wrong_modelling msg ->
+        (Printf.printf "could not interpreted f in %s\n" name; flush_all (); raise (Wrong_modelling msg)) *)
+
 end
 
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) =
@@ -286,13 +323,18 @@ struct
 
   let qinterpret (a,b) approx formula =
     wrap_wrong_modelling
-      (fun () -> (Atom.qinterpret a approx formula), b)
+      (fun () -> Atom.qinterpret a approx formula, b)
       (fun () -> a, (B.qinterpret b approx formula))
 
+  (* Whenever the list of constraints is empty means that it is a tautology, so we do not explicitly represent it.  *)
   let to_qformula (a,b) constraints =
-    let constraints, others = Atom.to_qformula' a constraints in
-    let qformula = Atom.A.I.to_qformula (Atom.interpretation a) constraints in
-    q_conjunction [qformula; (B.to_qformula b others)]
+    let a_constraints, b_constraints = Atom.to_qformula' a constraints in
+    if a_constraints = [] then
+      B.to_qformula b b_constraints
+    else
+      let a_formula = Atom.A.I.to_qformula (Atom.interpretation a) a_constraints in
+      if b_constraints = [] then a_formula
+      else q_conjunction [a_formula; (B.to_qformula b b_constraints)]
 
   let closure (a,b) =
     let a, has_changed = Atom.closure a in
@@ -402,7 +444,9 @@ struct
       | [] -> prod, []
       | qf::remaining ->
           try
+             (* let _ = Format.fprintf Format.std_formatter "%a\n" Lang.Pretty_print.print_qformula qf; flush_all () in *)
             let prod = P.qinterpret prod approx qf in
+            (* let _ = Format.fprintf Format.std_formatter "%a\n" P.print prod; flush_all () in *)
             aux prod remaining
           with Wrong_modelling _ ->
             let (prod, remaining) = aux prod remaining in

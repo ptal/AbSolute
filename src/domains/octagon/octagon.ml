@@ -98,6 +98,8 @@ struct
 
   (** Add the octagonal constraint in the octagon, if it is not entailed and without closing the DBM. *)
   let weak_incremental_closure octagon oc =
+    (* let _ = Format.fprintf Format.std_formatter "%a\n" Lang.Pretty_print.print_formula
+      (Lang.Rewritting.quantifier_free_of (I.to_qformula octagon.r [oc])); flush_all () in *)
     if entailment octagon oc then octagon
     else { octagon with constraints=oc::octagon.constraints }
 

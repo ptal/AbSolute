@@ -55,7 +55,26 @@ struct
   module Vardom = Vardom
   module Store = Var_store.Make(Vardom)
 
-  include Interpretation_base(struct type var_id=Store.key end)
+  module IB = Interpretation_base(struct type var_id=Store.key end)
+
+  type var_id = IB.var_id
+  type t = IB.t
+
+  let empty = IB.empty
+  let extend repr (v,idx,ty) = (* Printf.printf "Box add %s\n" v; flush_all (); *) IB.extend repr (v,idx,ty)
+  let exists = IB.exists
+  let to_logic_var = IB.to_logic_var
+  let to_abstract_var = IB.to_abstract_var
+
+  (** Add existential quantifiers to the variables occuring in the formula. *)
+  let equantify = IB.equantify
+
+  (** Conveniency version of `to_logic_var` without the type of the variable. *)
+  let to_logic_var' = IB.to_logic_var'
+  let to_abstract_var' = IB.to_abstract_var'
+
+  (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
+  let to_abstract_var_wm = IB.to_abstract_var_wm
 
   type var_dom = Store.cell
 
@@ -132,10 +151,8 @@ struct
   let to_formula_one repr (e1, op, e2) =
     Cmp (to_logic_expr repr e1, op, to_logic_expr repr e2)
 
-  let rec to_formula repr = function
-    | [] -> truef
-    | [c] -> to_formula_one repr c
-    | c::cs -> And (to_formula_one repr c, to_formula repr cs)
+  let to_formula repr cs =
+    conjunction (List.map (to_formula_one repr) cs)
 
   let to_qformula repr cs = equantify repr (to_formula repr cs)
 
