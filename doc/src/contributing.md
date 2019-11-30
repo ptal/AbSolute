@@ -39,12 +39,12 @@ In a more detailed way:
 4. Send your changes into master.
 5. Publish the new version (see below).
 
-If you modify interfaces that are shared by several abstract domains (such as [abstract_domain.ml](https://github.com/ptal/AbSolute/blob/master/src/domains/abstract_domain.ml)), you should create an issue on Github to discuss about it with the team, since it impacts virtually all the project.
+If you modify interfaces that are shared by several abstract domains (such as [abstract_domain.mli](https://github.com/ptal/AbSolute/blob/master/src/domains/abstract_domain.mli)), you should create an issue on Github to discuss about it with the team, since it impacts virtually all the project.
 
 About the coding guidelines, you should try to code in the same way than the rest of the project, please observe how we code and do the same.
 One very important rule is that you indent using *2 spaces* and __not tabulations__, and create `.ml` and its documented `.mli` companion for every new file.
 
-In any case, do not hesitate to communicate and ask questions—stupid questions do not exist :-).
+In any case, do not hesitate to communicate and ask questions; stupid questions do not exist :-).
 Questions and discussions are very important so you do not lose time during development, and do not go in a wrong direction.
 
 ## Publishing
@@ -66,3 +66,40 @@ For more usage information, you can type:
 ```
 
 This script is only compatible to Linux (not yet tested on MacOSX), so if you are on Windows, you should read this script (which is documented) to know what are the necessary steps.
+
+## Local version of AbSolute in OPAM
+
+It is often convenient to have a local version of AbSolute in OPAM, for instance when moving from `kobe` to `AbSolute` so we can detect bugs before committing and publishing a new version.
+We first pin a local version of AbSolute:
+
+```sh
+# Remove the currently installed version of AbSolute (not sure if it is necessary though).
+opam remove absolute
+# Pin a local version of AbSolute where `AbSolute` is the name of the git repository.
+opam pin add absolute AbSolute
+```
+
+The next step is to edit the OPAM configuration file of AbSolute in order to avoid being synchronized with git (since we want to work solely on the local copy).
+Write `opam pin edit absolute` in your terminal, and change the following line:
+
+```sh
+url {
+  src:
+    "git+file:///home/ptalbot/repositories/absolute-project/AbSolute#master"
+}
+```
+
+by removing the `git+` part of the URL:
+
+```sh
+url {
+  src:
+    "file:///home/ptalbot/repositories/absolute-project/AbSolute#master"
+}
+```
+
+Each time you make some changes and want to use the newest local version of AbSolute just type:
+```sh
+opam upgrade .
+```
+in the repository of AbSolute.

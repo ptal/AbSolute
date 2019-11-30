@@ -10,29 +10,31 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core
 open Lang
 open Lang.Ast
+open Lang.Rewritting
+open Domains.Interpretation
 open Minisatml
 open Minisatml.Types
 
-module type Sat_rep_sig =
+module type Sat_interpretation_sig =
 sig
-  type t
-  type var_kind = unit
-  type var_id = Solver.var
   type rconstraint = Lit.lit Vec.t
-  val empty: t
-  val extend: t -> (var * var_id) -> t
-  val to_logic_var: t -> var_id -> var
-  val to_abstract_var: t -> var -> var_id
-  val rewrite: t -> formula -> rconstraint list
-  val relax: t -> formula -> rconstraint list
-  val negate: rconstraint -> rconstraint
+  include module type of (Interpretation_base(
+    struct type
+      var_id=Solver.var
+    end))
+
+  (** Create a set of clauses from a formula.
+      The formula is rewritten into CNF. *)
+  val interpret: t -> approx_kind -> formula -> t * rconstraint list
+
+  (** See [Interpretation.to_qformula] *)
+  val to_qformula: t -> rconstraint list -> qformula
 end
 
 (* Replace `Equiv` and `Imply` with their logical equivalent using `And` and `Or`.
-   NOTE: It duplicates constraints if they occur in `<=>`. *)
+   NOTE: It duplicates formulas if they occur in `<=>`. *)
 let eliminate_imply_and_equiv formula =
   let rec aux = function
     | Cmp _ as f -> f
@@ -109,47 +111,34 @@ let map_clauses f formula =
     | _ -> failwith "`map_clauses` assumes the formula is in CNF." in
   aux formula
 
-module Sat_rep =
+module Sat_interpretation =
 struct
-  type var_kind = unit
-  type var_id = Solver.var
   type rconstraint = Lit.lit Vec.t
 
-  module Env = Tools.VarMap
-  module REnv = Mapext.Make(struct
-    type t=var_id
-    let compare = compare end)
-  type t = {
-    (* maps each variable name to its store index. *)
-    env: var_id Env.t;
-    (* reversed mapping of `env`. *)
-    renv: var REnv.t;
-  }
-
-  let empty = {env=Env.empty; renv=REnv.empty}
-  let extend repr (v,idx) = {
-    env=(Env.add v idx repr.env);
-    renv=(REnv.add idx v repr.renv);
-  }
-  let to_logic_var repr idx = REnv.find idx repr.renv
-  let to_abstract_var repr v = Env.find v repr.env
+  include Interpretation_base(struct type var_id=Solver.var end)
 
   let rewrite_clause repr clause =
     let rec aux = function
-      | Cmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports boolean variables (`FVar`).")
-      | FVar v -> [Lit.lit (to_abstract_var repr v) false]
-      | Not (FVar v) -> [Lit.lit (to_abstract_var repr v) true]
+      | Cmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports Boolean variables (`FVar`).")
+      | FVar v -> [Lit.lit (to_abstract_var' repr v) false]
+      | Not (FVar v) -> [Lit.lit (to_abstract_var' repr v) true]
       | Or (f1, f2) -> (aux f1)@(aux f2)
       | _ -> failwith "`rewrite_clause` is called on something else than a clause." in
     let clauses = aux clause in
     Vec.fromList clauses (List.length clauses)
 
-  let rewrite repr formula =
+  let interpret repr _ formula =
     let cnf = formula_to_cnf formula in
-    map_clauses (rewrite_clause repr) cnf
+    repr, map_clauses (rewrite_clause repr) cnf
 
-  let relax = rewrite
+  let lit_to_formula repr lit =
+    let var = FVar (to_logic_var' repr (Lit.var lit)) in
+    if Lit.sign lit then Not var else var
 
-  (* NOTE: We might want to extend the signature to constraint -> constraint list, so we can rewrite negation of clauses. *)
-  let negate _ = raise (Wrong_modelling "Negation of a clause is not a clause.")
+  let to_disjunction repr clause =
+    disjunction (List.map (lit_to_formula repr) (Array.to_list (Vec.get_data clause)))
+
+  let to_formula repr cs = conjunction (List.map (to_disjunction repr) cs)
+
+  let to_qformula repr cs = equantify repr (to_formula repr cs)
 end

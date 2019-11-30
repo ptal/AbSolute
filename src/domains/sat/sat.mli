@@ -14,33 +14,10 @@
     WARNING: only one instance of this module can be used at once, this is because Minisatml relies on global variables. *)
 
 open Bounds
-open Core
-open Sat_rep
-open Domains.Abstract_domain
+open Sat_interpretation
+open Event_loop.Event_abstract_domain
 
-module type Sat_sig =
-sig
-  type t
-
-  module R = Sat_rep
-
-  (** Boolean are representable on integers.
-      NOTE: We use `Bound_int` instead of introducing a new `Bound_bool`. *)
-  module B = Bound_int
-
-  val empty: ad_uid -> t
-  val uid: t -> ad_uid
-  val extend: t -> R.var_kind -> (t * R.var_id)
-  val project: t -> R.var_id -> (B.t * B.t)
-  val lazy_copy: t -> int -> t list
-  val copy: t -> t
-  val closure: t -> t
-  val weak_incremental_closure: t -> R.rconstraint -> t
-  val entailment: t -> R.rconstraint -> Kleene.t
-  val split: t -> t list
-  val volume: t -> float
-  val state_decomposition: t -> Kleene.t
-  val print: R.t -> Format.formatter -> t -> unit
-end
-
-module Sat: Sat_sig
+module Sat:
+  Event_abstract_domain with
+    module B=Bound_int and
+    module I=Sat_interpretation

@@ -41,6 +41,16 @@ type qformula =
   | QFFormula of formula
   | Exists of var * var_ty * qformula
 
+type optimization_kind =
+  | Minimize of var
+  | Maximize of var
+  | Satisfy
+
+type bab_qformula = {
+  qf: qformula;
+  optimise: optimization_kind
+}
+
 let one = Cst (Bound_rat.one, Int)
 let zero = Cst (Bound_rat.zero, Int)
 let two  = Cst (Bound_rat.two, Int)

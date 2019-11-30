@@ -24,10 +24,10 @@ depends: [
   "ocaml" {>= "4.09.0"}
   "extlib"
   "containers"
-  "minisatml"
+  "minisatml" {>= "0.2.0"}
   "mlgmpidl"
   "mtime"
-  "alcotest" {with-test}
+  "alcotest"
 ]
 
 synopsis: "AbSolute solver"

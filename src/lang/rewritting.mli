@@ -87,6 +87,7 @@ val quantifiers: qformula -> (var * Types.var_ty) list
 val quantifier_free_of: qformula -> formula
 
 val conjunction: formula list -> formula
+val disjunction: formula list -> formula
 val q_conjunction: qformula list -> qformula
 
 (** [map_formula f qf] applies the function `f` on `qf` bypassing the quantifiers. *)

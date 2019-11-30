@@ -317,6 +317,11 @@ let rec conjunction = function
   | c1::l -> And (c1, conjunction l)
   | [] -> truef
 
+let rec disjunction = function
+  | c1::[] -> c1
+  | c1::l -> Or (c1, disjunction l)
+  | [] -> falsef
+
 let rec map_formula next = function
   | QFFormula f -> QFFormula (next f)
   | Exists (v,ty,f) -> Exists (v, ty, map_formula next f)

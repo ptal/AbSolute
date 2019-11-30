@@ -61,6 +61,17 @@ type qformula =
   | QFFormula of formula
   | Exists of var * var_ty * qformula
 
+type optimization_kind =
+  | Minimize of var
+  | Maximize of var
+  | Satisfy
+
+(** Represent a data structure to store a formula along with its variable to optimise. *)
+type bab_qformula = {
+  qf: qformula;
+  optimise: optimization_kind
+}
+
 val zero: expr
 val one: expr
 val two: expr
