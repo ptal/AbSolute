@@ -11,8 +11,8 @@
    Lesser General Public License for more details. *)
 
 open Core.Types
-open Domains.Abstract_domain
 open Lang.Ast
+open Ad_type
 
 type tformula = ad_uid list * tformula_
 and tformula_ =

@@ -14,6 +14,7 @@ open Core
 open Core.Bot
 open Bounds
 open Lang
+open Typing
 
 module I = Itv.ItvI
 module R = Open_close_itv.Test
@@ -46,6 +47,8 @@ struct
 end
 
 let name = "ItvMix"
+
+let type_of () = Ad_type.Interval_mix
 
 open Itv_mix_of_bounds
 

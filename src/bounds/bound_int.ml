@@ -16,7 +16,8 @@ open Core
 type t = int
 
 let name = "Z"
-let abstract_ty = Types.Integer
+let type_of = Types.Z
+let abstract_ty = Types.Machine Types.Z
 let concrete_ty = Types.Int
 
 (* ordering *)

@@ -114,8 +114,8 @@ struct
       let _, aty = to_abstract_var_wm repr v in
       (* We list the variants explicitly because it must be considered if we add a new abstract type. *)
       match aty with
-      | VUnit | Bool | Integer | Rational | BDD _ -> ()
-      | Float -> raise (Wrong_modelling ("Variable `" ^ v ^ "` cannot be `" ^ (string_of_approx approx) ^ "` in the current abstract domain."))
+      | VUnit | Bool | Machine Z | Machine Q | BDD _ -> ()
+      | Machine F -> raise (Wrong_modelling ("Variable `" ^ v ^ "` cannot be `" ^ (string_of_approx approx) ^ "` in the current abstract domain."))
     in
     match approx with
     | OverApprox -> ()

@@ -16,8 +16,8 @@ open Core.Kleene
 open Bounds
 open Lang
 open Lang.Ast
+open Typing.Ad_type
 open Domains.Interpretation
-open Domains.Abstract_domain
 open Ordered_product
 open Event_loop.Event_abstract_domain
 
@@ -186,6 +186,8 @@ struct
   let uid qp = qp.uid
 
   let name = "Logic_product(" ^ P.name ^ ")"
+
+  let type_of qp = Some (qp.uid, Logic_product (P.type_of qp.prod))
 
   (* Entailed constraints are automatically deactivated by `Event_loop`. *)
   let state qp =

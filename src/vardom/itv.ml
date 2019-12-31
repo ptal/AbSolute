@@ -19,11 +19,14 @@ open Core
 open Core.Bot
 open Bounds
 open Lang
+open Typing
 open Vardom_sig
 
 module Itv(B : Bound_sig.S) = struct
 
   let name = "Itv(" ^ B.name ^ ")"
+
+  let type_of () = Ad_type.Interval B.type_of
 
   module Itv_of_bounds =
   struct

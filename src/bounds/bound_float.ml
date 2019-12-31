@@ -19,7 +19,8 @@ let _ = init ()
 type t = float
 
 let name = "F"
-let abstract_ty = Types.Float
+let type_of = Types.F
+let abstract_ty = Types.Machine Types.F
 let concrete_ty = Types.Real
 
 (* ordering *)

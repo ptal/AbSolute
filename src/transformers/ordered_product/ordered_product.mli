@@ -20,6 +20,7 @@ open Lang.Ast
 open Core
 open Core.Types
 open Bounds
+open Typing.Ad_type
 
 (** Generic variables and constraints. *)
 type gvar = ad_uid * int
@@ -46,6 +47,7 @@ sig
   val extend_var: t -> (var * var_ty) -> t * bool
 
   val empty': ad_uid -> t
+  val type_of: t -> ad_ty list
   val extend': ?ty:var_ty -> t -> (t * gvar * var_abstract_ty)
   val project: t -> gvar -> (Bound_rat.t * Bound_rat.t)
   type snapshot

@@ -18,6 +18,7 @@ open Domains.Abstract_domain
 open Domains.Interpretation
 open Lang.Ast
 open Lang.Rewritting
+open Typing.Ad_type
 open Core
 open Core.Types
 open Bounds
@@ -46,6 +47,7 @@ sig
   val extend_var: t -> (var * var_ty) -> t * bool
 
   val empty': ad_uid -> t
+  val type_of: t -> ad_ty list
   val extend': ?ty:var_ty -> t -> (t * gvar * var_abstract_ty)
   val project: t -> gvar -> (Bound_rat.t * Bound_rat.t)
   type snapshot
@@ -84,6 +86,11 @@ struct
 
   let unwrap pa = !(pa.a)
   let wrap pa a = pa.a := a; pa
+
+  let type_of pa =
+    match A.type_of (unwrap pa) with
+    | Some t -> [t]
+    | None -> []
 
   let restore pa snapshot =
     pa.a := A.restore !(pa.a) snapshot.a_bt;
@@ -266,6 +273,8 @@ struct
   let count = Atom.count + B.count
   let name = A.name ^ "," ^ B.name
 
+  let type_of (a,b) = (Atom.type_of a)@(B.type_of b)
+
   let init (a,b) = (Atom.init a, B.init b)
 
   let empty () = raise (Wrong_modelling
@@ -399,6 +408,8 @@ struct
      The UID of the product is `uid+n`. *)
   let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}
   let uid p = p.uid
+
+  let type_of p = Some (p.uid, Product (P.type_of p.prod))
 
   let wrap p prod = {p with prod}
 

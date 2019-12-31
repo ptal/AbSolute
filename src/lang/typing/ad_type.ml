@@ -16,12 +16,13 @@
 
     See also the [Typing] module. *)
 
-open Domains.Abstract_domain
+open Core.Types
 
-type value_ty = Z | Q | F
+type ad_uid = int
 
 type vardom_ty =
   | Interval of value_ty
+  | Interval_oc of value_ty
   | Interval_mix
 
 type ad_ty_ =

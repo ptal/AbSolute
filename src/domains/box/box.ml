@@ -18,6 +18,7 @@ module Var_store = Var_store
 open Core
 open Core.Kleene
 open Lang
+open Typing.Ad_type
 open Bounds
 open Vardom
 open Box_interpretation
@@ -76,6 +77,8 @@ struct
   let uid box = box.uid
 
   let name = "Box(" ^ V.name ^ ")"
+
+  let type_of box = Some (box.uid, Box (V.type_of ()))
 
   let extend ?ty box =
     let (store, idx, aty) = Store.extend ?ty box.store in

@@ -17,8 +17,8 @@
 open Core.Types
 open Bounds
 open Lang.Ast
+open Typing.Ad_type
 open Domains.Interpretation
-open Domains.Abstract_domain
 open Ordered_product
 open Event_loop.Event_abstract_domain
 

@@ -12,6 +12,7 @@
 
 open Core
 open Dbm
+open Typing.Ad_type
 open Octagon_interpretation
 open Domains.Abstract_domain
 open Event_loop.Event_abstract_domain
@@ -61,6 +62,8 @@ struct
 
   let uid octagon = octagon.uid
   let name = "Octagon(" ^ B.name ^ ")"
+
+  let type_of octagon = Some (octagon.uid, Octagon B.type_of)
 
   let interpretation octagon = octagon.r
   let map_interpretation octagon f = {octagon with r=(f octagon.r)}

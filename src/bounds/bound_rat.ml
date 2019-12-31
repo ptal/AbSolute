@@ -14,7 +14,8 @@ open Core
 type t = Mpqf.t
 
 let name = "Q"
-let abstract_ty = Types.Rational
+let type_of = Types.Q
+let abstract_ty = Types.Machine Types.Q
 let concrete_ty = Types.Real
 
 (* ordering *)

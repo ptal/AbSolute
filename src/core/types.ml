@@ -10,12 +10,12 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+type value_ty = Z | Q | F
+
 type var_abstract_ty =
   | VUnit
   | Bool
-  | Integer
-  | Rational
-  | Float
+  | Machine of value_ty
   | BDD of int
 
 type var_concrete_ty = Int | Real
@@ -28,12 +28,15 @@ let string_of_cty = function
   | Int -> "Int"
   | Real -> "Real"
 
+let string_of_value_ty = function
+  | Z -> "Integer"
+  | Q -> "Rational"
+  | F -> "Float"
+
 let string_of_aty = function
   | VUnit -> "Unit"
   | Bool -> "Bool"
-  | Integer -> "Integer"
-  | Rational -> "Rational"
-  | Float -> "Float"
+  | Machine ty -> string_of_value_ty ty
   | BDD x -> "BDD(" ^ (string_of_int x) ^ ")"
 
 let string_of_ty = function
@@ -41,12 +44,12 @@ let string_of_ty = function
   | Abstract x -> string_of_aty x
 
 let abstract_to_concrete_ty = function
-  | VUnit | Bool | Integer | BDD _ -> Int
-  | Rational | Float -> Real
+  | VUnit | Bool | Machine Z | BDD _ -> Int
+  | Machine Q | Machine F -> Real
 
 let is_continuous = function
-  | VUnit | Bool | Integer | BDD _ -> false
-  | Rational | Float -> true
+  | VUnit | Bool | Machine Z | BDD _ -> false
+  | Machine Q | Machine F -> true
 
 let join_concrete_ty a b =
   match a,b with
@@ -56,9 +59,9 @@ let join_concrete_ty a b =
 let bits_of = function
   | VUnit -> 0
   | Bool -> 1
-  | Integer -> 32
-  | Rational -> max_int
-  | Float -> 32
+  | Machine Z -> 32
+  | Machine Q -> max_int
+  | Machine F -> 32
   | BDD n -> n
 
 let less_precise_than less more =

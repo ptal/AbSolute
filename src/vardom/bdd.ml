@@ -30,6 +30,9 @@ type bound = B.t
 
 let name = "BDD"
 
+let type_of () = raise (Ast.Wrong_modelling
+  "[type_of] in BDD is not yet supported (reason: BDDs are not useful enough yet).")
+
 (* Functions on BDDs *)
 
 let bdd_of =

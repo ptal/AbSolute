@@ -1,7 +1,7 @@
 (library
   (name vardom)
   (public_name absolute.vardom)
-  (libraries absolute.core absolute.bounds absolute.lang)
+  (libraries absolute.core absolute.bounds absolute.lang absolute.lang.typing)
   (flags :standard)
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))

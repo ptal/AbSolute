@@ -21,6 +21,9 @@ open Core
 type t = unit
 
 let name = "unit"
+
+(* This module should dissapear soon, so it's ok if `type_of` is not correct. *)
+let type_of = Types.Z
 let abstract_ty = Types.VUnit
 let concrete_ty = Types.Int
 

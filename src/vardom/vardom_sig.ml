@@ -18,6 +18,7 @@ open Core
 open Core.Bot
 open Bounds
 open Lang
+open Typing
 open Vardom_factory
 
 (** Language of unary and binary operations that can be applied to `vardom`. *)
@@ -31,6 +32,8 @@ module type Vardom_sig = sig
   (** Name of the Vardom.
       See also `Abstract_domain.name`. *)
   val name: string
+
+  val type_of: unit -> Ad_type.vardom_ty
 
   (** Top element (the less precise element) of the Vardom.
       In case of a concrete type, a suited abstract representation is picked,

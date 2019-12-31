@@ -13,6 +13,7 @@
 module Event_abstract_domain = Event_abstract_domain
 
 open Domains.Abstract_domain
+open Typing.Ad_type
 open Fixpoint
 open Event_abstract_domain
 

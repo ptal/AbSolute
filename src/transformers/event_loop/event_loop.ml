@@ -13,12 +13,12 @@
 module Event_abstract_domain = Event_abstract_domain
 
 open Domains
-open Domains.Abstract_domain
 open Fixpoint
 open Core
 open Lang.Ast
 open Bounds
 open Event_abstract_domain
+open Typing.Ad_type
 
 module type Event_combinator =
 sig
@@ -101,6 +101,8 @@ struct
   let uid p = p.uid
 
   let name = "Event_loop(" ^ L.name ^ ")"
+
+  let type_of _ = None
 
   let closure p =
     let l, pengine = L.produce_tasks p.l p.pengine in

@@ -15,10 +15,9 @@ open Bounds
 open Interpretation
 open Lang
 open Lang.Ast
+open Typing.Ad_type
 
 exception Conflict of int
-
-type ad_uid = int
 
 module type Abstract_domain =
 sig
@@ -28,6 +27,7 @@ sig
   val empty: ad_uid -> t
   val uid: t -> ad_uid
   val name: string
+  val type_of: t -> ad_ty option
   val interpretation: t -> I.t
   val map_interpretation: t -> (I.t -> I.t) -> t
   val qinterpret: t -> approx_kind -> Ast.qformula -> t

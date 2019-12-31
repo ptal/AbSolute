@@ -16,13 +16,15 @@
     Note: It is not in `Lang` to avoid circular dependencies between `Bounds` and `Lang`.
     Indeed, we need to associate an abstract type to each bound. *)
 
+(** [value_ty] symbolically represents integers (Z), rational (Q), and floating point numbers (F).
+    It is also used in [Lang.Typing.Tast]. *)
+type value_ty = Z | Q | F
+
 (** `Integer` is considered to be over 32 bits. *)
 type var_abstract_ty =
   | VUnit
   | Bool
-  | Integer
-  | Rational
-  | Float
+  | Machine of value_ty (** Machine representation of [value_ty]. *)
   | BDD of int
 
 type var_concrete_ty = Int | Real
@@ -31,6 +33,7 @@ type var_ty =
   | Concrete of var_concrete_ty
   | Abstract of var_abstract_ty
 
+val string_of_value_ty: value_ty -> string
 val string_of_cty: var_concrete_ty -> string
 val string_of_aty: var_abstract_ty -> string
 val string_of_ty: var_ty -> string

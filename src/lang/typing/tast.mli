@@ -11,8 +11,8 @@
    Lesser General Public License for more details. *)
 
 open Core.Types
-open Domains.Abstract_domain
 open Lang.Ast
+open Ad_type
 
 (** We equip a formula with the possible UIDs of abstract elements in which it can be interpreted.
     The list can be empty if the abstract type of the formula has not been inferred yet.

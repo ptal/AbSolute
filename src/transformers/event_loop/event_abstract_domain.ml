@@ -11,6 +11,7 @@
    Lesser General Public License for more details. *)
 
 open Domains.Abstract_domain
+open Typing.Ad_type
 
 type task = ad_uid * int
 type event = ad_uid * int

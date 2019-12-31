@@ -17,12 +17,11 @@ open Core
 open Bounds
 open Interpretation
 open Lang
+open Typing.Ad_type
 
 (** Exception raised whenever a failure is encountered.
     In addition to `Bot.Bot_found`, `Conflict n` forces the backtrack in the search tree to the level `n`. *)
 exception Conflict of int
-
-type ad_uid = int
 
 (** We require that abstract domains internalize their connection to the logical formula.
     In practice, it often consists in a pair `(A.t, A.I.t)` of the abstract element and its interpretation.
@@ -46,13 +45,19 @@ sig
   val empty: ad_uid -> t
 
   (** Retrieve the UID of this abstract element.
-      UIDs are mainly useful to perform event-based propagation and associate event and task to a specific abstract domain.
+      UIDs are mainly useful to perform event-based propagation and to associate event and task to a specific abstract element.
       See also `Transformers.Event_loop`. *)
   val uid: t -> ad_uid
 
   (** Name of the abstract domain.
       This is particularly useful to print `Wrong_modelling` messages. *)
   val name: string
+
+  (** Synthesize the type of the current abstract element.
+      This function is useful once you created an abstract element, and wish to retrieve a symbolic representation of this element.
+      See also [Typing.Infer].
+      `None` if the abstract element does not have a "useful type" (for instance if it cannot represent constraints, e.g. `Event_loop`). *)
+  val type_of: t -> ad_ty option
 
   (** Read-only access to the interpretation structure. *)
   val interpretation: t -> I.t

@@ -17,6 +17,7 @@ open Bounds
 open Domains.Abstract_domain
 open Sat_interpretation
 open Lang.Ast
+open Typing.Ad_type
 open Minisatml
 open Minisatml.Solver
 open Minisatml.Types
@@ -45,6 +46,8 @@ struct
   let dummy_learnt_clause = Vec.init 0 dummy_lit
 
   let name = "SAT"
+  let type_of sat = Some (sat.uid, SAT)
+
   let interpretation sat = sat.r
   let map_interpretation sat f = {sat with r=(f sat.r)}
 

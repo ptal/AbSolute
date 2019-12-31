@@ -14,6 +14,7 @@ open Core
 open Core.Bot
 open Bounds
 open Lang
+open Typing
 
 module Make(B: Bound_sig.S) = struct
   module OC_itv_of_bounds =
@@ -72,6 +73,8 @@ module Make(B: Bound_sig.S) = struct
   end
 
   let name = "ItvOC(" ^ B.name ^ ")"
+
+  let type_of () = Ad_type.Interval_oc B.type_of
 
   open OC_itv_of_bounds
 
