@@ -24,7 +24,7 @@ depends: [
   "ocaml" {>= "4.09.0"}
   "extlib"
   "containers"
-  "minisatml" {>= "0.2.0"}
+  "minisatml" {>= "0.3.0"}
   "mlgmpidl"
   "mtime"
   "alcotest"

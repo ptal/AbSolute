@@ -61,13 +61,13 @@ sig
       Be careful using this function as it delegates to you the work to keep the interpretation and abstract domain consistent. *)
   val map_interpretation: t -> (I.t -> I.t) -> t
 
-  (** Interpret an existentially quantified logical formula into an abstract element and directly call `weak_incremental_closure` on this new constraint.
+  (** Interpret an existentially quantified logical formula into an abstract element and directly call `weak_incremental_closure` on the new constraints.
       Existentially quantified variables are added into the abstract element if not already present.
       All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
       Raise `Wrong_modelling` if:
         1. the constraint could not be interpreted, or
         2. some free variables are not already in the abstract domain.
-      Raise `Bot_found` if the constraint is detected unsatisfiable in constant time.
+      Raise `Bot_found` if the constraint is detected unsatisfiable (but the abstract domain is not required to).
       See also `Interpretation_sig.interpret`. *)
   val qinterpret: t -> approx_kind -> Ast.qformula -> t
 
@@ -81,11 +81,12 @@ sig
       Raise `Wrong_modelling` if the variable is not in the current abstract element. *)
   val project: t -> I.var_id -> (B.t * B.t)
 
-  (** A snapshot is a copy of the state of the abstract domain at some point in time. *)
+  (** A snapshot is a copy of the state of the abstract domain at some point in time.
+      For purely functional abstract domains, it will be equal to `t`. *)
   type snapshot
 
   (** [lazy_copy a n] creates a series of `n` snapshots of the current element `a`.
-      For fully functional abstract domain, it is as easy as `List.init n (fun _ -> a)`.
+      For purely functional abstract domain, it is as easy as `List.init n (fun _ -> a)`.
       Postcondition: `a` must not be used anymore unless in `restore`.
       Internally, some informations can be shared by the different snapshots (until restored).
       This function is useful in a backtracking algorithm. *)
@@ -102,7 +103,7 @@ sig
 
   (** Weak incremental closure add the constraint into the abstract element.
       This operation should be of low time complexity.
-      Raise `Bot_found` if the constraint is detected disentailed (but it is not required).
+      Raise `Bot_found` if the constraint is detected disentailed (but the abstract domain is not required to).
       Precondition: The variables in `c` must all belong to the abstract element. *)
   val weak_incremental_closure: t -> I.rconstraint -> t
 

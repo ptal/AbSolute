@@ -10,9 +10,11 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** We represent the abstract and concrete types of variables here.
-    Design rational: avoid circular dependencies between Bounds and Lang,
-    because we need to associate an abstract type to each bound. *)
+(** We represent the abstract and concrete types of variables.
+    Design rational: We need to distinguish between concrete and abstract types because `Real` can be "instantiated" to a float or rational number.
+    Rational are more precise than float but in essence they aim to represent the same solutions space.
+    Note: It is not in `Lang` to avoid circular dependencies between `Bounds` and `Lang`.
+    Indeed, we need to associate an abstract type to each bound. *)
 
 (** `Integer` is considered to be over 32 bits. *)
 type var_abstract_ty =

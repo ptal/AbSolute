@@ -66,7 +66,7 @@ type optimization_kind =
   | Maximize of var
   | Satisfy
 
-(** Represent a data structure to store a formula along with its variable to optimise. *)
+(** Data structure to store a formula along with its variable to optimise. *)
 type bab_qformula = {
   qf: qformula;
   optimise: optimization_kind

@@ -35,22 +35,29 @@ struct
     depth: int;
     (* A decision from `split` that is propagated in `closure`.
        It is set to `Solver.dummy_lit` if it has already been propagated. *)
-    decision: Types.Lit.t;
+    decision: Lit.t;
     (* The last index on the trail since `drain_delta` was called. *)
     last_trail_idx: int;
+    (* The latest learnt clause, to be considered only once after backjumping. *)
+    learnt_clause: Lit.t Vec.t;
   }
+
+  let dummy_learnt_clause = Vec.init 0 dummy_lit
 
   let name = "SAT"
   let interpretation sat = sat.r
   let map_interpretation sat f = {sat with r=(f sat.r)}
 
-  let empty uid = {
-    uid;
-    r=I.empty ();
-    depth=0;
-    decision=dummy_lit;
-    last_trail_idx=0;
-  }
+  let empty uid =
+    resetEnv ();
+    {
+      uid;
+      r=I.empty ();
+      depth=0;
+      decision=dummy_lit;
+      last_trail_idx=0;
+      learnt_clause=dummy_learnt_clause;
+    }
 
   let uid b = b.uid
 
@@ -58,6 +65,7 @@ struct
 
   let lazy_copy b n =
     newDecisionLevel ();
+    (* let _ = Printf.printf "New level %d.\n" (decisionLevel ()); flush_all () in *)
     let b = {b with depth=decisionLevel ()} in
     List.init n (fun _ -> b)
 
@@ -65,14 +73,17 @@ struct
      For safety, we guard all public functions of this module with `backtrack_state`.
      It avoids creating a new function such as `backtrack` only for this abstract domain.
      If later, we notice that such a function is useful for other domain, we might add it to `Abstract_domain`. *)
-  let restore _ b =
-    (if decisionLevel () <> b.depth then
-      cancelUntil b.depth);
-    b
+  let restore b snapshot =
+    (* let _ = Printf.printf "Restore from %d to %d.\n" (decisionLevel ()) b.depth; flush_all () in *)
+    (if decisionLevel () <> snapshot.depth then
+      cancelUntil snapshot.depth);
+    { snapshot with learnt_clause=b.learnt_clause }
 
   let extend ?(ty = Abstract Bool) b =
     match ty with
-    | Abstract Bool -> (b, newVar (), Bool)
+    | Abstract Bool -> let v = newVar () in
+        let _ = Printf.printf "Extend %d\n" v; flush_all () in
+        (b, v, Bool)
     | ty -> raise (Wrong_modelling ("SAT abstract domain does not support variables of type " ^ (string_of_ty ty) ^ "."))
 
   let project _ v =
@@ -84,13 +95,21 @@ struct
 
   (* The learnt clause are stored in the watched literals array.
      Actually, there is no explicit "learnt clause database". *)
-  let learn_clause learnt_clause =
-    let clause = Types.Clause.clause_new
-      (Vec.get_data learnt_clause)
-      (Vec.size learnt_clause) ~learnt:true in
-    attachClause clause;
-    uncheckedEnqueue_clause (Vec.get learnt_clause 0) clause;
-    varDecayActivity ()
+  let propagate_conflict b =
+    (if Vec.size b.learnt_clause = 0 then ()
+    else if Vec.size b.learnt_clause = 1 then
+      uncheckedEnqueue (Vec.get b.learnt_clause 0)
+    else
+    begin
+      let clause = Clause.clause_new
+        (Vec.get_data b.learnt_clause)
+        (Vec.size b.learnt_clause) ~learnt:true in
+      let _ = Clause.iter (fun i -> Printf.printf " %d \n" (Lit.var i)) clause; flush_all () in
+      attachClause clause;
+      uncheckedEnqueue_clause (Vec.get b.learnt_clause 0) clause;
+      varDecayActivity ()
+    end);
+    { b with learnt_clause=dummy_learnt_clause}
 
   let propagate_decision b =
     if b.decision <> dummy_lit then begin
@@ -102,23 +121,25 @@ struct
   (* This closure extracts the propagation and conflict resolution parts from `search` in minisatml. *)
   let closure b =
     let props = numPropagations () in
+    let b = propagate_conflict b in
     let b = propagate_decision b in
     let conflict_clause = ref (propagate ()) in
     (* In case of a conflict, we compute the backjump point and register the learnt clause. *)
     if !conflict_clause <> dummy_clause then
     begin
       if decisionLevel () = 0 then raise Bot.Bot_found;
-      let learnt_clause = Vec.init 0 dummy_lit in
       let backtrack_level = ref 0 in
-      analyze conflict_clause learnt_clause backtrack_level;
-      learn_clause learnt_clause;
+      analyze conflict_clause b.learnt_clause backtrack_level;
       raise (Conflict !backtrack_level)
     end
     else b, props <> (numPropagations ())
 
+  (** According to an assert in Minisatml, this can only be used at root level (not during solving). *)
   let weak_incremental_closure b c =
     if addClause c then b
-    else raise Bot.Bot_found
+    else
+      ((* Format.printf "Clause %a unsat.\n" Lang.Pretty_print.print_qformula (I.to_qformula b.r [c]); *)
+       raise Bot.Bot_found)
 
   exception Satisfiable
   let entailment _ c =

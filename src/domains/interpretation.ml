@@ -57,7 +57,7 @@ struct
   }
 
   let empty () = {env=Env.empty; renv=REnv.empty}
-  let extend repr (v,idx,ty) = {
+  let extend repr (v,idx,ty) = let _ = Printf.printf "Extend var %s\n." v; flush_all () in {
     env=(Env.add v (idx,ty) repr.env);
     renv=(REnv.add idx (v,ty) repr.renv);
   }
