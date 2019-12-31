@@ -1,0 +1,9 @@
+(library
+  (name typing)
+  (public_name absolute.lang.typing)
+  (libraries absolute.core absolute.domains absolute.bounds absolute.lang)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)
