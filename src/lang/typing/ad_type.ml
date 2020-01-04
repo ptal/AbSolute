@@ -29,11 +29,6 @@ type ad_ty_ =
   | Box of vardom_ty
   | Octagon of value_ty
   | SAT
-  | Logic_product of ad_ty list
-  | Product of ad_ty list
+  | Logic_completion of ad_ty
+  | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
-
-(** Associate the UID of an abstract element to its type.
-    This environment is mainly useful in the typing function converting a `qformula` into a `tformula` in order to know what abstract domains are available.
-    This environment is built by calling `type_of a` over an abstract element `a`. *)
-type typing_env = ad_ty list

@@ -62,6 +62,8 @@ sig
   val exists: t -> var -> bool
   val to_logic_var: t -> gvar -> (var * var_abstract_ty)
   val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
+
+  (** The formula is not rewritten and is represented as such. *)
   val interpret: t -> approx_kind -> formula -> t * qfp_formula list
   val to_qformula: t -> qfp_formula list -> qformula
 end

@@ -107,7 +107,6 @@ struct
   let to_logic_var _ _ = no_variable_exn "Logic_prod_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_prod_interpretation.to_abstract_var"
 
-  (** The formula is not rewritten and is represented as such. *)
   let interpret p approx f =
     let rec make_approx_formula p approx f =
       let p, ask = aux p UnderApprox f in
@@ -187,7 +186,7 @@ struct
 
   let name = "Logic_product(" ^ P.name ^ ")"
 
-  let type_of qp = Some (qp.uid, Logic_product (P.type_of qp.prod))
+  let type_of qp = Some (qp.uid, Logic_completion (0, Direct_product (P.type_of qp.prod)))
 
   (* Entailed constraints are automatically deactivated by `Event_loop`. *)
   let state qp =

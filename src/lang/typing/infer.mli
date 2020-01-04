@@ -13,4 +13,4 @@
 open Ad_type
 open Tast
 
-val infer_type: typing_env -> tqformula -> tqformula
+val infer_type: ad_ty -> tqformula -> tqformula

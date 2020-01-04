@@ -409,7 +409,7 @@ struct
   let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}
   let uid p = p.uid
 
-  let type_of p = Some (p.uid, Product (P.type_of p.prod))
+  let type_of p = Some (p.uid, Direct_product (P.type_of p.prod))
 
   let wrap p prod = {p with prod}
 
