@@ -256,7 +256,7 @@ let rec get_vars_formula = function
 
 let get_vars_set_formula formula = Variables.of_list (get_vars_formula formula)
 
-let vars_of_bconstraint c = get_vars_formula (Cmp c)
+let vars_of_bconstraint c = List.sort_uniq compare (get_vars_formula (Cmp c))
 
 let is_defined_over vars c =
   List.for_all (fun v -> List.mem v vars) (get_vars_formula (Cmp c))

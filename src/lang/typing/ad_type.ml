@@ -10,13 +10,8 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** Symbolic representation of the abstract domain by their "types".
-    For now, only the most interesting combination are represented, for instance I left out BDD because it is not complete enough to be useful.
-    These types should be extended whenever a new domain or combination is added.
-
-    See also the [Typing] module. *)
-
 open Core.Types
+open Core.Kleene
 
 type ad_uid = int
 
@@ -32,3 +27,36 @@ type ad_ty_ =
   | Logic_completion of ad_ty
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
+
+let rec is_more_specialized_value vty1 vty2 =
+  if vty1 = vty2 then True
+  else match vty1, vty2 with
+    | Z, _ -> Unknown
+    | Q, F -> True
+    | _ -> not_kleene (is_more_specialized_value vty2 vty1)
+
+let rec is_more_specialized_vardom vd1 vd2 =
+  if vd1 = vd2 then True
+  else match vd1, vd2 with
+    | Interval vty1, Interval vty2
+    | Interval_oc vty1, Interval vty2
+    | Interval_oc vty1, Interval_oc vty2 ->
+        is_more_specialized_value vty1 vty2
+    | Interval_mix, _ -> False
+    | _ -> not_kleene (is_more_specialized_vardom vd2 vd1)
+
+let rec is_more_specialized (u1,a1) (u2,a2) =
+  if a1 = a2 then True
+  else
+    match a1, a2 with
+    | SAT, _ -> True
+    | Box vd1, Box vd2 -> is_more_specialized_vardom vd1 vd2
+    | Octagon vty1, Octagon vty2 -> is_more_specialized_value vty1 vty2
+    | Octagon _, _ -> True
+    | Logic_completion a1, a2 -> not_kleene (is_more_specialized (u2,a2) a1)
+    | Direct_product adtys, a2 ->
+        let specs = List.map (is_more_specialized (u2,a2)) adtys in
+        if List.for_all (fun s -> s = True) specs then False
+        else if List.for_all (fun s -> s = False) specs then True
+        else Unknown
+    | _ -> is_more_specialized (u2,a2) (u1,a1)

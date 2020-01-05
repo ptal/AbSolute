@@ -113,7 +113,7 @@ let octagon_infer oct_uid env tf =
     | _ -> false
   in
   let is_octagonal_constraint ((e1, op, e2) as c) =
-    let vars = List.sort_uniq compare (vars_of_bconstraint c) in
+    let vars = vars_of_bconstraint c in
     if List.length vars <= 2 then
       match op with
       | NEQ -> false
@@ -187,9 +187,113 @@ and logic_completion_infer lc_uid env adty tf =
   in
   generic_formula_infer lc_uid tf lc_term lc_term
 
+(* III. Removes domain uids from variables if only unary (or no) constraints are involved with this variable in this domain.
+     If a variable has only unary (or no) constraints, we only keep the least specialized (most efficient) domain. *)
+
+module VarConsCounter = Map.Make(struct type t=var * ad_uid let compare=compare end)
+
+(* We first create a structure storing the number of unary and nary constraints for each variable and domain uid. *)
+let build_var_cons_map tf =
+  let rec aux env (uids, f) =
+    let add_unary v env uid =
+      VarConsCounter.update (v,uid) (fun x ->
+        match x with
+        | Some (u,n) -> Some (u+1,n)
+        | None -> Some(1,0)) env in
+    let add_nary c env uid =
+      let vars = vars_of_bconstraint c in
+      if List.length vars = 1 then
+        add_unary (List.hd vars) env uid
+      else
+        List.fold_left (fun env v ->
+          VarConsCounter.update (v,uid) (fun x ->
+            match x with
+            | Some (u,n) -> Some (u,n+1)
+            | None -> Some(0,1)) env) env vars in
+    match f with
+    | TFVar v -> List.fold_left (add_unary v) env uids
+    | TCmp c -> List.fold_left (add_nary c) env uids
+    | TEquiv(tf1,tf2) | TImply(tf1,tf2) | TAnd(tf1,tf2) | TOr(tf1,tf2) ->
+        aux (aux env tf1) tf2
+    | TNot tf -> aux env tf
+  in aux VarConsCounter.empty tf
+
+let select_vars tf =
+  let rec extract_formula = function
+    | TQFFormula tqf -> tqf
+    | TExists (_,_,_,tqf) -> extract_formula tqf in
+  let tqf = extract_formula tf in
+  let vsm = build_var_cons_map tqf in
+  let rec aux = function
+    | TQFFormula tqf -> TQFFormula tqf
+    | TExists (v,ty,uids,tqf) ->
+        let tqf = aux tqf in
+        let nary = List.fold_left
+          (fun nary uid ->
+            if snd (VarConsCounter.find (v,uid) vsm) > 0 then
+              uid::nary
+            else
+              nary) [] uids in
+        let uids = if (List.length nary) > 0 then nary else uids in
+        TExists (v,ty,uids,tqf)
+  in aux tf
+
+(* IV. Select a single type for each sub-formula.
+       If several abstract domain are on-par (unordered), only the first one is kept. *)
+
+let rec map_tqf f = function
+  | TQFFormula tqf -> TQFFormula (f tqf)
+  | TExists (v,ty,uids,tf) -> TExists (v,ty,uids,map_tqf f tf)
+
+module UID2Adty = Map.Make(struct type t=ad_uid let compare=compare end)
+
+let build_adenv adty =
+  let rec aux env ((uid, adty_) as adty) =
+    match adty_ with
+    | Box _ | Octagon _ | SAT -> UID2Adty.add uid adty env
+    | Logic_completion adty' ->
+        UID2Adty.add uid adty (aux env adty')
+    | Direct_product adtys ->
+        UID2Adty.add uid adty (List.fold_left aux env adtys)
+  in aux UID2Adty.empty adty
+
+let select_formula adty tf =
+  let ad_env = build_adenv adty in
+  let rec aux (uids, f) =
+    let f = match f with
+      | TFVar _ | TCmp _ -> f
+      | TEquiv(tf1,tf2) -> TEquiv(aux tf1,aux tf2)
+      | TImply(tf1,tf2) -> TImply(aux tf1,aux tf2)
+      | TAnd(tf1,tf2) -> TAnd(aux tf1,aux tf2)
+      | TOr(tf1,tf2) -> TOr(aux tf1,aux tf2)
+      | TNot tf1 -> TNot (aux tf1)
+    in
+    let adtys = List.map (fun uid -> UID2Adty.find uid ad_env) uids in
+    let (uid, _) = List.fold_left (fun current adty ->
+        if (is_more_specialized current adty) <> False then current else adty
+      ) (List.hd adtys) (List.tl adtys) in
+    ([uid], f)
+  in map_tqf aux tf
+
+(* V. Assemble all the typing parts together. *)
+
+let rec check_type_var = function
+  | TQFFormula _ -> ()
+  | TExists(v,_,[],_) ->
+      raise (Wrong_modelling ("Variable `" ^ v ^ "` cannot be handled in any domain."))
+  | TExists(_,_,_,tf) -> check_type_var tf
+
 let infer_type adty tf =
   let (env, tf) = infer_vars_ty adty tf in
-  let rec type_formula = function
-    | TQFFormula tf -> TQFFormula (infer_constraints_ty env tf adty)
-    | TExists (v,ty,uids,tqf) -> TExists (v,ty,uids,type_formula tqf)
-  in type_formula tf
+  let type_formula tf =
+    map_tqf (fun tqf ->
+      let tqf = infer_constraints_ty env tqf adty in
+      if (fst tqf) = [] then
+        raise (Wrong_modelling "The formula is not typable in the abstract domain provided.")
+      else
+        tqf) tf
+  in
+  let tf = type_formula tf in
+  let tf = select_vars tf in
+  check_type_var tf;
+  select_formula adty tf
