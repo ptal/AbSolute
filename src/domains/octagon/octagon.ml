@@ -24,9 +24,12 @@ module Closure = Closure
 
 module type Octagon_sig =
 sig
-  include Event_abstract_domain
-
   module DBM: DBM_sig
+  module B = DBM.B
+  module I : module type of (Octagon_interpretation(DBM.B))
+  include Event_abstract_domain with
+    module I := I and
+    module B := B
 
   (** Perform the incremental closure of the DBM with the constraint. *)
   val incremental_closure: t -> I.rconstraint -> t * bool

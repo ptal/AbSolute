@@ -1,4 +1,4 @@
-(* Copyright 2019 Pierre Talbot
+(* (* Copyright 2019 Pierre Talbot
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -11,10 +11,12 @@
    Lesser General Public License for more details. *)
 
 open Core
+open Core.Types
 open Lang
+open Lang.Ast
+open Domains.Interpretation
 open Bounds
 open Box
-open Box.Box_dom
 
 (* I. Data *)
 
@@ -41,70 +43,35 @@ let x_eq_one = Ast.(x, EQ, Cst (Bound_rat.one, Int))
 module B = Bound_int
 module BoxFFB = Box_base(Box_split.First_fail_bisect)(B)
 
-module type Box_maker_sig =
-sig
-  module Box: Box_sig
-  type t = {
-    box: Box.t;
-    repr: Box.R.t
-  }
-  val empty: t
-  val init_vars: t -> Ast.var list -> t
-  val init_constraints: t -> Ast.bconstraint list -> t
-  val init: Ast.var list -> Ast.bconstraint list -> t
-end
-
-module Box_maker(Box: Box_sig) =
-struct
-  module Box = Box
-  module R = Box.R
-  type t = {
-    box: Box.t;
-    repr: R.t
-  }
-
-  let empty = { box=Box.empty; repr=R.empty }
-
-  let init_vars br vars =
-    let var_kinds = List.init (List.length vars) (fun _ -> ()) in
-    let (box, vars_idx) = Tools.fold_map Box.extend br.box var_kinds in
-    let repr = List.fold_left R.extend br.repr (List.combine vars vars_idx) in
-    { box; repr }
-
-  let init_constraints br constraints =
-    let constraints =
-        List.map (fun c -> Ast.Cmp c) constraints
-     |> List.map (R.rewrite br.repr)
-     |> List.flatten in
-    let box = List.fold_left Box.weak_incremental_closure br.box constraints in
-    { br with box }
-
-  let init vars constraints =
-    let br = init_vars empty vars in
-    init_constraints br constraints
-end
-
 module type Bound_tester_sig =
 sig
-  module BR: Box_maker_sig
+  module Box: Box_sig
   val expect_bound_eq: string -> string -> int -> int -> unit
-  val expect_domain_eq: BR.t -> (string * int * int) list -> unit
+  val expect_domain_eq: Box.t -> (string * int * int) list -> unit
 end
 
-module Bound_tester(BR: Box_maker_sig) =
+module Bound_tester(Box: Box_sig) =
 struct
-  module BR = BR
-  module Box = BR.Box
-  module R = BR.Box.R
+  module Box = Box
+  module I = Box.I
+
+  let init_vars vars =
+    let box = Box.empty 0 in
+    let formula = List.fold_left
+      (fun f v -> Exists(v,Concrete Int,f)) (QFFormula truef) vars in
+    Box.qinterpret box Exact formula
+
+  let init_constraints box c =
+    Box.qinterpret box Exact (QFFormula c)
 
   let expect_bound_eq name var expected obtained =
     let name = name ^ " bound of `" ^ var ^ "`" in
     Alcotest.(check int) name expected obtained
 
-  let expect_domain_eq br expected =
+  let expect_domain_eq box expected =
     List.iter (fun (var, lb, ub) ->
-      let var_idx = R.to_abstract_var br.BR.repr var in
-      let (lb', ub') = Box.project br.box var_idx in
+      let var_idx = I.to_abstract_var (Box.interpretation box) var in
+      let (lb', ub') = Box.project box var_idx in
       begin
         expect_bound_eq "lower" var lb (Box.Vardom.B.to_int_down lb');
         expect_bound_eq "upper" var ub (Box.Vardom.B.to_int_up ub')
@@ -115,20 +82,19 @@ end
 (* III. Tests *)
 
 let test_Z () =
-  let (module BR : Box_maker_sig) = (module Box_maker(BoxFFB)) in
-  let (module BT : Bound_tester_sig) = (module Bound_tester(BR)) in
-  let br = BT.BR.init_vars BT.BR.empty ["x"; "y"] in
+  let (module BT : Bound_tester_sig) = (module Bound_tester(BoxFFB)) in
+  let box = BT.init_vars ["x"; "y"] in
   begin
-    BT.expect_domain_eq br [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
-    let br = BT.BR.init_constraints br constraints_Z in
-    let br = {br with box=(BT.BR.Box.closure br.box)} in
+    BT.expect_domain_eq box [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
+    let box = BT.init_constraints box constraints_Z in
+    let box = {box with box=(BT.Box.closure box.box)} in
     let box_expected = [("x",-1,3); ("y",0,4)] in
-    BT.expect_domain_eq br box_expected;
+    BT.expect_domain_eq box box_expected;
     Printf.printf "first closure succeeded.\n";
-    let br = BT.BR.init_constraints br [x_eq_one] in
-    BT.expect_domain_eq br [("x",1,1); ("y",0,4)];
-    let br = {br with box=(BT.BR.Box.closure br.box)} in
-    BT.expect_domain_eq br [("x",1,1); ("y",0,2)];
+    let box = BT.init_constraints box [x_eq_one] in
+    BT.expect_domain_eq box [("x",1,1); ("y",0,4)];
+    let box = {box with box=(BT.Box.closure box.box)} in
+    BT.expect_domain_eq box [("x",1,1); ("y",0,2)];
     Printf.printf "second closure succeeded.\n";
   end
 
@@ -168,3 +134,4 @@ let tests = [
   "split-input-order-bisect(Z)", `Quick, test_split_input_order_bisect;
   "split-input-order-assign-lb(Z)", `Quick, test_split_input_order_assign_lb;
 ]
+ *)

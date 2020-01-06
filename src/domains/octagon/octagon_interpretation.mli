@@ -37,6 +37,8 @@ sig
 
   (** See [Interpretation.to_qformula] *)
   val to_qformula: t -> rconstraint list -> qformula
+
+  val negate: rconstraint -> rconstraint
 end
 
 module Octagon_interpretation(B: Bound_sig.S): Octagon_interpretation_sig with module B=B

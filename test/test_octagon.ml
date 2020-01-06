@@ -50,11 +50,13 @@ let string_of_kleene = function
  | True -> "True"
  | False -> "False"
  | Unknown -> "Unknown"
+let string_of_bool = function
+  | true -> "true"
+  | false -> "false"
 
 let octagon_empty2D =
-  let o = OctagonZ.empty in
-  let (o, _) = Tools.fold_map OctagonZ.extend o [();()] in
-  o
+  let o = OctagonZ.empty 0 in
+  List.fold_left (fun o _ -> let (o,_,_) = OctagonZ.extend o in o) o [();()]
 
 let make_octagon dim values =
   let vars = List.rev (Fold_intervals.fold (fun a x -> x::a) [] dim) in
@@ -126,15 +128,15 @@ let test_octagon_Z () =
   let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
   begin
     OctagonTesterZ.expect_dbm "init(Z)" (OctagonZ.DBM.to_list (OctagonZ.unwrap octagon)) inf_dbm;
-    let octagon = OctagonZ.closure octagon in
+    let octagon = fst (OctagonZ.closure octagon) in
     OctagonTesterZ.expect_dbm "closure(Z)" (OctagonZ.DBM.to_list (OctagonZ.unwrap octagon)) closed_dbm;
   end
 
 let test_octagon_incremental_Z () =
   let octagon = octagon_empty2D in
   let constraints = octagon_2D in
-  let octagon = List.fold_left OctagonZ.incremental_closure octagon constraints in
-  (OctagonZ.print OctagonZ.R.empty Format.std_formatter octagon;
+  let octagon = List.fold_left (fun o c -> fst (OctagonZ.incremental_closure o c)) octagon constraints in
+  (OctagonZ.print Format.std_formatter octagon;
   OctagonTesterZ.expect_dbm "closure(Z)" (OctagonZ.DBM.to_list (OctagonZ.unwrap octagon)) closed_dbm)
 
 let test_octagon_entailment_inf_Z () =
@@ -142,7 +144,7 @@ let test_octagon_entailment_inf_Z () =
   let constraints = octagon_2D in
   List.iter (fun c ->
     let obtained = OctagonZ.entailment octagon c in
-    let expected = if c.d = Z.inf then True else Unknown in
+    let expected = if c.d = Z.inf then true else false in
     Printf.printf "Entailment of %s\n" (string_of_constraint c Z.to_string);
     Alcotest.(check bool) "entailment_inf(Z)" true (obtained = expected)) constraints
 
@@ -150,7 +152,7 @@ let test_octagon_entailment_Z () =
   let octagon = octagon_empty2D in
   let constraints = octagon_2D in
   let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
-  let octagon = OctagonZ.closure octagon in
+  let octagon = fst (OctagonZ.closure octagon) in
   let entailment_constraints = [
     {v=x; d=Z.of_int_up (-1)};
     {v=x; d=Z.of_int_up (-2)};
@@ -158,10 +160,10 @@ let test_octagon_entailment_Z () =
     {v=x; d=Z.of_int_up (-10)};
     {v=x; d=Z.of_int_up (-11)};
   ] in
-  let entailment_result = [True; True; Unknown; Unknown; False] in
+  let entailment_result = [true; true; false; false; false] in
   List.iter2 (fun c expected ->
     let obtained = OctagonZ.entailment octagon c in
-    Printf.printf "Entailment of %s (obtained %s/expect %s)\n" (string_of_constraint c Z.to_string) (string_of_kleene obtained) (string_of_kleene expected);
+    Printf.printf "Entailment of %s (obtained %s/expect %s)\n" (string_of_constraint c Z.to_string) (string_of_bool obtained) (string_of_bool expected);
     Alcotest.(check bool) "entailment(Z)" true (obtained = expected)) entailment_constraints entailment_result
 
 let tests = [

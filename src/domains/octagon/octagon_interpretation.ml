@@ -40,6 +40,7 @@ sig
 
   val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> Ast.qformula
+  val negate: rconstraint -> rconstraint
 end
 
 module Octagon_interpretation(B: Bound_sig.S) =
@@ -47,7 +48,6 @@ struct
   module B = B
   (* include Interpretation_base(struct type var_id=dbm_var end) *)
   type rconstraint = B.t dbm_constraint
-
 
   module IB = Interpretation_base(struct type var_id=dbm_var end)
 
@@ -190,12 +190,11 @@ struct
         raise (Wrong_modelling ("Octagon only supports conjunction of constraints (" ^ msg ^ ")")) in
     repr, List.flatten (List.map (interpret_one repr approx) constraints)
 
-  (* let negate c =
+  let negate c =
     if is_rotated c.v then
       { v=(Dbm.inv c.v); d=B.neg (B.succ c.d) }
     else
       { v=(Dbm.inv c.v); d=B.mul_up (B.neg (B.succ (B.div_down c.d B.two))) B.two }
- *)
 
   let ty = B.concrete_ty
 
