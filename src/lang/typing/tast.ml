@@ -14,32 +14,57 @@ open Core.Types
 open Lang.Ast
 open Ad_type
 
-type tformula = ad_uid list * tformula_
-and tformula_ =
+type 'a aformula = 'a * 'a aformula_
+and 'a aformula_ =
   | TFVar of var
   | TCmp of bconstraint
-  | TEquiv of tformula * tformula
-  | TImply of tformula * tformula
-  | TAnd of tformula * tformula
-  | TOr  of tformula * tformula
-  | TNot of tformula
+  | TEquiv of 'a aformula * 'a aformula
+  | TImply of 'a aformula * 'a aformula
+  | TAnd of 'a aformula * 'a aformula
+  | TOr  of 'a aformula * 'a aformula
+  | TNot of 'a aformula
 
-type tqformula =
-  | TQFFormula of tformula
-  | TExists of var * var_ty * ad_uid list * tqformula
+type 'a aqformula =
+  | TQFFormula of 'a aformula
+  | TExists of var * var_ty * 'a * 'a aqformula
 
-let rec formula_to_tformula f =
-  let tf = match f with
-    | FVar v -> TFVar v
-    | Cmp c -> TCmp c
-    | Equiv(f1, f2) -> TEquiv(formula_to_tformula f1, formula_to_tformula f2)
-    | Imply(f1, f2) -> TImply(formula_to_tformula f1, formula_to_tformula f2)
-    | And(f1, f2) -> TAnd(formula_to_tformula f1, formula_to_tformula f2)
-    | Or(f1, f2) -> TOr(formula_to_tformula f1, formula_to_tformula f2)
-    | Not f1 -> TNot (formula_to_tformula f1)
-  in
-  ([], tf)
+let rec aformula_to_formula (_,af) =
+  match af with
+  | TFVar v -> FVar v
+  | TCmp c -> Cmp c
+  | TEquiv(f1,f2) -> Equiv(aformula_to_formula f1, aformula_to_formula f2)
+  | TImply(f1,f2) -> Imply(aformula_to_formula f1, aformula_to_formula f2)
+  | TAnd(f1,f2) -> And(aformula_to_formula f1, aformula_to_formula f2)
+  | TOr(f1,f2) -> Or(aformula_to_formula f1, aformula_to_formula f2)
+  | TNot f1 -> Not (aformula_to_formula f1)
 
-let rec qformula_to_tqformula = function
-| QFFormula f -> TQFFormula (formula_to_tformula f)
-| Exists(v, ty, qf) -> TExists (v, ty, [], qformula_to_tqformula qf)
+let rec aqformula_to_qformula = function
+  | TQFFormula f -> QFFormula (aformula_to_formula f)
+  | TExists(v, ty, _, qf) -> Exists (v, ty, aqformula_to_qformula qf)
+
+let string_of_aformula af =
+  Lang.Pretty_print.print_formula Format.str_formatter (aformula_to_formula af);
+  Format.flush_str_formatter ()
+
+let rec map_tqf f = function
+  | TQFFormula tqf -> TQFFormula (f tqf)
+  | TExists (v,vty,ty,tf) -> TExists (v,vty,ty,map_tqf f tf)
+
+let rec map_annot_aformula (a, af) f =
+  (f a, match af with
+  | TFVar v -> TFVar v
+  | TCmp c -> TCmp c
+  | TEquiv(f1,f2) -> TEquiv(map_annot_aformula f1 f, map_annot_aformula f2 f)
+  | TImply(f1,f2) -> TImply(map_annot_aformula f1 f, map_annot_aformula f2 f)
+  | TAnd(f1,f2) -> TAnd(map_annot_aformula f1 f, map_annot_aformula f2 f)
+  | TOr(f1,f2) -> TOr(map_annot_aformula f1 f, map_annot_aformula f2 f)
+  | TNot f1 -> TNot(map_annot_aformula f1 f))
+
+let rec map_annot_aqformula af f =
+  match af with
+  | TQFFormula qf -> TQFFormula (map_annot_aformula qf f)
+  | TExists(v, ty, a, qf) -> TExists (v, ty, f a, map_annot_aqformula qf f)
+
+type tformula = ad_uid aformula
+type tformula_ = ad_uid aformula_
+type tqformula = ad_uid aqformula

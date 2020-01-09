@@ -60,3 +60,17 @@ let rec is_more_specialized (u1,a1) (u2,a2) =
         else if List.for_all (fun s -> s = False) specs then True
         else Unknown
     | _ -> is_more_specialized (u2,a2) (u1,a1)
+
+(** Map UID of abstract domain to its type. *)
+module UID2Adty = Map.Make(struct type t=ad_uid let compare=compare end)
+
+let build_adenv adty =
+  let rec aux env ((uid, adty_) as adty) =
+    match adty_ with
+    | Box _ | Octagon _ | SAT -> UID2Adty.add uid adty env
+    | Logic_completion adty' ->
+        UID2Adty.add uid adty (aux env adty')
+    | Direct_product adtys ->
+        UID2Adty.add uid adty (List.fold_left aux env adtys)
+  in aux UID2Adty.empty adty
+

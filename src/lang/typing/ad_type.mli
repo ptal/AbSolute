@@ -47,3 +47,7 @@ val is_more_specialized_vardom: vardom_ty -> vardom_ty -> Kleene.t
     We have: SAT > Octagon > Box.
     Inductive call on Logic_transformer and Direct_product. *)
 val is_more_specialized: ad_ty -> ad_ty -> Kleene.t
+
+module UID2Adty: Map.S with type key=ad_uid
+
+val build_adenv: ad_ty -> ad_ty UID2Adty.t

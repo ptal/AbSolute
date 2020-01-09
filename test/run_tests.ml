@@ -21,6 +21,7 @@ let test_suites: unit Alcotest.test list = [
   (* "Box", Test_box.tests; *)
   "Rewriter", Test_rewriter.tests;
   "Split strategies", Test_split_strategies.tests;
+  "Type inference of formula", Test_typing.tests;
 ]
 
 let () = Alcotest.run "AbSolute" test_suites

@@ -107,6 +107,30 @@ let fold_map f a l =
   let (a, l') = List.fold_left f (a, []) l in
   (a, List.rev l')
 
+let rec compare_list equal l1 l2 =
+  match l1, l2 with
+  | [], [] -> true
+  | x1::l1, x2::l2 when equal x1 x2 -> compare_list equal l1 l2
+  | _ -> false
+
+(* True if the elements of the list `l1` are included in `l2`. *)
+let is_subset_list l1 l2 =
+  let rec aux = function
+  | [] -> true
+  | x::l1 -> if List.mem x l2 then aux l1 else false
+  in aux l1
+
+let is_set_equal l1 l2 =
+  is_subset_list l1 l2 && is_subset_list l2 l1
+
+(* NOTE: order of list l1 is preserved. *)
+let intersect l1 l2 =
+  let rec aux = function
+    | [] -> []
+    | x::l1 when List.mem x l2 -> x::(aux l1)
+    | _::l1 -> aux l1 in
+  aux l1
+
 let contain_string s sub extract =
   let s = String.trim s in
   let sub = String.trim sub in
