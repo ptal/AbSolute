@@ -33,6 +33,7 @@ type var_ty =
   | Concrete of var_concrete_ty
   | Abstract of var_abstract_ty
 
+val string_of_value_ty_short: value_ty -> string
 val string_of_value_ty: value_ty -> string
 val string_of_cty: var_concrete_ty -> string
 val string_of_aty: var_abstract_ty -> string

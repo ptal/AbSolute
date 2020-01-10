@@ -28,6 +28,11 @@ let string_of_cty = function
   | Int -> "Int"
   | Real -> "Real"
 
+let string_of_value_ty_short = function
+  | Z -> "Z"
+  | Q -> "Q"
+  | F -> "F"
+
 let string_of_value_ty = function
   | Z -> "Integer"
   | Q -> "Rational"

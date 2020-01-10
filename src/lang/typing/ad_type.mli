@@ -34,6 +34,9 @@ type ad_ty_ =
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
 
+val string_of_vardom_ty: vardom_ty -> string
+val string_of_adty: ad_ty -> string
+
 (** Rational is more specialized than float (because more precise).
     Integers and rational/float are unordered. *)
 val is_more_specialized_value: value_ty -> value_ty -> Kleene.t
@@ -51,3 +54,7 @@ val is_more_specialized: ad_ty -> ad_ty -> Kleene.t
 module UID2Adty: Map.S with type key=ad_uid
 
 val build_adenv: ad_ty -> ad_ty UID2Adty.t
+
+(** Filter the abstract domains in the list which subsume all the others.
+    The list is empty if none exists. *)
+val select_mgad: ad_ty list -> ad_ty option

@@ -38,7 +38,7 @@ val aqformula_to_qformula: 'a aqformula -> qformula
 val string_of_aformula: 'a aformula -> string
 
 val map_tqf: ('a aformula -> 'a aformula) -> 'a aqformula -> 'a aqformula
-val map_annot_aformula: 'a aformula -> ('a -> 'b) -> 'b aformula
+val map_annot_aformula: 'a aformula -> ('a aformula -> 'b) -> 'b aformula
 val map_annot_aqformula: 'a aqformula -> ('a -> 'b) -> 'b aqformula
 
 (** We equip a formula with the UIDs of abstract elements in which it can be interpreted.

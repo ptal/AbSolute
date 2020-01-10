@@ -28,6 +28,25 @@ type ad_ty_ =
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
 
+let string_of_vardom_ty = function
+  | Interval vty -> "Itv(" ^ (string_of_value_ty_short vty) ^ ")"
+  | Interval_oc vty -> "ItvOC(" ^ (string_of_value_ty_short vty) ^ ")"
+  | Interval_mix -> "ItvMix"
+
+let string_of_adty adty =
+  let rec aux top_product (_,ty) =
+    match ty with
+    | Box vardom_ty -> "Box(" ^ (string_of_vardom_ty vardom_ty) ^ ")"
+    | Octagon vty -> "Oct(" ^ (string_of_value_ty_short vty) ^ ")"
+    | SAT -> "SAT"
+    | Logic_completion adty -> "LC(" ^ (aux false adty) ^ ")"
+    | Direct_product adtys ->
+        let sty =
+          List.fold_left (fun msg adty -> msg ^ " X " ^ (aux false adty))
+            (aux false (List.hd adtys)) (List.tl adtys) in
+        if top_product then sty else "(" ^ sty ^ ")"
+  in aux true adty
+
 let rec is_more_specialized_value vty1 vty2 =
   if vty1 = vty2 then True
   else match vty1, vty2 with
@@ -59,7 +78,7 @@ let rec is_more_specialized (u1,a1) (u2,a2) =
         if List.for_all (fun s -> s = True) specs then False
         else if List.for_all (fun s -> s = False) specs then True
         else Unknown
-    | _ -> is_more_specialized (u2,a2) (u1,a1)
+    | _ -> not_kleene (is_more_specialized (u2,a2) (u1,a1))
 
 (** Map UID of abstract domain to its type. *)
 module UID2Adty = Map.Make(struct type t=ad_uid let compare=compare end)
@@ -74,3 +93,25 @@ let build_adenv adty =
         UID2Adty.add uid adty (List.fold_left aux env adtys)
   in aux UID2Adty.empty adty
 
+let uids_of adty =
+  let rec aux (uid, ty) =
+    match ty with
+    | Box _ -> [uid]
+    | Octagon _ -> [uid]
+    | SAT -> [uid]
+    | Logic_completion adty -> uid::(aux adty)
+    | Direct_product adtys ->
+        List.fold_left (fun r adty -> r@(aux adty)) [uid] adtys
+  in List.sort_uniq compare (aux adty)
+
+let select_mgad adtys =
+  let all_uids = List.fold_left
+    (fun uids adty -> uids@(uids_of adty))
+    [] adtys in
+  let all_uids = List.sort_uniq compare all_uids in
+  let adtys = List.filter (fun adty ->
+    Core.Tools.is_set_equal (uids_of adty) all_uids) adtys in
+  match adtys with
+  | [] -> None
+  | [adty] -> Some adty
+  | _ -> failwith "select_mgad: More than one abstract element is the most general, this can only happen if two abstract element have the same UID, which should be forbidden."

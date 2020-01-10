@@ -51,7 +51,7 @@ let rec map_tqf f = function
   | TExists (v,vty,ty,tf) -> TExists (v,vty,ty,map_tqf f tf)
 
 let rec map_annot_aformula (a, af) f =
-  (f a, match af with
+  (f (a, af), match af with
   | TFVar v -> TFVar v
   | TCmp c -> TCmp c
   | TEquiv(f1,f2) -> TEquiv(map_annot_aformula f1 f, map_annot_aformula f2 f)
@@ -62,7 +62,7 @@ let rec map_annot_aformula (a, af) f =
 
 let rec map_annot_aqformula af f =
   match af with
-  | TQFFormula qf -> TQFFormula (map_annot_aformula qf f)
+  | TQFFormula qf -> TQFFormula (map_annot_aformula qf (fun (a,_) -> f a))
   | TExists(v, ty, a, qf) -> TExists (v, ty, f a, map_annot_aqformula qf f)
 
 type tformula = ad_uid aformula

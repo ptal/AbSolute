@@ -54,16 +54,24 @@ sig
   (** Boolean is the `trace` which indicates if the inference should create the error message or not (it might take longer if yes). *)
   val init: ad_ty -> bool -> t
 
-  (** Create `CannotType` with the given message if the trace is activated, and an empty message otherwise. *)
-  val gen_err: t -> (unit -> string) -> inferred_type
+  (** Find and format the name of an abstract domain.
+      It is used in the header of the error messages. *)
+  val ad_name: t -> ad_uid -> string
 
-  val variable_not_in_dom_err: t -> var -> inferred_type
-  val not_an_octagonal_constraint_err: t -> inferred_type
-  val ground_dom_does_not_handle_logic_connector_err: t -> inferred_type
-  val no_domain_support_this_variable_err: t -> var -> var_ty -> inferred_type
-  val sat_does_not_support_term_err: t -> inferred_type
-  val direct_product_no_subdomain_err: t -> inferred_type
-  val logic_completion_subdomain_failed_on_term_err: t -> inferred_type
+  (** Create `CannotType` with the given message if the trace is activated, and an empty message otherwise. *)
+  val gen_err: t -> ad_uid -> (unit -> string) -> inferred_type
+
+  (** Format the typing error of a formula.
+      We try to give the most precise error (an error on a small sub-formula). *)
+  val create_typing_error: string -> iformula -> string
+
+  val variable_not_in_dom_err: t -> ad_uid -> var -> inferred_type
+  val not_an_octagonal_constraint_err: t -> ad_uid -> inferred_type
+  val ground_dom_does_not_handle_logic_connector_err: t -> ad_uid -> inferred_type
+  val no_domain_support_this_variable_err: t -> ad_uid -> var -> var_ty -> inferred_type
+  val sat_does_not_support_term_err: t -> ad_uid -> inferred_type
+  val direct_product_no_subdomain_err: t -> ad_uid -> string -> inferred_type
+  val logic_completion_subdomain_failed_on_term_err: t -> ad_uid -> inferred_type
 
   (* I. Inference of the variables types. *)
 
@@ -101,10 +109,10 @@ sig
   val sat_infer: t -> ad_uid -> iformula -> iformula
 
   (** Infer the type of all subformulas compatible with this direct product. *)
-  val direct_product_infer: t -> ad_uid -> ad_ty list -> iformula -> iformula
+  val direct_product_infer: t -> ad_uid -> iformula -> ad_ty list -> iformula
 
   (** Infer the type of all subformulas compatible with the logic completion of the given domain's type. *)
-  val logic_completion_infer: t -> ad_uid -> ad_ty -> iformula -> iformula
+  val logic_completion_infer: t -> ad_uid -> iformula -> ad_ty -> iformula
 
   (** General inference of a formula with regards to the available abstract domain type. *)
   val infer_constraints_ty: t -> iformula -> ad_ty -> iformula
@@ -117,17 +125,23 @@ sig
 
   module VarConsCounter : Map.S with type key=(var * ad_uid)
 
-  (** We first create a structure storing the number of unary and nary constraints for each variable and domain uid. *)
-  val build_var_cons_map: iformula -> (int * int) VarConsCounter.t
+  (** Create a structure storing the number of unary and nary constraints for each variable and domain uid. *)
+  val build_var_cons_map: 'a aformula -> ('a -> int list) -> (int * int) VarConsCounter.t
+
+  (** This part is quite specialized, we need more research to infer better general rules.
+     Basically, we do not want to add an unary variable in an octagon if a box (or SAT) is available, because it is less costly. *)
+  val restrict_unary_var_dom: t -> ad_uid list -> ad_uid list
 
   (** Instantiate a variable with a single type. *)
-  val instantiate_var_ty: iqformula -> iqformula
+  val restrict_variable_ty: t -> iqformula -> iqformula
 
   (* IV. Select a single type for each sub-formula.
          If several abstract domain are on-par (unordered), only the first one is kept. *)
 
+  val instantiate_formula_ty: t -> iformula -> ad_uid
+
   (** Instantiate a formula with a single type per sub-formula. *)
-  val instantiate_formula_ty: t -> iqformula -> tqformula
+  val instantiate_qformula_ty: t -> iqformula -> tqformula
 
   (** Raises `Wrong_modelling` if a variable in `TExists` has a type `CannotType`. *)
   val check_type_var: iqformula -> unit
