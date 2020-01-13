@@ -6,6 +6,6 @@ env:
   global:
   - EXTRA_REMOTES="git://github.com/ptal/solvers-opam.git"
   matrix:
-  - OCAML_VERSION=4.07
+  - OCAML_VERSION=4.09
 os:
 - linux
