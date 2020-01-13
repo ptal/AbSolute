@@ -103,7 +103,7 @@ sig
 
   (** A generic inference scheme for logical formula (useful for SAT and Logic completion).
       [literal] and [term] are functions called on [TFVar] and [TCmp] respectively. *)
-  val generic_formula_infer: ad_uid -> iformula -> (var -> iformula -> inferred_type) -> (bconstraint -> iformula -> inferred_type) -> iformula
+  val generic_formula_infer: t -> ad_uid -> iformula -> (var -> iformula -> inferred_type) -> (bconstraint -> iformula -> inferred_type) -> iformula
 
   (** Infer the type of all SAT subformulas. *)
   val sat_infer: t -> ad_uid -> iformula -> iformula
@@ -133,12 +133,12 @@ sig
   val restrict_unary_var_dom: t -> ad_uid list -> ad_uid list
 
   (** Instantiate a variable with a single type. *)
-  val restrict_variable_ty: t -> iqformula -> iqformula
+  val restrict_variable_ty: t -> iqformula -> (t * iqformula)
 
   (* IV. Select a single type for each sub-formula.
          If several abstract domain are on-par (unordered), only the first one is kept. *)
 
-  val instantiate_formula_ty: t -> iformula -> ad_uid
+  val instantiate_formula_ty: t -> iformula -> tformula
 
   (** Instantiate a formula with a single type per sub-formula. *)
   val instantiate_qformula_ty: t -> iqformula -> tqformula

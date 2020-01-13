@@ -58,3 +58,6 @@ val build_adenv: ad_ty -> ad_ty UID2Adty.t
 (** Filter the abstract domains in the list which subsume all the others.
     The list is empty if none exists. *)
 val select_mgad: ad_ty list -> ad_ty option
+
+(** True if `adty` supports all the domains `uids` *)
+val is_mgad: ad_ty -> ad_uid list -> bool

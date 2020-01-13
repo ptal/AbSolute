@@ -229,22 +229,42 @@ struct
     | (_, Logic_completion adty) -> infer_var ty adty
     | _ -> []
 
-  let infer_vars_ty typer f =
+  let build_venv typer tf =
+    let rec aux = function
+    | TQFFormula _ -> Var2UID.empty
+    | TExists(v, _, Typed uids, tf) -> Var2UID.add v uids (aux tf)
+    | _ -> failwith "build_venv: `check_var_ty` should be called before."
+    in
+      {typer with venv=(aux tf)}
+
+  let rec check_type_var = function
+    | TQFFormula _ -> ()
+    | TExists(_,_,CannotType msg,_) ->
+        raise (Wrong_modelling msg)
+    | TExists(_,_,Typed [],_) ->
+        failwith "Empty list of UIDs: we should either give a type to the variable, or `CannotType`."
+    | TExists(_,_,_,tf) -> check_type_var tf
+
+  let infer_vars_ty typer tf =
     debug typer (fun () -> "I. Typing of the variables\n");
     let rec aux typer = function
-      | (TQFFormula _) as tf -> (typer, tf)
+      | (TQFFormula _) as tf -> tf
       | TExists (v, ty, Typed [], tf) ->
-          let (typer, tf) = aux typer tf in
+          let tf = aux typer tf in
           let uids = List.sort_uniq compare (infer_var ty typer.adty) in
           let res =
             if List.length uids > 0 then Typed uids
             else no_domain_support_this_variable_err typer 0 v ty
           in
           debug_ty typer (fun () -> v) res;
-          {typer with venv=(Var2UID.add v uids typer.venv)}, TExists (v, ty, res, tf)
+          TExists (v, ty, res, tf)
       | TExists (v,_,_,_) -> failwith
           ("infer_vars_ty: Existential connector of `" ^ v ^ "` is partly typed, which is not yet supported.")
-    in aux typer f
+    in
+      let tf = aux typer tf in
+      check_type_var tf;
+      let typer = build_venv typer tf in
+      (typer, tf)
 
   (* II. Inference of the constraints types. *)
 
@@ -320,21 +340,24 @@ struct
         not_an_octagonal_constraint_err typer oct_uid
     in ground_dom_infer typer oct_uid term_infer tf
 
-  let generic_formula_infer uid tf literal term =
+  let generic_formula_infer typer uid tf literal term =
     let rec aux ((ty, f) as tf) =
-      match f with
-      | TFVar v -> merge_ity ty (literal v tf), TFVar v
-      | TCmp c -> merge_ity ty (term c tf), TCmp c
-      | TEquiv(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TEquiv(tf1,tf2))
-      | TImply(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TImply(tf1,tf2))
-      | TAnd(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TAnd(tf1,tf2))
-      | TOr(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TOr(tf1,tf2))
-      | TNot tf ->
-          let tf = aux tf in
-          if is_uid_in uid tf then
-            (merge_ity ty (Typed [uid]), TNot tf)
-          else
-            (ty, TNot tf)
+      let tf = match f with
+        | TFVar v -> merge_ity ty (literal v tf), TFVar v
+        | TCmp c -> merge_ity ty (term c tf), TCmp c
+        | TEquiv(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TEquiv(tf1,tf2))
+        | TImply(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TImply(tf1,tf2))
+        | TAnd(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TAnd(tf1,tf2))
+        | TOr(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TOr(tf1,tf2))
+        | TNot tf ->
+            let tf = aux tf in
+            if is_uid_in uid tf then
+              (merge_ity ty (Typed [uid]), TNot tf)
+            else
+              (ty, TNot tf)
+      in
+        let _ = debug_ty typer (fun () -> string_of_aformula tf) (fst tf) in
+        tf
     and binary_aux ty tf1 tf2 make =
       let tf1, tf2 = aux tf1, aux tf2 in
       let f = make tf1 tf2 in
@@ -346,7 +369,7 @@ struct
       aux tf
 
   let sat_infer typer sat_uid tf =
-    generic_formula_infer sat_uid tf
+    generic_formula_infer typer sat_uid tf
       (fun v _ -> bool_var_infer typer v sat_uid)
       (fun _ _ -> sat_does_not_support_term_err typer sat_uid)
 
@@ -363,7 +386,7 @@ struct
     (* (1) Attempt to give a type to the formula `tf` in every component individually. *)
     let tf = List.fold_left (infer_constraints_ty typer) tf adtys in
     let adtys_uids = List.map fst adtys in
-    (* (2) The next step is to give the type `dp_uid` to formula of the form `f1:t1 /\ f2:t2` if t1,t2 are in the product, and t1 != t2. *)
+    (* (2) The next step is to give the type `dp_uid` to formulas of the form `f1:t1 /\ f2:t2` if t1,t2 are in the product, and t1 != t2. *)
     let rec aux (ty, f) =
       match f with
       | TAnd(tf1,tf2) ->
@@ -377,18 +400,16 @@ struct
               let u1 = Tools.intersect adtys_uids uids1 in
               let u2 = Tools.intersect adtys_uids uids2 in
               let common = Tools.intersect u1 u2 in
-              if List.length common > 0 then Typed common
+              (* The sub-formulas tf1 and tf2 can be interpreted in different sub-domains of the product. *)
+              if List.length u1 > 0 && List.length u2 > 0 then
+                Typed (dp_uid::common)
               else
-                (* The sub-formulas tf1 and tf2 can be interpreted in different sub-domains of the product. *)
-                if List.length u1 > 0 && List.length u2 > 0 then
-                  Typed [dp_uid]
-                else
-                  CannotType ("Direct product could not type a conjunction c1 /\\ c2 because " ^
-                    (match List.length u1, List.length u2 with
-                     | 0, 0 -> "none of the sub-formula could be treated in any sub-domain."
-                     | x, 0 when x > 0 -> "c2 could not be treated in any sub-domain"
-                     | 0, x when x > 0 -> "c1 could not be treated in any sub-domain"
-                     | _ -> failwith "unreachable"))
+                CannotType ("Direct product could not type a conjunction c1 /\\ c2 because " ^
+                  (match List.length u1, List.length u2 with
+                   | 0, 0 -> "none of the sub-formula could be treated in any sub-domain."
+                   | x, 0 when x > 0 -> "c2 could not be treated in any sub-domain"
+                   | 0, x when x > 0 -> "c1 could not be treated in any sub-domain"
+                   | _ -> failwith "unreachable"))
             in
             (merge_ity ty ty'), f
       | _ ->
@@ -402,15 +423,17 @@ struct
     in
       match aux tf with
       | CannotType msg, f -> direct_product_no_subdomain_err typer dp_uid msg, f
-      | f -> f
+      | tf ->
+          let _ = debug_ty typer (fun () -> string_of_aformula tf) (fst tf) in
+          tf
   and logic_completion_infer typer lc_uid tf adty =
     let tf = infer_constraints_ty (indent typer) tf adty in
     (* Whenever this term is typed in the sub-domain of the completion, the completion can handle it too. *)
     let lc_term _ tf =
-      if List.mem (fst adty) (uids_of tf) then Typed [lc_uid]
+      if is_mgad adty (uids_of tf) then Typed [lc_uid]
       else logic_completion_subdomain_failed_on_term_err typer lc_uid
     in
-    generic_formula_infer lc_uid tf lc_term lc_term
+    generic_formula_infer typer lc_uid tf lc_term lc_term
 
   let infer_constraints_ty_or_fail typer tf =
     debug typer (fun () -> "\nII. Typing of the sub-formulas & constraints.\n");
@@ -480,7 +503,6 @@ struct
     let rec aux = function
       | TQFFormula tqf -> TQFFormula tqf
       | TExists (v,ty,Typed uids,tqf) ->
-          let tqf = aux tqf in
           let nary = List.filter
             (fun uid -> snd (VarConsCounter.find (v,uid) vcm) > 0)
             uids in
@@ -488,36 +510,87 @@ struct
             if (List.length nary) > 0 then nary
             else restrict_unary_var_dom typer uids in
           debug_ty typer (fun () -> v) (Typed uids);
-          TExists (v,ty,Typed uids,tqf)
+          TExists (v,ty,Typed uids,aux tqf)
       | TExists (_,_,CannotType _,_) -> failwith "restrict_variable_ty: Reached a CannotType, but should be checked before in `check_type_var`."
-    in aux tf
+    in
+      let tf = aux tf in
+      let typer = build_venv typer tf in
+      (typer, tf)
 
-  (* IV. Instantiation of the formula type. *)
+  (* V. Instantiation of the formula type. *)
 
+  (* This function is applied after `instantiate_formula_ty`, therefore the constraints' types have already been instantiated.
+     Since we instantiate the variable with its most general abstract domain, the constraints stay well-typed. *)
   let instantiate_var_ty typer vcm v uids =
     let useful_uids = List.filter
       (fun uid ->
-        let u,n = try VarConsCounter.find (v,uid) vcm with Not_found -> failwith (v^":" ^(string_of_int uid)) in
+        let u,n = try VarConsCounter.find (v,uid) vcm with Not_found -> (0,0) in
         u > 0 || n > 0) uids in
     let adtys = List.map (fun uid -> UID2Adty.find uid typer.ad_env) useful_uids in
     match select_mgad adtys with
     | None -> no_var_mgad_err v adtys
     | Some adty -> fst adty
 
-  let instantiate_formula_ty typer (ty,f) =
-    let adtys = List.map (fun uid -> UID2Adty.find uid typer.ad_env) (uids_of' ty) in
+  let sort_most_specialized typer uids =
+    (* We want the list to be sorted with the most specialized first (so we rank it "smaller" in the compare function). *)
+    let compare_specialization ty1 ty2 =
+      if ty1 = ty2 then 0
+      else
+        match is_more_specialized ty1 ty2 with
+        | True -> -1
+        | False -> 1
+        | Unknown -> 0 (* Unrelated domains are considered equal here. *)
+    in
+    let adtys = List.map (fun uid -> UID2Adty.find uid typer.ad_env) uids in
     if adtys = [] then failwith "Type uids should not be empty (should be checked in `infer_constraints_ty_or_fail`)";
-    let uid = fst (List.fold_left (fun current adty ->
-        if (is_more_specialized current adty) <> False then current else adty
-      ) (List.hd adtys) (List.tl adtys)) in
-    debug_ty typer (fun () -> string_of_aformula (ty,f)) (Typed [uid]);
-    uid
+    let adtys = List.stable_sort compare_specialization adtys in
+    List.map fst adtys
+
+  let most_specialized typer uids = List.hd (sort_most_specialized typer uids)
+
+  (** From a sorted list of UIDS available, pick the first one that is a MGAD w.r.t. the UIDs in the provided list. *)
+  let first_supporting typer need_to_support_uids uids_available =
+    let rec aux = function
+      | [] -> failwith "Could not find an abstract domain supporting sub-formula, this should be checked in `infer_constraints_ty_or_fail`."
+      | uid::l ->
+          let adty = UID2Adty.find uid typer.ad_env in
+          if is_mgad adty need_to_support_uids then uid
+          else aux l
+    in aux uids_available
+
+  let instantiate_formula_ty typer tf =
+    let rec aux tf =
+      let (uid,f) = match tf with
+        | Typed uids, TFVar v ->
+            let var_uids = Var2UID.find v typer.venv in
+            let uids = Tools.intersect uids var_uids in
+            (most_specialized typer uids, TFVar v)
+        | Typed uids, TCmp c -> (most_specialized typer uids, TCmp c)
+        | Typed uids, TAnd (tf1, tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TAnd(tf1, tf2))
+        | Typed uids, TOr (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TOr(tf1, tf2))
+        | Typed uids, TImply (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TImply(tf1, tf2))
+        | Typed uids, TEquiv (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TEquiv(tf1, tf2))
+        | Typed uids, TNot tf ->
+            let (uid1, tf1) = aux tf in
+            let sorted_uids = sort_most_specialized typer uids in
+            (first_supporting typer [uid1] sorted_uids, TNot (uid1,tf1))
+        | _ -> failwith "instantiate_formula_ty: Formula should all be typed after the call to `infer_constraints_ty_or_fail`."
+      in
+        (* debug_ty typer (fun () -> string_of_aformula tf) (fst tf); *)
+        debug_ty typer (fun () -> string_of_aformula tf) (Typed [uid]);
+        (uid,f)
+    and binary_aux uids tf1 tf2 make =
+      let (uid1, tf1), (uid2, tf2) = aux tf1, aux tf2 in
+      let sorted_uids = sort_most_specialized typer uids in
+      (first_supporting typer [uid1; uid2] sorted_uids, make (uid1,tf1) (uid2,tf2))
+    in
+      aux tf
 
   let instantiate_qformula_ty typer tf =
     debug typer (fun () -> "\nIV. Instantiate the type of formula\n");
     let rec aux = function
       | TQFFormula tqf ->
-          let tqf = map_annot_aformula tqf (instantiate_formula_ty typer) in
+          let tqf = instantiate_formula_ty typer tqf in
           TQFFormula tqf, build_var_cons_map tqf (fun uid -> [uid])
       | TExists (v,ty,Typed uids,tf) ->
           let tf, vcm = aux tf in
@@ -525,14 +598,6 @@ struct
           TExists (v,ty,uid,tf), vcm
       | TExists (_,_,CannotType msg, _) -> raise (Wrong_modelling msg)
     in fst (aux tf)
-
-  let rec check_type_var = function
-    | TQFFormula _ -> ()
-    | TExists(_,_,CannotType msg,_) ->
-        raise (Wrong_modelling msg)
-    | TExists(_,_,Typed [],_) ->
-        failwith "Empty list of UIDs: we should either give a type to the variable, or `CannotType`."
-    | TExists(_,_,_,tf) -> check_type_var tf
 end
 
 let infer_type adty f =
@@ -540,7 +605,6 @@ let infer_type adty f =
   let tf = qformula_to_iqformula f in
   let typer = init adty true in
   let (typer, tf) = infer_vars_ty typer tf in
-  check_type_var tf;
   let tf = infer_constraints_ty_or_fail typer tf in
-  let tf = restrict_variable_ty typer tf in
+  let (typer, _) = restrict_variable_ty typer tf in
   instantiate_qformula_ty typer tf

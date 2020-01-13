@@ -115,3 +115,7 @@ let select_mgad adtys =
   | [] -> None
   | [adty] -> Some adty
   | _ -> failwith "select_mgad: More than one abstract element is the most general, this can only happen if two abstract element have the same UID, which should be forbidden."
+
+let is_mgad adty uids =
+  let uids' = uids_of adty in
+  Core.Tools.is_subset_list uids uids'
