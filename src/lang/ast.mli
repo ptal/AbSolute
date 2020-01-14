@@ -21,7 +21,7 @@ open Core.Types
 exception Wrong_modelling of string
 
 (** Variables are identified by a string. *)
-type var = string
+type vname = string
 
 (** Constants are defined over rational because they can represent exactly integers or floating point numbers. *)
 type i = Bound_rat.t
@@ -39,7 +39,7 @@ type expr =
   | Funcall of string * expr list
   | Unary   of unop * expr
   | Binary  of expr * binop * expr
-  | Var     of var
+  | Var     of vname
   | Cst     of i * var_concrete_ty
 
 (** A binary constraint. *)
@@ -47,7 +47,7 @@ type bconstraint = (expr * cmpop * expr)
 
 (** Propositional logic formula. *)
 type formula =
-  | FVar of var
+  | FVar of vname
   | Cmp of bconstraint
   | Equiv of formula * formula
   | Imply of formula * formula
@@ -59,11 +59,11 @@ type formula =
     It is mainly useful for declaring the concrete type of a variable's value. *)
 type qformula =
   | QFFormula of formula
-  | Exists of var * var_ty * qformula
+  | Exists of vname * var_ty * qformula
 
 type optimization_kind =
-  | Minimize of var
-  | Maximize of var
+  | Minimize of vname
+  | Maximize of vname
   | Satisfy
 
 (** Data structure to store a formula along with its variable to optimise. *)

@@ -16,7 +16,7 @@ open Ast
 val print_unop: formatter -> unop -> unit
 val print_binop: formatter -> binop -> unit
 val print_cmpop: formatter -> cmpop -> unit
-val print_var: formatter -> var -> unit
+val print_var: formatter -> vname -> unit
 val prior_level: (expr * expr) -> int
 
 val must_parenthesis_right: expr -> expr -> bool

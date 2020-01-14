@@ -10,43 +10,70 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core.Types
+(** Typed AST (TAST).
+    This is the AST used by the abstract domain because each sub-formula contains type information.
+    In our context, the type of a formula is an index of an abstract element.
+    We also have types for variables (see `Types.var_ty`) but they work at the value level rather than the level of abstract domains. *)
+
+open Core
 open Lang.Ast
 open Ad_type
 
-(** Generic annotated version of a formula.
-    It is useful to have this generic structure for UID types, and in [Infer] where we need to store local information along the formula. *)
-type 'a aformula = 'a * 'a aformula_
-and 'a aformula_ =
-  | TFVar of var
+type tvariable = {
+  name: vname;
+  (** Name of the variable as appearing in the model. *)
+
+  ty: Types.var_ty;
+  (** Type of the variable in the abstract element.
+      If the element is a product, and the variable has two different abstract types in the sub-domains, then the concrete domain is stored. *)
+
+  uid: ad_uid;
+  (** UID of the abstract element in which the variable occurs. *)
+}
+
+val string_of_tvar: tvariable -> string
+
+type tformula = ad_uid * tformula_
+and tformula_ =
+  | TFVar of vname
   | TCmp of bconstraint
-  | TEquiv of 'a aformula * 'a aformula
-  | TImply of 'a aformula * 'a aformula
-  | TAnd of 'a aformula * 'a aformula
-  | TOr  of 'a aformula * 'a aformula
-  | TNot of 'a aformula
+  | TEquiv of tformula * tformula
+  | TImply of tformula * tformula
+  | TAnd of tformula * tformula
+  | TOr  of tformula * tformula
+  | TNot of tformula
 
-type 'a aqformula =
-  | TQFFormula of 'a aformula
-  | TExists of var * var_ty * 'a * 'a aqformula
+(** Each variable has a type and belong to an abstract element. *)
+type tqformula =
+  | TQFFormula of tformula
+  | TExists of tvariable * tqformula
 
-(** Remove the types from a formula.
-    It is particularly useful to use the functions available in [Rewriting] and [Pretty_print] modules. *)
-val aformula_to_formula: 'a aformula -> formula
-val aqformula_to_qformula: 'a aqformula -> qformula
+(** Encoding of true and false as formula. *)
+val ttrue: tqformula
+val tfalse: tqformula
 
-val string_of_aformula: 'a aformula -> string
+val vars_of_tformula: tformula -> vname list
 
-val map_tqf: ('a aformula -> 'a aformula) -> 'a aqformula -> 'a aqformula
-val map_annot_aformula: 'a aformula -> ('a aformula -> 'b) -> 'b aformula
-val map_annot_aqformula: 'a aqformula -> ('a -> 'b) -> 'b aqformula
+(** [quantify env f] Given a variable environment `env`, existentially quantify the formula `f`.
+    It adds `Exists` in front of `f` for each variable occuring in `f` and `env`.
+    Variables not in `env` but in `f` (and vice-versa) are ignored. *)
+val quantify: tvariable list -> tformula -> tqformula
 
-(** We equip a formula with the UIDs of abstract elements in which it can be interpreted.
-    The UID `0` is by default the largest abstract type avalaible (usually a product among the available abstract domains).
-    This allows us to create partially typed formula, if the user wants some parts to be treated in a certain domain. *)
-type tformula = ad_uid aformula
-type tformula_ = ad_uid aformula_
+(** [quantifiers tqf] extracts all the existentially quantified variables from `tqf`.
+    Duplicated quantifiers are removed.
+    `Wrong_modelling` is raised if two identical variable's names have two distinct types. *)
+val quantifiers: tqformula -> tvariable list
 
-(** Each variable has a type and belong to a list of abstract elements.
-    When interpreted, a variable belonging to more than one abstract element is added in all these elements. *)
-type tqformula = ad_uid aqformula
+(** [quantifier_free_of tqf] removes the quantifiers from the formula `tqf`. *)
+val quantifier_free_of: tqformula -> tformula
+
+(** [map_formula f tqf] applies the function `f` on `tqf` bypassing the quantifiers. *)
+val map_formula: (tformula -> tformula) -> tqformula -> tqformula
+
+(** [merge_formula make f1 f2].
+    Given two quantified formulas, merge their quantifier-free part using `make`.
+    The existential binders of identical names are merged together. *)
+val merge_formula: (tformula -> tformula -> tformula) -> tqformula -> tqformula -> tqformula
+
+(** Merge a list of formula with the conjunctive connector of the given abstract domain type. *)
+val q_conjunction: ad_uid -> tqformula list -> tqformula

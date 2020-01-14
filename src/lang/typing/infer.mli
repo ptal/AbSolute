@@ -18,6 +18,7 @@
 
 open Core.Types
 open Ad_type
+open Aast
 open Tast
 open Lang.Ast
 
@@ -29,6 +30,8 @@ type inferred_type =
 
 val merge_ity: inferred_type -> inferred_type -> inferred_type
 
+(** We equip a formula with the UIDs of abstract elements in which it can be interpreted.
+    The UID `0` is by default the largest abstract type avalaible (usually a product among the available abstract domains). *)
 type iformula = inferred_type aformula
 type iqformula = inferred_type aqformula
 
@@ -47,7 +50,7 @@ val qformula_to_iqformula: qformula -> iqformula
 (** Module containing all the necessary information to type a formula with a given abstract domain type. *)
 module Inference :
 sig
-  module Var2UID : Map.S with type key=var
+  module Var2UID : Map.S with type key=vname
   type var_env = (ad_uid list) Var2UID.t
   type t
 
@@ -65,10 +68,10 @@ sig
       We try to give the most precise error (an error on a small sub-formula). *)
   val create_typing_error: string -> iformula -> string
 
-  val variable_not_in_dom_err: t -> ad_uid -> var -> inferred_type
+  val variable_not_in_dom_err: t -> ad_uid -> vname -> inferred_type
   val not_an_octagonal_constraint_err: t -> ad_uid -> inferred_type
   val ground_dom_does_not_handle_logic_connector_err: t -> ad_uid -> inferred_type
-  val no_domain_support_this_variable_err: t -> ad_uid -> var -> var_ty -> inferred_type
+  val no_domain_support_this_variable_err: t -> ad_uid -> vname -> var_ty -> inferred_type
   val sat_does_not_support_term_err: t -> ad_uid -> inferred_type
   val direct_product_no_subdomain_err: t -> ad_uid -> string -> inferred_type
   val logic_completion_subdomain_failed_on_term_err: t -> ad_uid -> inferred_type
@@ -84,8 +87,8 @@ sig
 
   (* II. Inference of the constraints types. *)
 
-  val belong: t -> ad_uid -> var -> bool
-  val bool_var_infer: t -> var -> ad_uid -> inferred_type
+  val belong: t -> ad_uid -> vname -> bool
+  val bool_var_infer: t -> vname -> ad_uid -> inferred_type
 
   (** Infer type for ground abstract domain, [term_infer] gives a type to term.
       It is a helper to implement inference for box, octagon and other ground abstract domains.
@@ -93,7 +96,7 @@ sig
   val ground_dom_infer: t -> ad_uid -> (bconstraint -> inferred_type) -> iformula -> iformula
 
   (** `None` if the variables of `c` are all treatable in the element `uid`, otherwise `Some v` where `v` is a variable not treatable. *)
-  val fully_defined_over: t -> ad_uid -> bconstraint -> var option
+  val fully_defined_over: t -> ad_uid -> bconstraint -> vname option
 
   (** Infer the type of all the box constraints. *)
   val box_infer: t -> ad_uid -> iformula -> iformula
@@ -103,7 +106,7 @@ sig
 
   (** A generic inference scheme for logical formula (useful for SAT and Logic completion).
       [literal] and [term] are functions called on [TFVar] and [TCmp] respectively. *)
-  val generic_formula_infer: t -> ad_uid -> iformula -> (var -> iformula -> inferred_type) -> (bconstraint -> iformula -> inferred_type) -> iformula
+  val generic_formula_infer: t -> ad_uid -> iformula -> (vname -> iformula -> inferred_type) -> (bconstraint -> iformula -> inferred_type) -> iformula
 
   (** Infer the type of all SAT subformulas. *)
   val sat_infer: t -> ad_uid -> iformula -> iformula
@@ -123,7 +126,7 @@ sig
   (* III. Removes domain uids from variables if only unary (or no) constraints are involved with this variable in this domain.
        If a variable has only unary (or no) constraints, we only keep the least specialized (most efficient) domain. *)
 
-  module VarConsCounter : Map.S with type key=(var * ad_uid)
+  module VarConsCounter : Map.S with type key=(vname * ad_uid)
 
   (** Create a structure storing the number of unary and nary constraints for each variable and domain uid. *)
   val build_var_cons_map: 'a aformula -> ('a -> int list) -> (int * int) VarConsCounter.t
@@ -138,14 +141,17 @@ sig
   (* IV. Select a single type for each sub-formula.
          If several abstract domain are on-par (unordered), only the first one is kept. *)
 
-  val instantiate_formula_ty: t -> iformula -> tformula
+  val instantiate_formula_ty: t -> iformula -> ad_uid aformula
 
   (** Instantiate a formula with a single type per sub-formula. *)
-  val instantiate_qformula_ty: t -> iqformula -> tqformula
+  val instantiate_qformula_ty: t -> iqformula -> ad_uid aqformula
 
   (** Raises `Wrong_modelling` if a variable in `TExists` has a type `CannotType`. *)
   val check_type_var: iqformula -> unit
 end
+
+(** Final step of the typing process where the formula is cleaned with the UID information. *)
+val make_tqformula: ad_uid aqformula -> tqformula
 
 (** Given an abstract domain type and an untyped formula, infer the type of each component of the formula matching the given abstract domain.
     Raises `Wrong_modelling msg` if the formula is not typable for this abstract domain's type; `msg` should explain why the formula is not typable.

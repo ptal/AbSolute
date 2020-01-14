@@ -12,6 +12,7 @@
 
 open Bounds
 open Domains.Abstract_domain
+open Typing.Tast
 open Lang.Ast
 
 (** This module is plugged onto a `Solver` in order to provide additional solving information.
@@ -56,8 +57,8 @@ sig
       `best` contains the best solution so far, or `None` if none was found yet. *)
   type bab = {
     kind: cmpop;
-    objective: (A.I.var_id * var);
-    best: (A.snapshot * qformula) option;
+    objective: (A.I.var_id * vname);
+    best: (A.snapshot * tqformula) option;
   }
 
   (** The arguments are as follows: `print_node status depth domain`.
@@ -77,9 +78,9 @@ sig
   | BoundSolutions of int
 
   (** See `type bab`. *)
-  val make_bab: cmpop -> (A.I.var_id * var) -> transformer
-  val minimize_bab: (A.I.var_id * var) -> transformer
-  val maximize_bab: (A.I.var_id * var) -> transformer
+  val make_bab: cmpop -> (A.I.var_id * vname) -> transformer
+  val minimize_bab: (A.I.var_id * vname) -> transformer
+  val maximize_bab: (A.I.var_id * vname) -> transformer
 
   (** Global state which stays identical to the whole computation. *)
   type gs = {

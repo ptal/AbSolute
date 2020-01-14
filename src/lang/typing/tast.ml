@@ -10,61 +10,91 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core.Types
+open Core
+open Lang
 open Lang.Ast
 open Ad_type
 
-type 'a aformula = 'a * 'a aformula_
-and 'a aformula_ =
-  | TFVar of var
+type tvariable = {
+  name: vname;
+  ty: Types.var_ty;
+  uid: ad_uid;
+}
+
+let string_of_tvar tv =
+  tv.name ^ ":" ^ (Types.string_of_ty tv.ty) ^ "@" ^ (string_of_int tv.uid)
+
+type tformula = ad_uid * tformula_
+and tformula_ =
+  | TFVar of vname
   | TCmp of bconstraint
-  | TEquiv of 'a aformula * 'a aformula
-  | TImply of 'a aformula * 'a aformula
-  | TAnd of 'a aformula * 'a aformula
-  | TOr  of 'a aformula * 'a aformula
-  | TNot of 'a aformula
+  | TEquiv of tformula * tformula
+  | TImply of tformula * tformula
+  | TAnd of tformula * tformula
+  | TOr  of tformula * tformula
+  | TNot of tformula
 
-type 'a aqformula =
-  | TQFFormula of 'a aformula
-  | TExists of var * var_ty * 'a * 'a aqformula
+type tqformula =
+  | TQFFormula of tformula
+  | TExists of tvariable * tqformula
 
-let rec aformula_to_formula (_,af) =
-  match af with
-  | TFVar v -> FVar v
-  | TCmp c -> Cmp c
-  | TEquiv(f1,f2) -> Equiv(aformula_to_formula f1, aformula_to_formula f2)
-  | TImply(f1,f2) -> Imply(aformula_to_formula f1, aformula_to_formula f2)
-  | TAnd(f1,f2) -> And(aformula_to_formula f1, aformula_to_formula f2)
-  | TOr(f1,f2) -> Or(aformula_to_formula f1, aformula_to_formula f2)
-  | TNot f1 -> Not (aformula_to_formula f1)
+let ttrue = TQFFormula (0, TCmp (zero, LEQ, zero))
+let tfalse = TQFFormula (0, TCmp (one, LEQ, zero))
 
-let rec aqformula_to_qformula = function
-  | TQFFormula f -> QFFormula (aformula_to_formula f)
-  | TExists(v, ty, _, qf) -> Exists (v, ty, aqformula_to_qformula qf)
+let vars_of_tformula tf =
+  let rec aux (_,f) =
+    match f with
+    | TCmp c -> Rewritting.vars_of_bconstraint c
+    | TFVar v -> [v]
+    | TEquiv (tf1, tf2) | TImply (tf1, tf2) | TAnd (tf1, tf2) | TOr (tf1, tf2) ->
+        (aux tf1)@(aux tf2)
+    | TNot tf -> aux tf
+  in List.sort_uniq compare (aux tf)
 
-let string_of_aformula af =
-  Lang.Pretty_print.print_formula Format.str_formatter (aformula_to_formula af);
-  Format.flush_str_formatter ()
+let quantify env tf =
+  let vars = vars_of_tformula tf in
+  let rec aux = function
+  | [] -> TQFFormula tf
+  | v::vars ->
+      let tqf = aux vars in
+      begin
+        match List.find_opt (fun tv -> tv.name = v) env with
+        | None -> tqf
+        | Some tv -> TExists (tv, tqf)
+      end
+  in aux vars
 
-let rec map_tqf f = function
-  | TQFFormula tqf -> TQFFormula (f tqf)
-  | TExists (v,vty,ty,tf) -> TExists (v,vty,ty,map_tqf f tf)
+let rec quantifiers = function
+  | TQFFormula _ -> []
+  | TExists(tv,f) ->
+      let tvars = quantifiers f in
+      match List.find_opt (fun tv' -> tv.name = tv'.name) tvars with
+      | None -> tv::tvars
+      | Some tv' when tv.uid = tv'.uid && tv.ty = tv'.ty -> tvars
+      | Some tv' -> raise (Wrong_modelling
+          ("Two quantifiers on variable `" ^ tv.name ^ "` with two distinct types (`"
+          ^ (string_of_tvar tv) ^ "` and `" ^ (string_of_tvar tv') ^ "`."))
 
-let rec map_annot_aformula (a, af) f =
-  (f (a, af), match af with
-  | TFVar v -> TFVar v
-  | TCmp c -> TCmp c
-  | TEquiv(f1,f2) -> TEquiv(map_annot_aformula f1 f, map_annot_aformula f2 f)
-  | TImply(f1,f2) -> TImply(map_annot_aformula f1 f, map_annot_aformula f2 f)
-  | TAnd(f1,f2) -> TAnd(map_annot_aformula f1 f, map_annot_aformula f2 f)
-  | TOr(f1,f2) -> TOr(map_annot_aformula f1 f, map_annot_aformula f2 f)
-  | TNot f1 -> TNot(map_annot_aformula f1 f))
+let rec quantifier_free_of = function
+  | TQFFormula tf -> tf
+  | TExists(_,tqf) -> quantifier_free_of tqf
 
-let rec map_annot_aqformula af f =
-  match af with
-  | TQFFormula qf -> TQFFormula (map_annot_aformula qf (fun (a,_) -> f a))
-  | TExists(v, ty, a, qf) -> TExists (v, ty, f a, map_annot_aqformula qf f)
+let rec map_formula next = function
+  | TQFFormula tqf -> TQFFormula (next tqf)
+  | TExists (tv,tqf) -> TExists (tv, map_formula next tqf)
 
-type tformula = ad_uid aformula
-type tformula_ = ad_uid aformula_
-type tqformula = ad_uid aqformula
+let merge_formula make qf1 qf2 =
+  let vars = (quantifiers qf1)@(quantifiers qf2) in
+  let qf =
+    map_formula (fun f1 ->
+      quantifier_free_of (
+        map_formula (fun f2 -> make f1 f2) qf2)) qf1
+  in
+    quantify vars (quantifier_free_of qf)
+
+let rec q_conjunction uid = function
+  | qf1::[] -> qf1
+  | qf1::qfs ->
+      let qf2 = q_conjunction uid qfs in
+      merge_formula (fun f1 f2 -> (uid, TAnd(f1,f2))) qf1 qf2
+  | [] -> ttrue

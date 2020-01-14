@@ -10,7 +10,6 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core
 open Ast
 
 (** Every atoms `a` in `expr` is transformed to `a binop expr'`. *)
@@ -51,49 +50,27 @@ val neg: cmpop -> cmpop
 val neg_formula: formula -> formula
 val neg_bconstraint: bconstraint -> bconstraint
 
-val replace_cst_expr: (var * i) -> expr -> expr
-val replace_cst_formula: (var * i) -> formula -> formula
+val replace_cst_expr: (vname * i) -> expr -> expr
+val replace_cst_formula: (vname * i) -> formula -> formula
 
-module Variables: Set.S with type elt = var
+module Variables: Set.S with type elt = vname
 
-val get_vars_expr: expr -> var list
+val get_vars_expr: expr -> vname list
 val get_vars_set_expr: expr -> Variables.t
-val get_vars_formula: formula -> var list
+val get_vars_formula: formula -> vname list
 val get_vars_set_formula: formula -> Variables.t
-val vars_of_bconstraint: bconstraint -> var list
+val vars_of_bconstraint: bconstraint -> vname list
 
 (* True if the constraint is fully defined over the set of variables `vars`. *)
-val is_defined_over: var list -> bconstraint -> bool
+val is_defined_over: vname list -> bconstraint -> bool
 
-val from_cst_to_expr: (var * (i * i)) -> bconstraint list
-val csts_to_expr: (var * (i * i)) list -> bconstraint list
+val from_cst_to_expr: (vname * (i * i)) -> bconstraint list
+val csts_to_expr: (vname * (i * i)) list -> bconstraint list
 
-val replace_var_in_expr: (var -> expr) -> expr -> expr
+val replace_var_in_expr: (vname -> expr) -> expr -> expr
 
 (** Traverse the formula `f` and raise `Wrong_modelling` if we meet a formula containing something else than conjunctions or predicates. *)
 val mapfold_conjunction: (bconstraint -> 'a list) -> formula -> 'a list
 
-(** [quantify env f] Given a variable environment `env`, existentially quantify the formula `f`.
-    It adds `Exists` in front of `f` for each variable occuring in `f` and `env`.
-    Variables not in `env` are ignored. *)
-val quantify: (var * Types.var_ty) list -> formula -> qformula
-
-(** [quantifiers qf] extracts all the existentially quantified variables from `qf`.
-    Duplicated quantifiers are removed.
-    `Wrong_modelling` is raised if two identical variable's names have two distinct types. *)
-val quantifiers: qformula -> (var * Types.var_ty) list
-
-(** [quantifier_free_of qf] removes the quantifiers from the formula `qf`. *)
-val quantifier_free_of: qformula -> formula
-
 val conjunction: formula list -> formula
 val disjunction: formula list -> formula
-val q_conjunction: qformula list -> qformula
-
-(** [map_formula f qf] applies the function `f` on `qf` bypassing the quantifiers. *)
-val map_formula: (formula -> formula) -> qformula -> qformula
-
-(** [merge_formula make f1 f2].
-    Given two quantified formulas, merge their quantifier-free part using `make`.
-    The existential binders of identical names are merged together. *)
-val merge_formula: (formula -> formula -> formula) -> qformula -> qformula -> qformula

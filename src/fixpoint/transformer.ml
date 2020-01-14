@@ -12,6 +12,7 @@
 
 open Domains.Abstract_domain
 open Lang.Ast
+open Typing.Tast
 open Core
 
 type global_statistics = {
@@ -48,8 +49,8 @@ module Make(A: Abstract_domain) =
 struct
   type bab = {
     kind: cmpop;
-    objective: (A.I.var_id * var);
-    best: (A.snapshot * qformula) option;
+    objective: (A.I.var_id * vname);
+    best: (A.snapshot * tqformula) option;
   }
 
   type printer = {
@@ -94,7 +95,7 @@ struct
       | [] -> raise Not_found
       | BAB bab::_ ->
           begin match bab.best with
-          | Some (_, (QFFormula (Cmp (Var _, _, Cst (best,_))))) ->
+          | Some (_, (TQFFormula (_,TCmp (Var _, _, Cst (best,_))))) ->
               Some best
           | Some (_,_) -> failwith
               "[Transformer.unwrap_best] Best formula is suppose to be formatted as `v <op> best` where best is a constant."
@@ -114,9 +115,10 @@ struct
   let optimize (gs,bs) bab =
     match bab.best with
     | None -> (gs,bs)
-    | Some (_,formula) ->
+    | Some (_,tf) ->
         wrap_exception (gs,bs) (fun (gs, bs) ->
-          let domain = A.qinterpret gs.domain OverApprox formula in
+          let domain, constraints = A.interpret gs.domain OverApprox tf in
+          let domain = List.fold_left A.weak_incremental_closure domain constraints in
           ({gs with domain}, bs))
 
   let stop_if t = function
@@ -153,12 +155,12 @@ struct
       match transformer with
       | BAB bab ->
           let v = fst bab.objective in
-          let (_, ty) = A.I.to_logic_var (A.interpretation gs.domain) v in
+          let tv = A.I.to_logic_var (A.interpretation gs.domain) v in
           let (_,ub) = A.project gs.domain v in
-          let ub = Cst (A.B.to_rat ub, Types.abstract_to_concrete_ty ty) in
-          let formula = QFFormula (Cmp (Var (snd bab.objective), bab.kind, ub)) in
+          let ub = Cst (A.B.to_rat ub, Types.to_concrete_ty tv.ty) in
+          let tqf = TQFFormula (tv.uid, TCmp (Var (snd bab.objective), bab.kind, ub)) in
           let a = List.hd (A.lazy_copy gs.domain 1) in
-          (gs,bs), BAB {bab with best=Some (a, formula)}
+          (gs,bs), BAB {bab with best=Some(a, tqf)}
       | Printer printer ->
           printer.print_sol gs.domain;
           printer.print_node "true" bs.bt_stats.depth gs.domain;

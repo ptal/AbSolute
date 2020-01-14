@@ -15,7 +15,7 @@ open Core
 open Core.Types
 
 exception Wrong_modelling of string
-type var = string
+type vname = string
 type i = Bound_rat.t
 type unop = NEG
 type binop = ADD | SUB | MUL | DIV | POW
@@ -24,12 +24,12 @@ type expr =
   | Funcall of string * expr list
   | Unary   of unop * expr
   | Binary  of expr * binop * expr
-  | Var     of var
+  | Var     of vname
   | Cst     of i * var_concrete_ty
 
 type bconstraint = (expr * cmpop * expr)
 type formula =
-  | FVar of var
+  | FVar of vname
   | Cmp of bconstraint
   | Equiv of formula * formula
   | Imply of formula * formula
@@ -39,11 +39,11 @@ type formula =
 
 type qformula =
   | QFFormula of formula
-  | Exists of var * var_ty * qformula
+  | Exists of vname * var_ty * qformula
 
 type optimization_kind =
-  | Minimize of var
-  | Maximize of var
+  | Minimize of vname
+  | Maximize of vname
   | Satisfy
 
 type bab_qformula = {

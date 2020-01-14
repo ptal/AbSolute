@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Typing
 open Lang.Ast
 
 type t = unit
@@ -23,4 +24,4 @@ let exists _ _ = false
 let to_logic_var _ _ = raise Not_found
 let to_abstract_var _ _ = raise Not_found
 let interpret _ _ _ = raise (Wrong_modelling "`Unit_representation` does not support interpreting constraints.")
-let to_qformula _ _ = QFFormula truef
+let to_qformula _ _ = Tast.ttrue

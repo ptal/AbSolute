@@ -16,6 +16,7 @@ open Lang.Ast
 open Lang.Rewritting
 open Lang.Pretty_print
 open Tast
+open Aast
 open Ad_type
 
 type inferred_type =
@@ -44,23 +45,23 @@ let is_uid_in2 uid tf1 tf2 = is_uid_in uid tf1 && is_uid_in uid tf2
 
 let rec formula_to_iformula f =
   let tf = match f with
-    | FVar v -> TFVar v
-    | Cmp c -> TCmp c
-    | Equiv(f1, f2) -> TEquiv(formula_to_iformula f1, formula_to_iformula f2)
-    | Imply(f1, f2) -> TImply(formula_to_iformula f1, formula_to_iformula f2)
-    | And(f1, f2) -> TAnd(formula_to_iformula f1, formula_to_iformula f2)
-    | Or(f1, f2) -> TOr(formula_to_iformula f1, formula_to_iformula f2)
-    | Not f1 -> TNot (formula_to_iformula f1)
+    | FVar v -> AFVar v
+    | Cmp c -> ACmp c
+    | Equiv(f1, f2) -> AEquiv(formula_to_iformula f1, formula_to_iformula f2)
+    | Imply(f1, f2) -> AImply(formula_to_iformula f1, formula_to_iformula f2)
+    | And(f1, f2) -> AAnd(formula_to_iformula f1, formula_to_iformula f2)
+    | Or(f1, f2) -> AOr(formula_to_iformula f1, formula_to_iformula f2)
+    | Not f1 -> ANot (formula_to_iformula f1)
   in
   (Typed [], tf)
 
 let rec qformula_to_iqformula = function
-  | QFFormula f -> TQFFormula (formula_to_iformula f)
-  | Exists(v, ty, qf) -> TExists (v, ty, Typed [], qformula_to_iqformula qf)
+  | QFFormula f -> AQFFormula (formula_to_iformula f)
+  | Exists(v, ty, qf) -> AExists (v, ty, Typed [], qformula_to_iqformula qf)
 
 module Inference =
 struct
-  module Var2UID = Map.Make(struct type t=var let compare=compare end)
+  module Var2UID = Map.Make(struct type t=vname let compare=compare end)
   type var_env = (ad_uid list) Var2UID.t
 
   type t = {
@@ -170,20 +171,20 @@ struct
         ^ (Tools.indent msg) in
     let rec aux msg f =
       match f with
-      | TFVar v -> "Cannot type of the variable `" ^ v ^ "` because:\n"
+      | AFVar v -> "Cannot type of the variable `" ^ v ^ "` because:\n"
           ^ (Tools.indent msg)
-      | TCmp c -> "Cannot type the following constraint: `" ^ (string_of_constraint c) ^ "` because:\n"
+      | ACmp c -> "Cannot type the following constraint: `" ^ (string_of_constraint c) ^ "` because:\n"
           ^ (Tools.indent msg)
-      | TAnd (tf1, tf2)
-      | TOr (tf1,tf2)
-      | TImply (tf1,tf2)
-      | TEquiv (tf1,tf2) ->
+      | AAnd (tf1, tf2)
+      | AOr (tf1,tf2)
+      | AImply (tf1,tf2)
+      | AEquiv (tf1,tf2) ->
           (match tf1, tf2 with
           | ((CannotType msg, f1), _) -> aux msg f1
           | (_, (CannotType msg, f2)) -> aux msg f2
           | _ -> cannot_type_formula msg f)
-      | TNot (CannotType msg, tf1) -> aux msg tf1
-      | TNot _ -> cannot_type_formula msg f
+      | ANot (CannotType msg, tf1) -> aux msg tf1
+      | ANot _ -> cannot_type_formula msg f
     in aux msg (snd tf)
 
   (* I. Inference of the variables types. *)
@@ -231,25 +232,25 @@ struct
 
   let build_venv typer tf =
     let rec aux = function
-    | TQFFormula _ -> Var2UID.empty
-    | TExists(v, _, Typed uids, tf) -> Var2UID.add v uids (aux tf)
+    | AQFFormula _ -> Var2UID.empty
+    | AExists(v, _, Typed uids, tf) -> Var2UID.add v uids (aux tf)
     | _ -> failwith "build_venv: `check_var_ty` should be called before."
     in
       {typer with venv=(aux tf)}
 
   let rec check_type_var = function
-    | TQFFormula _ -> ()
-    | TExists(_,_,CannotType msg,_) ->
+    | AQFFormula _ -> ()
+    | AExists(_,_,CannotType msg,_) ->
         raise (Wrong_modelling msg)
-    | TExists(_,_,Typed [],_) ->
+    | AExists(_,_,Typed [],_) ->
         failwith "Empty list of UIDs: we should either give a type to the variable, or `CannotType`."
-    | TExists(_,_,_,tf) -> check_type_var tf
+    | AExists(_,_,_,tf) -> check_type_var tf
 
   let infer_vars_ty typer tf =
     debug typer (fun () -> "I. Typing of the variables\n");
     let rec aux typer = function
-      | (TQFFormula _) as tf -> tf
-      | TExists (v, ty, Typed [], tf) ->
+      | (AQFFormula _) as tf -> tf
+      | AExists (v, ty, Typed [], tf) ->
           let tf = aux typer tf in
           let uids = List.sort_uniq compare (infer_var ty typer.adty) in
           let res =
@@ -257,8 +258,8 @@ struct
             else no_domain_support_this_variable_err typer 0 v ty
           in
           debug_ty typer (fun () -> v) res;
-          TExists (v, ty, res, tf)
-      | TExists (v,_,_,_) -> failwith
+          AExists (v, ty, res, tf)
+      | AExists (v,_,_,_) -> failwith
           ("infer_vars_ty: Existential connector of `" ^ v ^ "` is partly typed, which is not yet supported.")
     in
       let tf = aux typer tf in
@@ -282,19 +283,19 @@ struct
     let rec aux typer (ty, f) =
       let (ty', f) =
         match f with
-        | TFVar v -> merge_ity ty (bool_var_infer typer v uid), f
-        | TCmp c -> (term_infer c, f)
+        | AFVar v -> merge_ity ty (bool_var_infer typer v uid), f
+        | ACmp c -> (term_infer c, f)
         (* For conjunction, we type `TAnd` only if the inferred type is the same in both formula. *)
-        | TAnd (tf1, tf2) ->
+        | AAnd (tf1, tf2) ->
             let tf1, tf2 = aux typer tf1, aux typer tf2 in
             if is_uid_in2 uid tf1 tf2 then
-              (merge_ity ty (Typed [uid]), TAnd(tf1,tf2))
+              (merge_ity ty (Typed [uid]), AAnd(tf1,tf2))
             else
-              (ty, TAnd(tf1,tf2))
-        | TOr (tf1,tf2) -> binary_aux typer tf1 tf2 (fun tf1 tf2 -> TOr(tf1, tf2))
-        | TImply (tf1,tf2) -> binary_aux typer tf1 tf2 (fun tf1 tf2 -> TImply(tf1, tf2))
-        | TEquiv (tf1,tf2) -> binary_aux typer tf1 tf2 (fun tf1 tf2 -> TEquiv(tf1, tf2))
-        | TNot tf1 -> (ground_dom_does_not_handle_logic_connector_err typer uid, TNot (aux typer tf1)) in
+              (ty, AAnd(tf1,tf2))
+        | AOr (tf1,tf2) -> binary_aux typer tf1 tf2 (fun tf1 tf2 -> AOr(tf1, tf2))
+        | AImply (tf1,tf2) -> binary_aux typer tf1 tf2 (fun tf1 tf2 -> AImply(tf1, tf2))
+        | AEquiv (tf1,tf2) -> binary_aux typer tf1 tf2 (fun tf1 tf2 -> AEquiv(tf1, tf2))
+        | ANot tf1 -> (ground_dom_does_not_handle_logic_connector_err typer uid, ANot (aux typer tf1)) in
       let tf = (merge_ity ty ty', f) in
       let _ = debug_ty typer (fun () -> string_of_aformula tf) (fst tf) in
       tf
@@ -343,18 +344,18 @@ struct
   let generic_formula_infer typer uid tf literal term =
     let rec aux ((ty, f) as tf) =
       let tf = match f with
-        | TFVar v -> merge_ity ty (literal v tf), TFVar v
-        | TCmp c -> merge_ity ty (term c tf), TCmp c
-        | TEquiv(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TEquiv(tf1,tf2))
-        | TImply(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TImply(tf1,tf2))
-        | TAnd(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TAnd(tf1,tf2))
-        | TOr(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> TOr(tf1,tf2))
-        | TNot tf ->
+        | AFVar v -> merge_ity ty (literal v tf), AFVar v
+        | ACmp c -> merge_ity ty (term c tf), ACmp c
+        | AEquiv(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> AEquiv(tf1,tf2))
+        | AImply(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> AImply(tf1,tf2))
+        | AAnd(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> AAnd(tf1,tf2))
+        | AOr(tf1,tf2) -> binary_aux ty tf1 tf2 (fun tf1 tf2 -> AOr(tf1,tf2))
+        | ANot tf ->
             let tf = aux tf in
             if is_uid_in uid tf then
-              (merge_ity ty (Typed [uid]), TNot tf)
+              (merge_ity ty (Typed [uid]), ANot tf)
             else
-              (ty, TNot tf)
+              (ty, ANot tf)
       in
         let _ = debug_ty typer (fun () -> string_of_aformula tf) (fst tf) in
         tf
@@ -389,9 +390,9 @@ struct
     (* (2) The next step is to give the type `dp_uid` to formulas of the form `f1:t1 /\ f2:t2` if t1,t2 are in the product, and t1 != t2. *)
     let rec aux (ty, f) =
       match f with
-      | TAnd(tf1,tf2) ->
+      | AAnd(tf1,tf2) ->
           let tf1, tf2 = aux tf1, aux tf2 in
-          let f = TAnd(tf1, tf2) in
+          let f = AAnd(tf1, tf2) in
           let uids1, uids2 = uids_of tf1, uids_of tf2 in
           let ty' =
             if is_uid_in2 dp_uid tf1 tf2 then
@@ -454,7 +455,7 @@ struct
 
   (* III. Variable's type restriction. *)
 
-  module VarConsCounter = Map.Make(struct type t=var * ad_uid let compare=compare end)
+  module VarConsCounter = Map.Make(struct type t=vname * ad_uid let compare=compare end)
 
   let build_var_cons_map tf uids_of =
     let rec aux vcm tf =
@@ -474,11 +475,11 @@ struct
               | Some (u,n) -> Some (u,n+1)
               | None -> Some(0,1)) vcm) vcm vars in
       match tf with
-      | ty, TFVar v -> List.fold_left (add_unary v) vcm (uids_of ty)
-      | ty, TCmp c -> List.fold_left (add_nary c) vcm (uids_of ty)
-      | _, TEquiv(tf1,tf2) | _, TImply(tf1,tf2) | _, TAnd(tf1,tf2) | _, TOr(tf1,tf2) ->
+      | ty, AFVar v -> List.fold_left (add_unary v) vcm (uids_of ty)
+      | ty, ACmp c -> List.fold_left (add_nary c) vcm (uids_of ty)
+      | _, AEquiv(tf1,tf2) | _, AImply(tf1,tf2) | _, AAnd(tf1,tf2) | _, AOr(tf1,tf2) ->
           aux (aux vcm tf1) tf2
-      | _, TNot tf -> aux vcm tf
+      | _, ANot tf -> aux vcm tf
     in aux VarConsCounter.empty tf
 
   let restrict_unary_var_dom typer uids =
@@ -493,16 +494,16 @@ struct
     if List.length uids > 1 then remove_octagon uids else uids
 
   let rec extract_formula = function
-    | TQFFormula tqf -> tqf
-    | TExists (_,_,_,tqf) -> extract_formula tqf
+    | AQFFormula tqf -> tqf
+    | AExists (_,_,_,tqf) -> extract_formula tqf
 
   let restrict_variable_ty typer tf =
     debug typer (fun () -> "\nIII. Restrict variables' types\n");
     let tqf = extract_formula tf in
     let vcm = build_var_cons_map tqf uids_of' in
     let rec aux = function
-      | TQFFormula tqf -> TQFFormula tqf
-      | TExists (v,ty,Typed uids,tqf) ->
+      | AQFFormula tqf -> AQFFormula tqf
+      | AExists (v,ty,Typed uids,tqf) ->
           let nary = List.filter
             (fun uid -> snd (VarConsCounter.find (v,uid) vcm) > 0)
             uids in
@@ -510,8 +511,8 @@ struct
             if (List.length nary) > 0 then nary
             else restrict_unary_var_dom typer uids in
           debug_ty typer (fun () -> v) (Typed uids);
-          TExists (v,ty,Typed uids,aux tqf)
-      | TExists (_,_,CannotType _,_) -> failwith "restrict_variable_ty: Reached a CannotType, but should be checked before in `check_type_var`."
+          AExists (v,ty,Typed uids,aux tqf)
+      | AExists (_,_,CannotType _,_) -> failwith "restrict_variable_ty: Reached a CannotType, but should be checked before in `check_type_var`."
     in
       let tf = aux tf in
       let typer = build_venv typer tf in
@@ -521,14 +522,14 @@ struct
 
   (* This function is applied after `instantiate_formula_ty`, therefore the constraints' types have already been instantiated.
      Since we instantiate the variable with its most general abstract domain, the constraints stay well-typed. *)
-  let instantiate_var_ty typer vcm v uids =
+  let instantiate_var_ty typer vcm vname uids =
     let useful_uids = List.filter
       (fun uid ->
-        let u,n = try VarConsCounter.find (v,uid) vcm with Not_found -> (0,0) in
+        let u,n = try VarConsCounter.find (vname,uid) vcm with Not_found -> (0,0) in
         u > 0 || n > 0) uids in
     let adtys = List.map (fun uid -> UID2Adty.find uid typer.ad_env) useful_uids in
     match select_mgad adtys with
-    | None -> no_var_mgad_err v adtys
+    | None -> no_var_mgad_err vname adtys
     | Some adty -> fst adty
 
   let sort_most_specialized typer uids =
@@ -561,19 +562,19 @@ struct
   let instantiate_formula_ty typer tf =
     let rec aux tf =
       let (uid,f) = match tf with
-        | Typed uids, TFVar v ->
+        | Typed uids, AFVar v ->
             let var_uids = Var2UID.find v typer.venv in
             let uids = Tools.intersect uids var_uids in
-            (most_specialized typer uids, TFVar v)
-        | Typed uids, TCmp c -> (most_specialized typer uids, TCmp c)
-        | Typed uids, TAnd (tf1, tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TAnd(tf1, tf2))
-        | Typed uids, TOr (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TOr(tf1, tf2))
-        | Typed uids, TImply (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TImply(tf1, tf2))
-        | Typed uids, TEquiv (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> TEquiv(tf1, tf2))
-        | Typed uids, TNot tf ->
+            (most_specialized typer uids, AFVar v)
+        | Typed uids, ACmp c -> (most_specialized typer uids, ACmp c)
+        | Typed uids, AAnd (tf1, tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AAnd(tf1, tf2))
+        | Typed uids, AOr (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AOr(tf1, tf2))
+        | Typed uids, AImply (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AImply(tf1, tf2))
+        | Typed uids, AEquiv (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AEquiv(tf1, tf2))
+        | Typed uids, ANot tf ->
             let (uid1, tf1) = aux tf in
             let sorted_uids = sort_most_specialized typer uids in
-            (first_supporting typer [uid1] sorted_uids, TNot (uid1,tf1))
+            (first_supporting typer [uid1] sorted_uids, ANot (uid1,tf1))
         | _ -> failwith "instantiate_formula_ty: Formula should all be typed after the call to `infer_constraints_ty_or_fail`."
       in
         (* debug_ty typer (fun () -> string_of_aformula tf) (fst tf); *)
@@ -589,16 +590,31 @@ struct
   let instantiate_qformula_ty typer tf =
     debug typer (fun () -> "\nIV. Instantiate the type of formula\n");
     let rec aux = function
-      | TQFFormula tqf ->
+      | AQFFormula tqf ->
           let tqf = instantiate_formula_ty typer tqf in
-          TQFFormula tqf, build_var_cons_map tqf (fun uid -> [uid])
-      | TExists (v,ty,Typed uids,tf) ->
+          AQFFormula tqf, build_var_cons_map tqf (fun uid -> [uid])
+      | AExists (vname,ty,Typed uids,tf) ->
           let tf, vcm = aux tf in
-          let uid = instantiate_var_ty typer vcm v uids in
-          TExists (v,ty,uid,tf), vcm
-      | TExists (_,_,CannotType msg, _) -> raise (Wrong_modelling msg)
+          let uid = instantiate_var_ty typer vcm vname uids in
+          AExists (vname, ty, uid, tf), vcm
+      | AExists (_,_,CannotType msg, _) -> raise (Wrong_modelling msg)
     in fst (aux tf)
 end
+
+let make_tqformula tf =
+  let rec aux' = function
+    | uid, AFVar v -> (uid, TFVar v)
+    | uid, ACmp c -> (uid, TCmp c)
+    | uid, AAnd (tf1, tf2) -> (uid, TAnd(aux' tf1, aux' tf2))
+    | uid, AOr (tf1,tf2) -> (uid, TOr(aux' tf1, aux' tf2))
+    | uid, AImply (tf1,tf2) -> (uid, TImply(aux' tf1, aux' tf2))
+    | uid, AEquiv (tf1,tf2) -> (uid, TEquiv(aux' tf1, aux' tf2))
+    | uid, ANot tf -> (uid, TNot (aux' tf)) in
+  let rec aux = function
+    | AQFFormula tqf -> TQFFormula (aux' tqf)
+    | AExists (name, ty, uid, tf) ->
+        TExists ({name; ty; uid}, aux tf)
+  in aux tf
 
 let infer_type adty f =
   let open Inference in
@@ -607,4 +623,5 @@ let infer_type adty f =
   let (typer, tf) = infer_vars_ty typer tf in
   let tf = infer_constraints_ty_or_fail typer tf in
   let (typer, _) = restrict_variable_ty typer tf in
-  instantiate_qformula_ty typer tf
+  let tf = instantiate_qformula_ty typer tf in
+  make_tqformula tf

@@ -234,7 +234,7 @@ let rec replace_cst_formula cst = function
   | Or (b1, b2) -> Or (replace_cst_formula cst b1, replace_cst_formula cst b2)
   | Not b -> Not (replace_cst_formula cst b)
 
-module Variables = Set.Make(struct type t=var let compare=compare end)
+module Variables = Set.Make(struct type t=vname let compare=compare end)
 
 let rec get_vars_expr = function
   | Cst (_,_)          -> []
@@ -285,33 +285,6 @@ let rec mapfold_conjunction f = function
   | Or _ -> raise (Wrong_modelling "unsupported disjunction")
   | Not _ -> raise (Wrong_modelling "unsupported negation")
 
-let quantify env f =
-  let vars = Variables.elements (get_vars_set_formula f) in
-  let rec aux = function
-  | [] -> QFFormula f
-  | v::vars ->
-      let f = aux vars in
-      try
-        let ty = List.assoc v env in
-        Exists (v, ty, f)
-      with Not_found -> f
-  in aux vars
-
-let rec quantifiers = function
-  | QFFormula _ -> []
-  | Exists(v,ty,f) ->
-      let vars = quantifiers f in
-      match List.find_opt (fun (v',_) -> v = v') vars with
-      | Some (_, ty') when ty = ty' -> vars
-      | None -> (v,ty)::vars
-      | Some (_, ty') -> raise (Wrong_modelling
-          ("Two quantifiers on variable `" ^ v ^ "` with two distinct types (`"
-          ^ (Types.string_of_ty ty) ^ "` and `" ^ (Types.string_of_ty ty') ^ "`."))
-
-let rec quantifier_free_of = function
-  | QFFormula f -> f
-  | Exists(_,_,qf) -> quantifier_free_of qf
-
 let rec conjunction = function
   | c1::[] -> c1
   | c1::l -> And (c1, conjunction l)
@@ -322,22 +295,3 @@ let rec disjunction = function
   | c1::l -> Or (c1, disjunction l)
   | [] -> falsef
 
-let rec map_formula next = function
-  | QFFormula f -> QFFormula (next f)
-  | Exists (v,ty,f) -> Exists (v, ty, map_formula next f)
-
-let merge_formula make qf1 qf2 =
-  let vars = (quantifiers qf1)@(quantifiers qf2) in
-  let qf =
-    map_formula (fun f1 ->
-      quantifier_free_of (
-        map_formula (fun f2 -> make f1 f2) qf2)) qf1
-  in
-    quantify vars (quantifier_free_of qf)
-
-let rec q_conjunction = function
-  | qf1::[] -> qf1
-  | qf1::qfs ->
-      let qf2 = q_conjunction qfs in
-      merge_formula (fun f1 f2 -> And(f1,f2)) qf1 qf2
-  | [] -> QFFormula (truef)
