@@ -10,8 +10,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core
 open Lang
+open Typing
+open Typing.Ad_type
 
 (** The kind of approximation when interpreting a logical formula into an abstract element.
     Note that the values `UnderApprox` or `OverApprox` interpret the constraint exactly if it is possible.
@@ -29,7 +30,7 @@ val neg_approx: approx_kind -> approx_kind
 val string_of_approx: approx_kind -> string
 
 (** Every abstract domain may have a different variable and constraint representation according to their internal implementation.
-  We ask every abstract domain to provide an interpretation module in order to connect the logic specification (`Ast.qformula`) and the representation of the abstract domain.
+  We ask every abstract domain to provide an interpretation module in order to connect the logic specification (`Ast.tqformula`) and the representation of the abstract domain.
   This module can also interpret a logic constraint into a more suited representation of the abstract domain.
   Rational: Why not directly pushing these functions into the definition of the abstract domain?
     We could parametrize the abstract domain by an interpretation although we do not do it yet.
@@ -46,21 +47,21 @@ module type Interpretation_sig = sig
   type rconstraint
 
   (** An empty interpretation. *)
-  val empty: unit -> t
+  val empty: ad_uid -> t
 
   (** Add a mapping between a logical variable and its representation
      in the abstract domain. *)
-  val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
+  val extend: t -> (var_id * Tast.tvariable) -> t
 
   (** `True` if the variable `v` exists in the abstract element.
       Note that it does not necessarily implies that a mapping exists.
       This is convenient for abstract domain that are defined on top of others domains such as `Logic_product`. *)
-  val exists: t -> Ast.var -> bool
+  val exists: t -> Ast.vname -> bool
 
   (** Conversions utilities between logical variables and their
      representations. *)
-  val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
-  val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
+  val to_logic_var: t -> var_id -> Tast.tvariable
+  val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
 
   (** Interpret a logic formula into a list of abstract constraints.
       It approximates the representation of the formula if needed according to `approx`.
@@ -68,13 +69,13 @@ module type Interpretation_sig = sig
       Raise `Wrong_modelling` if:
         1. the formula cannot be approximated according to `approx` in the abstract domain.
         2. a variable of the formula does not belong to the interpretation. *)
-  val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
+  val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
 
   (** Give a logical representation of an abstract element.
       This function is the reverse of `interpret`.
       Note that we do not need to approximate the result as a formula should always be able to represent exactly an element.
       The free variables in the formula obtained should be considered existentially quantified. *)
-  val to_qformula: t -> rconstraint list -> Ast.qformula
+  val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
 
 (* Many interpretations have the same underlying structure that we factorize in this module.
@@ -84,19 +85,20 @@ sig
   type var_id = V_ID.var_id
   type t
 
-  val empty: unit -> t
-  val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
-  val exists: t -> Ast.var -> bool
-  val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
-  val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
+  val empty: ad_uid -> t
+  val uid: t -> ad_uid
+  val extend: t -> var_id * Tast.tvariable -> t
+  val exists: t -> Ast.vname -> bool
+  val to_logic_var: t -> var_id -> Tast.tvariable
+  val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
 
   (** Add existential quantifiers to the variables occuring in the formula. *)
-  val equantify: t -> Ast.formula -> Ast.qformula
+  val equantify: t -> Tast.tformula -> Tast.tqformula
 
   (** Conveniency version of `to_logic_var` without the type of the variable. *)
-  val to_logic_var': t -> var_id -> Ast.var
-  val to_abstract_var': t -> Ast.var -> var_id
+  val to_logic_var': t -> var_id -> Ast.vname
+  val to_abstract_var': t -> Ast.vname -> var_id
 
   (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
-  val to_abstract_var_wm: t -> Ast.var -> (var_id * Types.var_abstract_ty)
+  val to_abstract_var_wm: t -> Ast.vname -> (var_id * Tast.tvariable)
 end

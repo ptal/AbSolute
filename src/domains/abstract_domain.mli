@@ -10,13 +10,13 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** Signature of abstract domain.
+(** Signatures of abstract domain and some extensions.
     We suppose here that the constraints are encapsulated in the abstract element. *)
 
 open Core
 open Bounds
 open Interpretation
-open Lang
+open Typing
 open Typing.Ad_type
 
 (** Exception raised whenever a failure is encountered.
@@ -25,7 +25,7 @@ exception Conflict of int
 
 (** We require that abstract domains internalize their connection to the logical formula.
     In practice, it often consists in a pair `(A.t, A.I.t)` of the abstract element and its interpretation.
-    The function `qinterpret` allows us to easily add constraints, the variables being added automatically if needed.
+    The function `interpret` allows us to easily add constraints, the variables being added automatically if needed.
     See also `Interpretation.Interpretation_base`. *)
 module type Abstract_domain =
 sig
@@ -45,7 +45,7 @@ sig
   val empty: ad_uid -> t
 
   (** Retrieve the UID of this abstract element.
-      UIDs are mainly useful to perform event-based propagation and to associate event and task to a specific abstract element.
+      For instance, UIDs are useful to perform event-based propagation and to associate event and task to a specific abstract element.
       See also `Transformers.Event_loop`. *)
   val uid: t -> ad_uid
 
@@ -66,21 +66,26 @@ sig
       Be careful using this function as it delegates to you the work to keep the interpretation and abstract domain consistent. *)
   val map_interpretation: t -> (I.t -> I.t) -> t
 
-  (** Interpret an existentially quantified logical formula into an abstract element and directly call `weak_incremental_closure` on the new constraints.
-      Existentially quantified variables are added into the abstract element if not already present.
-      All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
-      Raise `Wrong_modelling` if:
-        1. the constraint could not be interpreted, or
-        2. some free variables are not already in the abstract domain.
-      Raise `Bot_found` if the constraint is detected unsatisfiable (but the abstract domain is not required to).
-      See also `Interpretation_sig.interpret`. *)
-  val qinterpret: t -> approx_kind -> Ast.qformula -> t
+  (** Interpret an existentially quantified logical formula into an abstract element.
+        1. Existentially quantified variables are added into the abstract element if not already present.
+        2. Constraints are transformed into `rconstraint` and can be added into the abstract element with `weak_incremental_closure`.
 
-  (** Extend the abstract element with a variable of the given type.
-      The ID of the fresh variable is returned along with its abstract type.
-      Raise `Wrong_modelling` if the abstract domain does not support variables
-      of the given type. *)
-  val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
+      Usage:
+        It should be considered as an incremental interpretation function.
+        For instance, if you interpret `∃x∃y.x < y` first, and then interpret `∃y∃z.y = z`, it is equivalent to: `∃x∃y∃z.x < y /\ y = z`.
+        You can add a variable without constraints with `∃x.true`; use `I.to_logic_variable` to retrieve the `var_id` and other information about "x".
+
+      Exception:
+        Raise `Wrong_modelling` if:
+          1. the constraint could not be interpreted, or
+          2. some free variables are not already in the abstract element.
+        Raise `Bot_found` if the constraint is detected unsatisfiable (this is optional).
+
+      Note:
+        All variables are supposed to have a different name, otherwise they are considered equal; this differs from the usual existential connector in logic.
+
+      See also `Interpretation_sig.interpret`. *)
+  val interpret: t -> approx_kind -> Tast.tqformula -> (t * I.rconstraint list)
 
   (** Project the lower and upper bounds of a single variable.
       Raise `Wrong_modelling` if the variable is not in the current abstract element. *)
@@ -100,16 +105,14 @@ sig
   (** Restore the abstract element to the same state as when the snapshot was created. *)
   val restore: t -> snapshot -> t
 
-  (** Closure of the abstract element: it tries to remove as much
-      inconsistent values as possible from the abstract element
-      according to the encapsulated constraints (added through `weak_incremental_closure`).
+  (** Closure of the abstract element: it tries to remove as much inconsistent values as possible from the abstract element according to the encapsulated constraints (added through `weak_incremental_closure`).
       Returns `true` if a change on this abstract domain (or subdomain) occur, `false` otherwise (in this case `closure(t)=t`). *)
   val closure: t -> (t * bool)
 
   (** Weak incremental closure add the constraint into the abstract element.
       This operation should be of low time complexity.
-      Raise `Bot_found` if the constraint is detected disentailed (but the abstract domain is not required to).
-      Precondition: The variables in `c` must all belong to the abstract element. *)
+      Raise `Bot_found` if the constraint is detected unsatisfiable (this is optional).
+      Precondition: The variables in the constraint must all belong to the abstract element. *)
   val weak_incremental_closure: t -> I.rconstraint -> t
 
   (** [entailment a c] returns is `true` if the constraint `c` is entailed by the abstract element `a`.
@@ -117,13 +120,12 @@ sig
       To test for disentailment, you must call `entailment` on the negation of the constraint.
       It is not possible to return a `Kleene` value due to over-approximation of constraint.
       Indeed, `c` might be an over-approximation of its logical constraint `l`, and therefore the disentailment of `c` does not imply the disentailment of `l`.
-      This is explained in more depth in the paper "Combining Constraint Languages via Abstract Interpretation" (Talbot and al., 2019). *)
+      This is explained more formally in the paper "Combining Constraint Languages via Abstract Interpretation" (Talbot and al., 2019). *)
   val entailment: t -> I.rconstraint -> bool
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split a` should be equal to `a`.
-      The list is empty if the abstract element cannot be split (either
-      because `state a != unknown` or because it does not provide a split operator). *)
+      The list is empty if the abstract element cannot be split (either because `state a != unknown` or because it does not provide a split operator). *)
   val split: t -> snapshot list
 
   (** The volume is crucial to get information on the current state of
@@ -146,6 +148,7 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
+(*
 (** This module is just useful for `QInterpreter_base` below. *)
 module type Small_abstract_domain =
 sig
@@ -165,5 +168,6 @@ sig
   (** Extends the abstract element with a fresh variable.
       Returns `true` if the variable has been added, and `false` if it was already present. *)
   val extend_var: A.t -> (Ast.var * Types.var_ty) -> A.t * bool
-  val qinterpret: A.t -> approx_kind -> Ast.qformula -> A.t
+  val qinterpret: A.t -> approx_kind -> Tast.tqformula -> A.t
 end
+*)

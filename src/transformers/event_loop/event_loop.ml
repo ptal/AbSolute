@@ -113,8 +113,8 @@ struct
   let state _ = Kleene.True
   let split _ = []
   let volume _ = 1.
-  let interpretation _ = Unit_interpretation.empty ()
-  let map_interpretation x f = ignore(f (Unit_interpretation.empty ())); x
+  let interpretation _ = Unit_interpretation.empty 0
+  let map_interpretation x f = ignore(f (Unit_interpretation.empty 0)); x
   let print _ _ = ()
 
   (* This abstract domain is totally functional. *)
@@ -125,9 +125,8 @@ struct
   let meta_exn () = raise (Wrong_modelling ("[" ^ name ^ "] Event_loop is a meta abstract domain that does not represent any kind of variable or constraint."))
 
   let empty _ = raise (Wrong_modelling "`Event_loop.empty` is not supported, you should first create the abstract domains and then pass their references to `Event_loop.init`.")
-  let extend ?ty:_ _ = meta_exn ()
   let project _ _ = meta_exn ()
   let weak_incremental_closure _ _ = meta_exn ()
   let entailment _ _ = meta_exn ()
-  let qinterpret _ _ _ = meta_exn ()
+  let interpret _ _ _ = meta_exn ()
 end

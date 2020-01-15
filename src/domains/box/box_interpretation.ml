@@ -13,8 +13,8 @@
 
 open Core
 open Domains.Interpretation
+open Typing.Tast
 open Lang.Ast
-open Lang.Rewritting
 open Vardom.Vardom_sig
 open Var_store
 
@@ -40,8 +40,8 @@ sig
 
   type rconstraint = rexpr * cmpop * rexpr
 
-  val interpret: t -> approx_kind -> formula -> t * rconstraint list
-  val to_qformula: t -> rconstraint list -> qformula
+  val interpret: t -> approx_kind -> tformula -> t * rconstraint list
+  val to_qformula: t -> rconstraint list -> tqformula
 
   val make_expr: node -> rexpr
   val vars_of_constraint: rconstraint -> var_id list
@@ -56,25 +56,7 @@ struct
   module Store = Var_store.Make(Vardom)
 
   module IB = Interpretation_base(struct type var_id=Store.key end)
-
-  type var_id = IB.var_id
-  type t = IB.t
-
-  let empty = IB.empty
-  let extend repr (v,idx,ty) = (* Printf.printf "Box add %s\n" v; flush_all (); *) IB.extend repr (v,idx,ty)
-  let exists = IB.exists
-  let to_logic_var = IB.to_logic_var
-  let to_abstract_var = IB.to_abstract_var
-
-  (** Add existential quantifiers to the variables occuring in the formula. *)
-  let equantify = IB.equantify
-
-  (** Conveniency version of `to_logic_var` without the type of the variable. *)
-  let to_logic_var' = IB.to_logic_var'
-  let to_abstract_var' = IB.to_abstract_var'
-
-  (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
-  let to_abstract_var_wm = IB.to_abstract_var_wm
+  include IB
 
   type var_dom = Store.cell
 
@@ -109,52 +91,61 @@ struct
 
   (* We check that the approximation is possible with the current variables and formula `f`.
      See `interpret` documentation. *)
-  let check_approx_typing repr f approx =
+  let check_approx_typing repr tf approx =
     let is_exact_approx v =
-      let _, aty = to_abstract_var_wm repr v in
+      let _, tv = to_abstract_var_wm repr v in
       (* We list the variants explicitly because it must be considered if we add a new abstract type. *)
-      match aty with
-      | VUnit | Bool | Machine Z | Machine Q | BDD _ -> ()
-      | Machine F -> raise (Wrong_modelling ("Variable `" ^ v ^ "` cannot be `" ^ (string_of_approx approx) ^ "` in the current abstract domain."))
+      match tv.ty with
+      | Concrete _ -> failwith
+          "A variable in Box has a concrete type but it should be instantiated to an abstract type."
+      | Abstract ty ->
+        match ty with
+        | VUnit | Bool | Machine Z | Machine Q | BDD _ -> ()
+        | Machine F -> raise (Wrong_modelling ("Variable `" ^ v ^ "` cannot be `" ^ (string_of_approx approx) ^ "` in the current abstract domain."))
     in
     match approx with
     | OverApprox -> ()
     | UnderApprox | Exact ->
-       let vars = Variables.elements (get_vars_set_formula f) in
+       let vars = vars_of_tformula tf in
        List.iter is_exact_approx vars
 
   let interpret_bconstraint repr (e1, op, e2) =
     [(interpret_expr repr e1, op, interpret_expr repr e2)]
 
-  let interpret repr approx f =
-    let rec aux = function
-      | Cmp c -> interpret_bconstraint repr c
-      | FVar x -> interpret_bconstraint repr (Var x, EQ, one)
-      | Not (FVar x) -> interpret_bconstraint repr (Var x, EQ, zero)
-      | And (f1, f2) -> (aux f1)@(aux f2)
-      | _ -> raise (Wrong_modelling "Logical constraints should be handled in the `Logic_product` domain.")
+  let interpret repr approx tf =
+    if (fst tf) <> (IB.uid repr) then
+      raise (Wrong_modelling "Box.interpret: The formula has not the right UID.");
+    let rec aux (_, f) =
+      match f with
+      | TCmp c -> interpret_bconstraint repr c
+      | TFVar x -> interpret_bconstraint repr (Var x, EQ, one)
+      | TNot ((_,TFVar x)) -> interpret_bconstraint repr (Var x, EQ, zero)
+      | TAnd (tf1, tf2) -> (aux tf1)@(aux tf2)
+      | _ -> raise (Wrong_modelling "Box.interpret: Box do not support logical constraints (see e.g. `Logic_completion`).")
     in
-    check_approx_typing repr f approx;
-    (repr, aux f)
+    check_approx_typing repr tf approx;
+    (repr, aux tf)
 
   let to_logic_expr repr expr =
     let rec aux expr =
       match expr.node with
       | BCst (v,aty) ->
           Cst (fst (Vardom.to_rational_range v), Types.abstract_to_concrete_ty aty)
-      | BVar x -> Var(fst (to_logic_var repr x))
+      | BVar x -> Var(to_logic_var' repr x)
       | BUnary (op, e) -> Unary(op, aux e)
       | BBinary (e1, op, e2) -> Binary(aux e1, op, aux e2)
       | BFuncall (x,args) -> Funcall(x, List.map aux args) in
     aux expr
 
   let to_formula_one repr (e1, op, e2) =
-    Cmp (to_logic_expr repr e1, op, to_logic_expr repr e2)
+    (IB.uid repr, TCmp (to_logic_expr repr e1, op, to_logic_expr repr e2))
 
-  let to_formula repr cs =
-    conjunction (List.map (to_formula_one repr) cs)
-
-  let to_qformula repr cs = equantify repr (to_formula repr cs)
+  let to_qformula repr cs =
+    let fs = List.map (fun c -> TQFFormula (to_formula_one repr c)) cs in
+    let tqf = q_conjunction (IB.uid repr) fs in
+    match tqf with
+    | TQFFormula tf -> equantify repr tf
+    | _ -> failwith "unreachable (to_qformula): no variable inserted."
 
   let rec vars_of_expr expr =
     match expr.node with

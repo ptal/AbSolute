@@ -48,6 +48,9 @@ type tqformula =
   | TQFFormula of tformula
   | TExists of tvariable * tqformula
 
+val tformula_to_formula: tformula -> formula
+val tqformula_to_qformula: tqformula -> qformula
+
 (** Encoding of true and false as formula. *)
 val ttrue: tqformula
 val tfalse: tqformula

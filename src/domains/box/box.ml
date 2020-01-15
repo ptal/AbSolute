@@ -18,11 +18,12 @@ module Var_store = Var_store
 open Core
 open Core.Kleene
 open Lang
+open Typing
 open Typing.Ad_type
+open Typing.Tast
 open Bounds
 open Vardom
 open Box_interpretation
-open Domains.Abstract_domain
 open Event_loop.Event_abstract_domain
 
 module type Box_sig =
@@ -67,7 +68,7 @@ struct
 
   let empty uid = {
     uid;
-    r = I.empty ();
+    r = I.empty uid;
     store=Store.empty;
     constraints = Tools.empty_parray ();
     new_tasks = [];
@@ -80,9 +81,16 @@ struct
 
   let type_of box = Some (box.uid, Box (V.type_of ()))
 
-  let extend ?ty box =
-    let (store, idx, aty) = Store.extend ?ty box.store in
-    ({ box with store }, idx, aty)
+  let interpret box approx tqf =
+    let rec aux box = function
+      | TQFFormula tf ->
+          let r, cs = I.interpret box.r approx tf in
+          {box with r}, cs
+      | TExists(tv, tqf) ->
+          let (store, idx, aty) = Store.extend ~ty:(tv.ty) box.store in
+          let r = I.extend box.r (idx, {tv with ty = Abstract aty}) in
+          aux {box with r; store} tqf
+    in aux box tqf
 
   let project_vardom box v = Store.get box.store v
 
@@ -105,12 +113,13 @@ struct
 
   let print_store fmt (repr,store) =
     let print_entry idx vardom =
-      Format.fprintf fmt "%s=%a \n" (fst (I.to_logic_var repr idx)) V.print vardom in
+      Format.fprintf fmt "%s=%a \n" (I.to_logic_var' repr idx) V.print vardom in
     Store.iter print_entry store
 
   let print_box_cons fmt f =
+    let f = Tast.quantifier_free_of f in
     Format.fprintf fmt "%a\n" Pretty_print.print_formula
-      (Rewritting.quantifier_free_of f)
+      (Tast.tformula_to_formula f)
 
   let print fmt box =
     Format.fprintf fmt "%a\n" print_store (box.r,box.store);
@@ -174,8 +183,8 @@ struct
     let tasks_events = List.fold_left drain_one [] box.new_tasks in
     ({ box with new_tasks=[] }, tasks_events)
 
-  type t' = t
-
+  (* type t' = t *)
+(*
   include QInterpreter_base(struct
     type t=t'
     module I=I
@@ -183,7 +192,7 @@ struct
     let interpretation=interpretation
     let map_interpretation=map_interpretation
     let extend=extend
-    let weak_incremental_closure=weak_incremental_closure end)
+    let weak_incremental_closure=weak_incremental_closure end) *)
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor =

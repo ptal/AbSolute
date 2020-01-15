@@ -13,12 +13,10 @@
 open Core
 open Bounds
 open Interpretation
-open Lang
-open Lang.Ast
+open Typing
 open Typing.Ad_type
 
 exception Conflict of int
-
 module type Abstract_domain =
 sig
   module I: Interpretation_sig
@@ -30,8 +28,7 @@ sig
   val type_of: t -> ad_ty option
   val interpretation: t -> I.t
   val map_interpretation: t -> (I.t -> I.t) -> t
-  val qinterpret: t -> approx_kind -> Ast.qformula -> t
-  val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
+  val interpret: t -> approx_kind -> Tast.tqformula -> (t * I.rconstraint list)
   val project: t -> I.var_id -> (B.t * B.t)
   type snapshot
   val lazy_copy: t -> int -> snapshot list
@@ -45,6 +42,7 @@ sig
   val print: Format.formatter -> t -> unit
 end
 
+(*
 module type Small_abstract_domain =
 sig
   type t
@@ -81,3 +79,4 @@ struct
       with Wrong_modelling msg ->
         raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg))
 end
+ *)

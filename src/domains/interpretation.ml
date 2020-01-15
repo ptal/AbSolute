@@ -12,6 +12,9 @@
 
 open Core
 open Lang
+open Typing
+open Typing.Tast
+open Typing.Ad_type
 
 type approx_kind =
 | Exact
@@ -32,13 +35,13 @@ module type Interpretation_sig = sig
   type t
   type var_id
   type rconstraint
-  val empty: unit -> t
-  val extend: t -> (Ast.var * var_id * Types.var_abstract_ty) -> t
-  val exists: t -> Ast.var -> bool
-  val to_logic_var: t -> var_id -> (Ast.var * Types.var_abstract_ty)
-  val to_abstract_var: t -> Ast.var -> (var_id * Types.var_abstract_ty)
-  val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
-  val to_qformula: t -> rconstraint list -> Ast.qformula
+  val empty: ad_uid -> t
+  val extend: t -> (var_id * Tast.tvariable) -> t
+  val exists: t -> Ast.vname -> bool
+  val to_logic_var: t -> var_id -> Tast.tvariable
+  val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
+  val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
+  val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
 
 module Interpretation_base(V_ID:sig type var_id end) =
@@ -50,32 +53,35 @@ struct
     type t = var_id
     let compare = compare end)
   type t = {
+    ad_uid: ad_uid;
     (* Maps each variable name to its index. *)
-    env: (var_id * Types.var_abstract_ty) Env.t;
+    env: (var_id * tvariable) Env.t;
     (* reversed mapping of `env`. *)
-    renv: (Ast.var * Types.var_abstract_ty) REnv.t;
+    renv: tvariable REnv.t;
   }
 
-  let empty () = {env=Env.empty; renv=REnv.empty}
-  let extend repr (v,idx,ty) = let _ = Printf.printf "Extend var %s\n." v; flush_all () in {
-    env=(Env.add v (idx,ty) repr.env);
-    renv=(REnv.add idx (v,ty) repr.renv);
+  let empty ad_uid = {ad_uid; env=Env.empty; renv=REnv.empty}
+  let uid repr = repr.ad_uid
+  let extend repr (id, v) = {
+    repr with
+    env=(Env.add v.name (id, v) repr.env);
+    renv=(REnv.add id v repr.renv);
   }
 
-  let to_logic_var repr idx = REnv.find idx repr.renv
-  let to_abstract_var repr v = Env.find v repr.env
-  let exists repr v = Env.mem v repr.env
+  let to_logic_var repr id = REnv.find id repr.renv
+  let to_abstract_var repr vname = Env.find vname repr.env
+  let exists repr vname = Env.mem vname repr.env
 
-  let equantify repr f =
-    Rewritting.quantify (List.map
-      (fun (_,(x,aty)) -> x, Types.Abstract aty)
-      (REnv.bindings repr.renv)
-    ) f
+  let equantify repr tf =
+    Tast.quantify (List.map snd (REnv.bindings repr.renv)) tf
 
-  let to_logic_var' repr idx = fst (to_logic_var repr idx)
-  let to_abstract_var' repr v = fst (to_abstract_var repr v)
+  let to_logic_var' repr id = (to_logic_var repr id).name
+  let to_abstract_var' repr vname = fst (to_abstract_var repr vname)
 
-  let to_abstract_var_wm repr v =
-    try to_abstract_var repr v
-    with Not_found -> raise (Ast.Wrong_modelling ("Variable `" ^ v ^ "` does not belong to the current abstract element."))
+  let to_abstract_var_wm repr vname =
+    try
+      to_abstract_var repr vname
+    with Not_found ->
+      raise (Ast.Wrong_modelling
+        ("Variable `" ^ vname ^ "` does not belong to the current abstract element."))
 end

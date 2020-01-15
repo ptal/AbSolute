@@ -52,6 +52,10 @@ let abstract_to_concrete_ty = function
   | VUnit | Bool | Machine Z | BDD _ -> Int
   | Machine Q | Machine F -> Real
 
+let to_concrete_ty = function
+  | Abstract ty -> abstract_to_concrete_ty ty
+  | Concrete ty -> ty
+
 let is_continuous = function
   | VUnit | Bool | Machine Z | BDD _ -> false
   | Machine Q | Machine F -> true

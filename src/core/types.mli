@@ -40,6 +40,7 @@ val string_of_aty: var_abstract_ty -> string
 val string_of_ty: var_ty -> string
 
 val abstract_to_concrete_ty: var_abstract_ty -> var_concrete_ty
+val to_concrete_ty: var_ty -> var_concrete_ty
 
 (** True if the abstract element do not have machine-representable successors or predecessors. *)
 val is_continuous: var_abstract_ty -> bool

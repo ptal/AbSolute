@@ -38,6 +38,20 @@ type tqformula =
   | TQFFormula of tformula
   | TExists of tvariable * tqformula
 
+let rec tformula_to_formula (_,f) =
+  match f with
+  | TFVar v -> FVar v
+  | TCmp c -> Cmp c
+  | TEquiv(f1,f2) -> Equiv(tformula_to_formula f1, tformula_to_formula f2)
+  | TImply(f1,f2) -> Imply(tformula_to_formula f1, tformula_to_formula f2)
+  | TAnd(f1,f2) -> And(tformula_to_formula f1, tformula_to_formula f2)
+  | TOr(f1,f2) -> Or(tformula_to_formula f1, tformula_to_formula f2)
+  | TNot f1 -> Not (tformula_to_formula f1)
+
+let rec tqformula_to_qformula = function
+  | TQFFormula f -> QFFormula (tformula_to_formula f)
+  | TExists(tv, qf) -> Exists (tv.name, tv.ty, tqformula_to_qformula qf)
+
 let ttrue = TQFFormula (0, TCmp (zero, LEQ, zero))
 let tfalse = TQFFormula (0, TCmp (one, LEQ, zero))
 
