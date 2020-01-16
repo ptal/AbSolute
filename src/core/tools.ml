@@ -107,6 +107,13 @@ let fold_map f a l =
   let (a, l') = List.fold_left f (a, []) l in
   (a, List.rev l')
 
+let find_index v l =
+  let rec aux i = function
+    | [] -> raise Not_found
+    | x::_ when x = v -> i
+    | _::l -> aux (i+1) l
+  in aux 0 l
+
 let rec compare_list equal l1 l2 =
   match l1, l2 with
   | [], [] -> true

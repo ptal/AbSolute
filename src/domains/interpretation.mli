@@ -49,10 +49,6 @@ module type Interpretation_sig = sig
   (** An empty interpretation. *)
   val empty: ad_uid -> t
 
-  (** Add a mapping between a logical variable and its representation
-     in the abstract domain. *)
-  val extend: t -> (var_id * Tast.tvariable) -> t
-
   (** `True` if the variable `v` exists in the abstract element.
       Note that it does not necessarily implies that a mapping exists.
       This is convenient for abstract domain that are defined on top of others domains such as `Logic_product`. *)
@@ -87,6 +83,9 @@ sig
 
   val empty: ad_uid -> t
   val uid: t -> ad_uid
+
+  (** Add a mapping between a logical variable and its representation
+     in the abstract domain. *)
   val extend: t -> var_id * Tast.tvariable -> t
   val exists: t -> Ast.vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable

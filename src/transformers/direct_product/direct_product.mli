@@ -18,9 +18,10 @@ open Domains.Abstract_domain
 open Domains.Interpretation
 open Lang.Ast
 open Core
-open Core.Types
 open Bounds
+open Typing
 open Typing.Ad_type
+open Typing.Tast
 
 (** Generic variables and constraints. *)
 type gvar = ad_uid * int
@@ -37,19 +38,22 @@ sig
 
   val init: init_t -> t
   val empty: unit -> t
-  val extend: t -> (var * gvar * var_abstract_ty) -> t
-  val exists: t -> var -> bool
-  val to_logic_var: t -> gvar -> (var * var_abstract_ty)
-  val to_abstract_var: t -> var -> (gvar * var_abstract_ty)
-  val interpret: t -> approx_kind -> formula -> t * gconstraint list
-  val to_qformula: t -> gconstraint list -> qformula
-  val qinterpret: t -> approx_kind -> qformula -> t
-  val extend_var: t -> (var * var_ty) -> t * bool
+  val exists: t -> vname -> bool
+  val to_logic_var: t -> var_id -> Tast.tvariable
+  val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
+  val to_qformula: t -> gconstraint list -> tqformula list
+
+  (** Interpret a constraint in the product.
+      Either we interpret this constraint in all components of the product (the type of the constraint is the UID of the product), or in only one.
+      Similarly for variables. *)
+  val interpret_all: t -> approx_kind -> tformula -> t * gconstraint list
+  val interpret_one: t -> approx_kind -> tformula -> t * gconstraint list
+  val extend_var_all: t -> approx_kind -> tvariable -> t * gconstraint list
+  val extend_var_one: t -> approx_kind -> tvariable -> t * gconstraint list
 
   val empty': ad_uid -> t
   val type_of: t -> ad_ty list
-  val extend': ?ty:var_ty -> t -> (t * gvar * var_abstract_ty)
-  val project: t -> gvar -> (Bound_rat.t * Bound_rat.t)
+  val project: t -> var_id -> (Bound_rat.t * Bound_rat.t)
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list
@@ -76,7 +80,7 @@ module Prod_cons(A: Abstract_domain)(B: Prod_combinator) :
     type t = Prod_atom(A).t * B.t and
     type init_t = A.t ref * B.init_t
 
-module Ordered_product(P: Prod_combinator) :
+module Direct_product(P: Prod_combinator) :
 sig
   include Abstract_domain
   val init: ad_uid -> P.init_t -> t
