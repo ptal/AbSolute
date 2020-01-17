@@ -103,7 +103,7 @@ struct
       r, { ask; tell }
     and make_pn_formula r approx tf =
       let r, positive = make_approx_formula r approx tf in
-      let r, negative = make_approx_formula r approx (Tast.neg_formula tf) in
+      let r, negative = make_approx_formula r approx (Tast.neg_formula r.uid tf) in
       r, { positive; negative }
     and aux r approx tf =
       forward_or r tf (fun x -> x) (fun () ->

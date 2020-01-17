@@ -33,3 +33,4 @@ val output_constraints: bconstraint list -> unit
 val print_constraints: formatter -> formula list -> unit
 
 val string_of_constraint: bconstraint -> string
+val string_of_formula: formula -> string

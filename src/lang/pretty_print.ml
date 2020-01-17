@@ -112,3 +112,7 @@ let print_constraints = Format.pp_print_list ~pp_sep:pp_sep_newline print_formul
 let string_of_constraint c =
   print_constraint Format.str_formatter c;
   Format.flush_str_formatter ()
+
+let string_of_formula f =
+  Format.fprintf Format.str_formatter "%a" print_formula f;
+  Format.flush_str_formatter ()

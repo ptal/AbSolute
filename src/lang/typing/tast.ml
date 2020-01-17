@@ -121,15 +121,15 @@ let rec q_disjunction uid = function
       merge_formula (fun f1 f2 -> (uid, TOr(f1,f2))) qf1 qf2
   | [] -> tfalse
 
-let neg_formula tf =
+let neg_formula luid tf =
   let rec aux = function
     | uid, TCmp c -> uid, TCmp (Rewritting.neg_bconstraint c)
     | uid, TFVar v -> uid, TNot (uid, TFVar v)
-    | uid, TEquiv (b1,b2) -> uid, TEquiv (aux b1, b2)
-    | uid, TImply (b1,b2) -> uid, TAnd (b1, aux b2)
-    | uid, TAnd (b1,b2) -> uid, TOr (aux b1, aux b2)
-    | uid, TOr (b1,b2) -> uid, TAnd (aux b1, aux b2)
-    | _, TNot b -> b
+    | _, TEquiv (tf1,tf2) -> luid, TEquiv (aux tf1, tf2)
+    | _, TImply (tf1,tf2) -> luid, TAnd (tf1, aux tf2)
+    | _, TAnd (tf1,tf2) -> luid, TOr (aux tf1, aux tf2)
+    | _, TOr (tf1,tf2) -> luid, TAnd (aux tf1, aux tf2)
+    | _, TNot tf -> tf
   in aux tf
 
 let map_uid uid tf =

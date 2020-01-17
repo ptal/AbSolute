@@ -120,13 +120,16 @@ struct
         raise (Wrong_modelling ("Box.interpret: The formula has the UID "
           ^ (string_of_int (fst tf)) ^ " but the box has the UID "
           ^ (string_of_int (IB.uid repr)) ^ "."));
-      let rec aux (_, f) =
+      let rec aux (uid, f) =
         match f with
         | TCmp c -> interpret_bconstraint repr c
         | TFVar x -> interpret_bconstraint repr (Var x, EQ, one)
         | TNot ((_,TFVar x)) -> interpret_bconstraint repr (Var x, EQ, zero)
         | TAnd (tf1, tf2) -> (aux tf1)@(aux tf2)
-        | _ -> raise (Wrong_modelling "Box.interpret: Box do not support logical constraints (see e.g. `Logic_completion`).")
+        | _ -> raise (Wrong_modelling (
+            "Box.interpret: Box do not support logical constraints (see e.g. `Logic_completion`). UID = " ^
+            (string_of_int uid) ^ " - Box UID: " ^ (string_of_int (IB.uid repr)) ^
+            " - Formula " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula (uid,f)))))
       in
       check_approx_typing repr tf approx;
       (repr, aux tf)

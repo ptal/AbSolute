@@ -85,7 +85,8 @@ val q_disjunction: ad_uid -> tqformula list -> tqformula
 
 (** Negate a logic formula.
     NOT are pushed inwards such that it only occur over FVar.
-    The size of the formula does not increase. *)
-val neg_formula: tformula -> tformula
+    The size of the formula does not increase.
+    The UID is the UID of a domain that support arbitrary logical formula. *)
+val neg_formula: ad_uid -> tformula -> tformula
 
 val map_uid: ad_uid -> tformula -> tformula
