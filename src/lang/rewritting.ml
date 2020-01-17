@@ -202,15 +202,6 @@ let rec map_constraint f = function
   | Or (b1,b2) -> And (map_constraint f b1, map_constraint f b2)
   | Not b -> Not (map_constraint f b)
 
-let rec neg_formula = function
-  | Cmp (e1,op,e2) -> Cmp(e1,neg op,e2)
-  | FVar v -> Not (FVar v)
-  | Equiv (b1,b2) -> Equiv (neg_formula b1, b2)
-  | Imply (b1,b2) -> And (b1, neg_formula b2)
-  | And (b1,b2) -> Or (neg_formula b1, neg_formula b2)
-  | Or (b1,b2) -> And (neg_formula b1, neg_formula b2)
-  | Not b -> b
-
 let neg_bconstraint (e1,op,e2) = (e1,neg op,e2)
 
 (*****************************************)

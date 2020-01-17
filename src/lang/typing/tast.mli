@@ -80,3 +80,8 @@ val merge_formula: (tformula -> tformula -> tformula) -> tqformula -> tqformula 
 
 (** Merge a list of formula with the conjunctive connector of the given abstract domain type. *)
 val q_conjunction: ad_uid -> tqformula list -> tqformula
+
+(** Negate a logic formula.
+    NOT are pushed inwards such that it only occur over FVar.
+    The size of the formula does not increase. *)
+val neg_formula: tformula -> tformula

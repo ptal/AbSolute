@@ -10,9 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** This is a direct product combining N abstract domains A1...An in an ordered fashion.
-    In particular, when adding a constraint, we try to add it into Ai and if it fails into A(i+1).
-    This direct product slightly generalizes the "specialization product" presented in the dissertation of Ghiles Ziat (2019).  *)
+(** This is a direct product combining N abstract domains A1...An. *)
 
 open Domains.Abstract_domain
 open Domains.Interpretation
@@ -64,6 +62,8 @@ sig
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
+  val drain_events: t -> (t * event list)
+  val events_of: t -> rconstraint -> event list
 end
 
 module Prod_atom(A: Abstract_domain) :

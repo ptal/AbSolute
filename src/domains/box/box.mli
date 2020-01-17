@@ -17,7 +17,7 @@ module Var_store = Var_store
 
 open Bounds
 open Vardom
-open Event_loop.Event_abstract_domain
+open Event_loop.Schedulable_abstract_domain
 
 (** Box are an event-based abstract domain and must be encapsulated in an `Event_loop`.
     The `closure` operator is the identity function since it is decomposed in many tasks

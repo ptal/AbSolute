@@ -10,14 +10,15 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-module Event_abstract_domain = Event_abstract_domain
+module Schedulable_abstract_domain = Schedulable_abstract_domain
 
 open Domains
+open Domains.Abstract_domain
 open Fixpoint
 open Core
 open Lang.Ast
 open Bounds
-open Event_abstract_domain
+open Schedulable_abstract_domain
 open Typing.Ad_type
 
 module type Event_combinator =
@@ -129,4 +130,6 @@ struct
   let weak_incremental_closure _ _ = meta_exn ()
   let entailment _ _ = meta_exn ()
   let interpret _ _ _ = meta_exn ()
+  let drain_events _ = meta_exn ()
+  let events_of _ _ = meta_exn ()
 end

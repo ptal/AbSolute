@@ -112,3 +112,14 @@ let rec q_conjunction uid = function
       let qf2 = q_conjunction uid qfs in
       merge_formula (fun f1 f2 -> (uid, TAnd(f1,f2))) qf1 qf2
   | [] -> ttrue
+
+let neg_formula tf =
+  let rec aux = function
+    | uid, TCmp c -> uid, TCmp (Rewritting.neg_bconstraint c)
+    | uid, TFVar v -> uid, TNot (uid, TFVar v)
+    | uid, TEquiv (b1,b2) -> uid, TEquiv (aux b1, b2)
+    | uid, TImply (b1,b2) -> uid, TAnd (b1, aux b2)
+    | uid, TAnd (b1,b2) -> uid, TOr (aux b1, aux b2)
+    | uid, TOr (b1,b2) -> uid, TAnd (aux b1, aux b2)
+    | _, TNot b -> b
+  in aux tf

@@ -11,8 +11,8 @@
    Lesser General Public License for more details. *)
 
 (* Important note: This module is not functional due to the references to the abstract domains.
-   It means that whenever an exception is raised, we must restored `pa`.
-   Hence, for every function modifying the abstract domain, use `safe_wrap`. *)
+   It means that whenever an exception is raised, we must restore `pa`.
+   Hence, for every function that modifies the abstract domain before an exception might occur, use `safe_wrap`. *)
 
 open Domains.Abstract_domain
 open Domains.Interpretation
@@ -59,6 +59,8 @@ sig
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
+  val drain_events: t -> (t * event list)
+  val events_of: t -> rconstraint -> event list
 end
 
 module Prod_atom(A: Abstract_domain) =
@@ -206,15 +208,21 @@ struct
   let interpret_one = interpret
 
   let extend_var pa approx tv =
-    safe_wrap pa (fun pa ->
-      let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,ttrue)) in
-      let (atom_id, _) = A.I.to_abstract_var (interpretation pa) tv.name in
-      let pa = {pa with var_map=(atom_id::pa.var_map) } in
-      let pa, gcons = to_generic_constraints pa cs in
-      wrap pa a, gcons)
+    let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,ttrue)) in
+    let (atom_id, _) = A.I.to_abstract_var (interpretation pa) tv.name in
+    let pa = {pa with var_map=(atom_id::pa.var_map) } in
+    let pa, gcons = to_generic_constraints pa cs in
+    wrap pa a, gcons
 
   let extend_var_all = extend_var
   let extend_var_one = extend_var
+
+  let drain_events pa =
+    let a, events = A.drain_events (unwrap pa) in
+    wrap pa a, events
+
+  let events_of pa c =
+    A.events_of (unwrap pa) (get_constraint pa c)
 end
 
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) =
@@ -331,6 +339,15 @@ struct
 
   let print fmt (a,b) =
     Format.fprintf fmt "%a\n%a" Atom.print a B.print b
+
+  let drain_events (a,b) =
+    let a, events = Atom.drain_events a in
+    let b, events' = B.drain_events b in
+    (a,b), events@events'
+
+  let events_of (a,b) c =
+    if Atom.uid a != (fst c) then B.events_of b c
+    else Atom.events_of a c
 end
 
 module Direct_product(P: Prod_combinator) =
@@ -418,4 +435,10 @@ struct
     in
       let prod, cs = aux p.prod tqf in
       I.wrap p prod, cs
+
+  let drain_events (p:t) =
+    let prod, events = P.drain_events p.prod in
+    I.wrap p prod, events
+
+  let events_of (p:t) c = P.events_of p.prod c
 end

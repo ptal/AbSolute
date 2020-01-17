@@ -17,6 +17,7 @@ module Var_store = Var_store
 
 open Core
 open Core.Kleene
+open Domains.Abstract_domain
 open Lang
 open Typing
 open Typing.Ad_type
@@ -24,7 +25,7 @@ open Typing.Tast
 open Bounds
 open Vardom
 open Box_interpretation
-open Event_loop.Event_abstract_domain
+open Event_loop.Schedulable_abstract_domain
 
 module type Box_sig =
 sig

@@ -10,12 +10,12 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-module Event_abstract_domain = Event_abstract_domain
+module Schedulable_abstract_domain = Schedulable_abstract_domain
 
 open Domains.Abstract_domain
 open Typing.Ad_type
 open Fixpoint
-open Event_abstract_domain
+open Schedulable_abstract_domain
 
 (** This module type is useful to parametrize `Event_loop` by a list of modules. *)
 module type Event_combinator =

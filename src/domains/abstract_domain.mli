@@ -23,6 +23,9 @@ open Typing.Ad_type
     In addition to `Bot.Bot_found`, `Conflict n` forces the backtrack in the search tree to the level `n`. *)
 exception Conflict of int
 
+type task = ad_uid * int
+type event = ad_uid * int
+
 (** We require that abstract domains internalize their connection to the logical formula.
     In practice, it often consists in a pair `(A.t, A.I.t)` of the abstract element and its interpretation.
     The function `interpret` allows us to easily add constraints, the variables being added automatically if needed.
@@ -146,6 +149,13 @@ sig
   (** Print the current element in the abstract element using the
       logical names of variables. *)
   val print: Format.formatter -> t -> unit
+
+  (** [drain_events t] returns the events produced since the last call.
+      The events are removed from `t`, so an immediate next call will return an empty list. *)
+  val drain_events: t -> (t * event list)
+
+  (** [events_of t c] returns the events of the constraints `c`. *)
+  val events_of: t -> I.rconstraint -> event list
 end
 
 (*

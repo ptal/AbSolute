@@ -17,6 +17,8 @@ open Typing
 open Typing.Ad_type
 
 exception Conflict of int
+type task = ad_uid * int
+type event = ad_uid * int
 module type Abstract_domain =
 sig
   module I: Interpretation_sig
@@ -40,6 +42,8 @@ sig
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
+  val drain_events: t -> (t * event list)
+  val events_of: t -> I.rconstraint -> event list
 end
 
 (*
