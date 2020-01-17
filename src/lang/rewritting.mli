@@ -69,3 +69,4 @@ val mapfold_conjunction: (bconstraint -> 'a list) -> formula -> 'a list
 
 val conjunction: formula list -> formula
 val disjunction: formula list -> formula
+val map_formula: (formula -> formula) -> qformula -> qformula

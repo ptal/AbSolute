@@ -136,7 +136,7 @@ struct
   let to_qformula r fs =
     let rec aux = function
       | Atom cs -> A.I.to_qformula (A.interpretation !(r.a)) cs
-      | PNot f1 -> map_formula (fun f -> (r.uid, TNot f)) (aux' f1)
+      | PNot f1 -> map_tformula (fun f -> (r.uid, TNot f)) (aux' f1)
       | PAnd(f1,f2) -> binary_aux f1 f2 (fun f1 f2 -> (r.uid, TAnd(f1,f2)))
       | POr(f1,f2) -> binary_aux f1 f2 (fun f1 f2 -> (r.uid, TOr(f1,f2)))
       | PImply(f1,f2) -> binary_aux f1 f2 (fun f1 f2 -> (r.uid, TImply(f1,f2)))

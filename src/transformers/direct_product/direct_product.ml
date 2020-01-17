@@ -182,7 +182,7 @@ struct
       A.B.to_rat lb, A.B.to_rat ub
 
   let weak_incremental_closure pa (uid', c_id) =
-    if uid pa != uid' then raise (Wrong_modelling "`Direct_product.weak_incremental_closure`: this constraint does not belong to this ordered product.")
+    if uid pa != uid' then raise (Wrong_modelling "`Direct_product.weak_incremental_closure`: this constraint does not belong to this direct product.")
     else
       let c_a = List.nth pa.constraint_map c_id in
       let a = A.weak_incremental_closure !(pa.a) c_a in
@@ -195,26 +195,38 @@ struct
   let print fmt pa = Format.fprintf fmt "%a" A.print !(pa.a)
 
   let interpret pa approx tf =
-    safe_wrap pa (fun pa ->
-      try
-        let (i, constraints) = A.I.interpret (interpretation pa) approx tf in
-        let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
-        let pa, gconstraints = to_generic_constraints pa constraints in
-        pa, gconstraints
-      with Wrong_modelling msg ->
-        raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg)))
+    if snd tf = Tast.ctrue then pa, []
+    else
+    begin
+      if uid pa != fst tf then raise (Wrong_modelling "`Direct_product.interpret`: this constraint does not belong to this direct product.");
+      safe_wrap pa (fun pa ->
+        try
+          let (i, constraints) = A.I.interpret (interpretation pa) approx tf in
+          let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
+          let pa, gconstraints = to_generic_constraints pa constraints in
+          pa, gconstraints
+        with Wrong_modelling msg ->
+          raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg)))
+    end
 
-  let interpret_all = interpret
+  let interpret_all pa approx tf =
+    let tf = Tast.map_uid (A.uid (unwrap pa)) tf in
+    interpret pa approx tf
+
   let interpret_one = interpret
 
   let extend_var pa approx tv =
-    let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,ttrue)) in
-    let (atom_id, _) = A.I.to_abstract_var (interpretation pa) tv.name in
-    let pa = {pa with var_map=(atom_id::pa.var_map) } in
-    let pa, gcons = to_generic_constraints pa cs in
-    wrap pa a, gcons
+    if uid pa != tv.uid then
+      raise (Wrong_modelling "`Direct_product.extend_var`: this variable does not belong to this direct product.");
+    safe_wrap pa (fun pa ->
+      let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,TQFFormula(tv.uid, ctrue))) in
+      let pa = wrap pa a in
+      let (atom_id, _) = A.I.to_abstract_var (interpretation pa) tv.name in
+      let pa = {pa with var_map=(atom_id::pa.var_map) } in
+      let pa, gcons = to_generic_constraints pa cs in
+      wrap pa a, gcons)
 
-  let extend_var_all = extend_var
+  let extend_var_all pa approx tv = extend_var pa approx {tv with uid=(uid pa)}
   let extend_var_one = extend_var
 
   let drain_events pa =

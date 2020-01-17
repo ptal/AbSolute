@@ -132,8 +132,11 @@ let to_float_down x : float =
 
 let to_rat x = x
 
-let to_int_up x = (int_of_float (ceil (to_float_up x)))
-let to_int_down x = (int_of_float (floor (to_float_down x)))
+let to_int_up x =
+  wrap (fun x -> int_of_float (ceil (Mpqf.to_float x))) int_inf int_minus_inf 0 x
+
+let to_int_down x =
+  wrap (fun x -> int_of_float (floor (-.(Mpqf.to_float (Mpqf.neg x))))) int_inf int_minus_inf 0 x
 
 (* printing *)
 let output chan x = output_string chan (to_string x)

@@ -52,7 +52,8 @@ let rec tqformula_to_qformula = function
   | TQFFormula f -> QFFormula (tformula_to_formula f)
   | TExists(tv, qf) -> Exists (tv.name, tv.ty, tqformula_to_qformula qf)
 
-let ttrue = TQFFormula (0, TCmp (zero, LEQ, zero))
+let ctrue = TCmp (zero, LEQ, zero)
+let ttrue = TQFFormula (0, ctrue)
 let tfalse = TQFFormula (0, TCmp (one, LEQ, zero))
 
 let vars_of_tformula tf =
@@ -93,16 +94,16 @@ let rec quantifier_free_of = function
   | TQFFormula tf -> tf
   | TExists(_,tqf) -> quantifier_free_of tqf
 
-let rec map_formula next = function
+let rec map_tformula next = function
   | TQFFormula tqf -> TQFFormula (next tqf)
-  | TExists (tv,tqf) -> TExists (tv, map_formula next tqf)
+  | TExists (tv,tqf) -> TExists (tv, map_tformula next tqf)
 
 let merge_formula make qf1 qf2 =
   let vars = (quantifiers qf1)@(quantifiers qf2) in
   let qf =
-    map_formula (fun f1 ->
+    map_tformula (fun f1 ->
       quantifier_free_of (
-        map_formula (fun f2 -> make f1 f2) qf2)) qf1
+        map_tformula (fun f2 -> make f1 f2) qf2)) qf1
   in
     quantify vars (quantifier_free_of qf)
 
@@ -113,6 +114,13 @@ let rec q_conjunction uid = function
       merge_formula (fun f1 f2 -> (uid, TAnd(f1,f2))) qf1 qf2
   | [] -> ttrue
 
+let rec q_disjunction uid = function
+  | qf1::[] -> qf1
+  | qf1::qfs ->
+      let qf2 = q_disjunction uid qfs in
+      merge_formula (fun f1 f2 -> (uid, TOr(f1,f2))) qf1 qf2
+  | [] -> tfalse
+
 let neg_formula tf =
   let rec aux = function
     | uid, TCmp c -> uid, TCmp (Rewritting.neg_bconstraint c)
@@ -122,4 +130,16 @@ let neg_formula tf =
     | uid, TAnd (b1,b2) -> uid, TOr (aux b1, aux b2)
     | uid, TOr (b1,b2) -> uid, TAnd (aux b1, aux b2)
     | _, TNot b -> b
+  in aux tf
+
+let map_uid uid tf =
+  let rec aux (_, f) =
+    match f with
+    | TCmp c -> uid, TCmp c
+    | TFVar v -> uid, TFVar v
+    | TEquiv (tf1,tf2) -> uid, TEquiv (aux tf1, aux tf2)
+    | TImply (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TAnd (tf1,tf2) -> uid, TOr (aux tf1, aux tf2)
+    | TOr (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TNot tf -> uid, TNot (aux tf)
   in aux tf

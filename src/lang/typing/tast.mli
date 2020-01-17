@@ -52,6 +52,7 @@ val tformula_to_formula: tformula -> formula
 val tqformula_to_qformula: tqformula -> qformula
 
 (** Encoding of true and false as formula. *)
+val ctrue: tformula_
 val ttrue: tqformula
 val tfalse: tqformula
 
@@ -71,7 +72,7 @@ val quantifiers: tqformula -> tvariable list
 val quantifier_free_of: tqformula -> tformula
 
 (** [map_formula f tqf] applies the function `f` on `tqf` bypassing the quantifiers. *)
-val map_formula: (tformula -> tformula) -> tqformula -> tqformula
+val map_tformula: (tformula -> tformula) -> tqformula -> tqformula
 
 (** [merge_formula make f1 f2].
     Given two quantified formulas, merge their quantifier-free part using `make`.
@@ -80,8 +81,11 @@ val merge_formula: (tformula -> tformula -> tformula) -> tqformula -> tqformula 
 
 (** Merge a list of formula with the conjunctive connector of the given abstract domain type. *)
 val q_conjunction: ad_uid -> tqformula list -> tqformula
+val q_disjunction: ad_uid -> tqformula list -> tqformula
 
 (** Negate a logic formula.
     NOT are pushed inwards such that it only occur over FVar.
     The size of the formula does not increase. *)
 val neg_formula: tformula -> tformula
+
+val map_uid: ad_uid -> tformula -> tformula

@@ -24,16 +24,16 @@ open Event_loop.Schedulable_abstract_domain
     handled by `Event_loop`. *)
 module type Box_sig =
 sig
-  module Vardom: Vardom_sig.Vardom_sig
+  module B: Bound_sig.S
+  module Vardom: Vardom_sig.Vardom_sig with module B := B
   type vardom = Vardom.t
+  include Schedulable_abstract_domain with module B := B
 
-  include Schedulable_abstract_domain
-
-  (** `project_vardom box v` projects the interval of the variable `v`. *)
+  (** `project_vardom box v` projects the domain of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom
 end
 
-module type Box_functor = functor (B: Bound_sig.S) -> Box_sig with module Vardom.B = B
+module type Box_functor = functor (B: Bound_sig.S) -> Box_sig
 
 module Make
   (B: Bound_sig.S)

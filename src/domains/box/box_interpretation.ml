@@ -113,18 +113,24 @@ struct
     [(interpret_expr repr e1, op, interpret_expr repr e2)]
 
   let interpret repr approx tf =
-    if (fst tf) <> (IB.uid repr) then
-      raise (Wrong_modelling "Box.interpret: The formula has not the right UID.");
-    let rec aux (_, f) =
-      match f with
-      | TCmp c -> interpret_bconstraint repr c
-      | TFVar x -> interpret_bconstraint repr (Var x, EQ, one)
-      | TNot ((_,TFVar x)) -> interpret_bconstraint repr (Var x, EQ, zero)
-      | TAnd (tf1, tf2) -> (aux tf1)@(aux tf2)
-      | _ -> raise (Wrong_modelling "Box.interpret: Box do not support logical constraints (see e.g. `Logic_completion`).")
-    in
-    check_approx_typing repr tf approx;
-    (repr, aux tf)
+    if snd tf = ctrue then repr, []
+    else
+    begin
+      if (fst tf) <> (IB.uid repr) then
+        raise (Wrong_modelling ("Box.interpret: The formula has the UID "
+          ^ (string_of_int (fst tf)) ^ " but the box has the UID "
+          ^ (string_of_int (IB.uid repr)) ^ "."));
+      let rec aux (_, f) =
+        match f with
+        | TCmp c -> interpret_bconstraint repr c
+        | TFVar x -> interpret_bconstraint repr (Var x, EQ, one)
+        | TNot ((_,TFVar x)) -> interpret_bconstraint repr (Var x, EQ, zero)
+        | TAnd (tf1, tf2) -> (aux tf1)@(aux tf2)
+        | _ -> raise (Wrong_modelling "Box.interpret: Box do not support logical constraints (see e.g. `Logic_completion`).")
+      in
+      check_approx_typing repr tf approx;
+      (repr, aux tf)
+    end
 
   let to_logic_expr repr expr =
     let rec aux expr =

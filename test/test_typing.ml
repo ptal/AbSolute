@@ -36,9 +36,11 @@ let mismatch_formula_error () =
   Printf.printf "The typed and untyped formulas are not the same, which mean that `Infer.infer_type` did not preserve the shape of the formula.";
   false
 
+let mtv name ty uid = Tast.{name;ty;uid}
+
 let check_same_type_formula tf1 tf2 =
   let rec aux (u1,expected) (u2,obtained) =
-    if check_uids u1 u2 Pretty_print.print_formula (aformula_to_formula (u2, obtained)) then
+    if check_uids u1 u2 Pretty_print.print_formula (tformula_to_formula (u2, obtained)) then
       match expected, obtained with
       | TFVar _, TFVar _ | TCmp _, TCmp _ -> true
       | TEquiv(tf1,tf2), TEquiv(tf1',tf2') -> aux tf1 tf1' && aux tf2 tf2'
@@ -51,8 +53,8 @@ let check_same_type_formula tf1 tf2 =
   aux tf1 tf2
 
 let rec check_same_type_qformula = function
-  | (TExists(_,_,u1,tf) as f), TExists(_,_,u2,tf') ->
-      if check_uids u1 u2 Pretty_print.print_qformula (aqformula_to_qformula f) then
+  | (TExists(tv1,tf) as f), TExists(tv2,tf') ->
+      if check_uids tv1.uid tv2.uid Pretty_print.print_qformula (tqformula_to_qformula f) then
         check_same_type_qformula (tf, tf')
       else false
   | TQFFormula tf, TQFFormula tf' -> check_same_type_formula tf tf'
@@ -79,9 +81,9 @@ let test_simple_direct_product () =
   let oct = (ou, Octagon Z) in
   let dp = (du, Direct_product([box; oct])) in
   let dp_ob_expected_type =
-    TExists("x", Concrete Int, ou,
-    TExists("y", Concrete Int, ou,
-    TExists("b1", Abstract Bool, bu,
+    TExists((mtv "x" (Concrete Int) ou),
+    TExists((mtv "y" (Concrete Int) ou),
+    TExists((mtv "b1" (Abstract Bool) bu),
     TQFFormula(
       (du, TAnd((bu, TFVar "b1"), (ou, TCmp c1)))
     )))) in
@@ -104,9 +106,9 @@ let test_typing_logic_completion () =
   let lcb = (lu, Logic_completion box) in
   let dp = (du, Direct_product([box; lcb])) in
   let lcb_expected_type =
-    TExists("x", Concrete Int, bu,
-    TExists("y", Concrete Int, bu,
-    TExists("b1", Abstract Bool, bu,
+    TExists((mtv "x" (Concrete Int) bu),
+    TExists((mtv "y" (Concrete Int) bu),
+    TExists((mtv "b1" (Abstract Bool) bu),
     TQFFormula(
       (lu, TEquiv((bu, TFVar "b1"), (bu, TCmp c1)))
     )))) in
@@ -121,9 +123,9 @@ let test_typing_logic_completion () =
   let lc_ob = (lu, Logic_completion ob) in
   let dp = (du, Direct_product([box; oct; lc_ob])) in
   let lc_ob_expected_type =
-    TExists("x", Concrete Int, ou,
-    TExists("y", Concrete Int, ou,
-    TExists("b1", Abstract Bool, bu,
+    TExists((mtv "x" (Concrete Int) ou),
+    TExists((mtv "y" (Concrete Int) ou),
+    TExists((mtv "b1" (Abstract Bool) bu),
     TQFFormula(
       (lu, TEquiv((bu, TFVar "b1"), (ou, TCmp c1)))
     )))) in
@@ -159,10 +161,10 @@ let test_typing_rcpsp_like () =
   let lc_box = (lu, Logic_completion(box)) in
   let dp = (du, Direct_product([box; lc_box])) in
   let lc_box_expected_type =
-    TExists("x", Concrete Int, bu,
-    TExists("y", Concrete Int, bu,
-    TExists("b1", Abstract Bool, bu,
-    TExists("b2", Abstract Bool, bu,
+    TExists((mtv "x" (Concrete Int) bu),
+    TExists((mtv "y" (Concrete Int) bu),
+    TExists((mtv "b1" (Abstract Bool) bu),
+    TExists((mtv "b2" (Abstract Bool) bu),
     TQFFormula(
       (du, TAnd((bu, TCmp c1),
       (du, TAnd((lu, TEquiv((bu, TFVar "b1"), (bu, TAnd((bu, TCmp c2), (bu, TCmp c3))))),
@@ -182,10 +184,10 @@ let test_typing_rcpsp_like () =
   let lc_ob = (lu, Logic_completion ob) in
   let dp = (du, Direct_product([box; oct; ob; lc_ob])) in
   let lc_ob_expected_type =
-    TExists("x", Concrete Int, ou,
-    TExists("y", Concrete Int, ou,
-    TExists("b1", Abstract Bool, bu,
-    TExists("b2", Abstract Bool, bu,
+    TExists((mtv "x" (Concrete Int) ou),
+    TExists((mtv "y" (Concrete Int) ou),
+    TExists((mtv "b1" (Abstract Bool) bu),
+    TExists((mtv "b2" (Abstract Bool) bu),
     TQFFormula(
       (du, TAnd((ou, TCmp c1),
       (du, TAnd((lu, TEquiv((bu, TFVar "b1"), (ou, TAnd((ou, TCmp c2), (ou, TCmp c3))))),

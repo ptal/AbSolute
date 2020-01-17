@@ -48,6 +48,7 @@ end
 
 module Logic_completion(A: Abstract_domain):
 sig
-  include Schedulable_abstract_domain
+  module I : Logic_completion_interpretation_sig
+  include Schedulable_abstract_domain with module I := I
   val init: I.t -> t
-end with module B = Bound_unit
+end with module B = Bound_unit and module I.A = A

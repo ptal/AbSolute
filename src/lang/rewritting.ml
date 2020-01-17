@@ -286,3 +286,6 @@ let rec disjunction = function
   | c1::l -> Or (c1, disjunction l)
   | [] -> falsef
 
+let rec map_formula next = function
+  | QFFormula tqf -> QFFormula (next tqf)
+  | Exists (v,ty,tqf) -> Exists (v,ty,map_formula next tqf)

@@ -85,7 +85,7 @@ struct
   }
 
   let init adty trace =
-    {trace; debug=true; indent=0; venv = Var2UID.empty; adty; ad_env = (build_adenv adty)}
+    {trace; debug=false; indent=0; venv = Var2UID.empty; adty; ad_env = (build_adenv adty)}
 
   (* Debugging facilities. *)
 

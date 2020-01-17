@@ -29,13 +29,16 @@ open Event_loop.Schedulable_abstract_domain
 
 module type Box_sig =
 sig
-  module Vardom: Vardom_sig.Vardom_sig
+  module B: Bound_sig.S
+  module Vardom: Vardom_sig.Vardom_sig with module B := B
   type vardom = Vardom.t
-  include Schedulable_abstract_domain
+  include Schedulable_abstract_domain with module B := B
+
+  (** `project_vardom box v` projects the domain of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom
 end
 
-module type Box_functor = functor (B: Bound_sig.S) -> Box_sig with module Vardom.B = B
+module type Box_functor = functor (B: Bound_sig.S) -> Box_sig
 
 module Make
   (B: Bound_sig.S)
@@ -106,7 +109,8 @@ struct
       if B.equal l h then B.one
       else B.add_up (B.sub_up h l) B.one in
     let size vardom = range (V.to_range vardom) in
-    let vol = B.to_float_up (Store.fold (fun acc _ vardom -> B.mul_up (size vardom) acc) B.one box.store) in
+    let vol = B.to_float_up (Store.fold
+      (fun acc _ vardom -> B.mul_up (size vardom) acc) B.one box.store) in
     if classify_float vol = FP_infinite || classify_float vol = FP_nan then
       infinity
     else
@@ -183,17 +187,6 @@ struct
       ((box.uid, c_idx), events)::acc in
     let tasks_events = List.fold_left drain_one [] box.new_tasks in
     ({ box with new_tasks=[] }, tasks_events)
-
-  (* type t' = t *)
-(*
-  include QInterpreter_base(struct
-    type t=t'
-    module I=I
-    let name=name
-    let interpretation=interpretation
-    let map_interpretation=map_interpretation
-    let extend=extend
-    let weak_incremental_closure=weak_incremental_closure end) *)
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor =
