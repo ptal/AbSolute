@@ -13,6 +13,7 @@
 open Core
 open Lang
 open Lang.Ast
+open Typing.Tast
 open Bounds
 open Dbm
 open Domains.Interpretation
@@ -36,39 +37,19 @@ module type Octagon_interpretation_sig =
 sig
   module B: Bound_sig.S
   type rconstraint = B.t dbm_constraint
-  include module type of (Interpretation_base(struct type var_id=dbm_var end))
+  include module type of (Interpretation_ground(struct type var_id=dbm_var end))
 
-  val interpret: t -> approx_kind -> Ast.formula -> t * rconstraint list
-  val to_qformula: t -> rconstraint list -> Ast.qformula
+  val interpret: t -> approx_kind -> tformula -> t * rconstraint list
+  val to_qformula: t -> rconstraint list -> tqformula
   val negate: rconstraint -> rconstraint
 end
 
 module Octagon_interpretation(B: Bound_sig.S) =
 struct
   module B = B
-  (* include Interpretation_base(struct type var_id=dbm_var end) *)
+  module IG = Interpretation_ground(struct type var_id=dbm_var end)
+  include IG
   type rconstraint = B.t dbm_constraint
-
-  module IB = Interpretation_base(struct type var_id=dbm_var end)
-
-  type var_id = IB.var_id
-  type t = IB.t
-
-  let empty = IB.empty
-  let extend repr (v,idx,ty) = (* Printf.printf "Octagon add %s\n" v; flush_all ();  *)IB.extend repr (v,idx,ty)
-  let exists = IB.exists
-  let to_logic_var = IB.to_logic_var
-  let to_abstract_var = IB.to_abstract_var
-
-  (** Add existential quantifiers to the variables occuring in the formula. *)
-  let equantify = IB.equantify
-
-  (** Conveniency version of `to_logic_var` without the type of the variable. *)
-  let to_logic_var' = IB.to_logic_var'
-  let to_abstract_var' = IB.to_abstract_var'
-
-  (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
-  let to_abstract_var_wm = IB.to_abstract_var_wm
 
   let dim_of_var repr v =
     let (v,_) = to_abstract_var repr v in
@@ -175,7 +156,7 @@ struct
       | _ -> cannot_interpret "under-" c
     ) (generic_rewrite c))
 
-  let interpret_one repr approx c =
+  let interpret_one approx repr c =
     try
       interpret_one_exact "exact " repr c
     with Wrong_modelling msg ->
@@ -184,11 +165,8 @@ struct
       | UnderApprox -> interpret_one_under_approx repr c
       | OverApprox -> interpret_one_over_approx repr c
 
-  let interpret repr approx formula =
-    let constraints = try Rewritting.mapfold_conjunction (fun c -> [c]) formula
-      with Wrong_modelling msg ->
-        raise (Wrong_modelling ("Octagon only supports conjunction of constraints (" ^ msg ^ ")")) in
-    repr, List.flatten (List.map (interpret_one repr approx) constraints)
+  let interpret repr approx tf =
+    IG.interpret_gen repr "Octagon" tf (interpret_one approx)
 
   let negate c =
     if is_rotated c.v then
@@ -202,19 +180,21 @@ struct
     let d = B.to_rat oc.d in
     let k1, k2 = oc.v.c / 2, oc.v.l / 2 in
     let x,y = Dbm.make_canonical_var k1, Dbm.make_canonical_var k2 in
-    let (x,_), (y,_) = to_logic_var repr x, to_logic_var repr y in
-    if k1 = k2 then
-      if oc.v.l > oc.v.c then
-        Cmp (Var x, LEQ, Cst (d, ty))
+    let x, y = to_logic_var repr x, to_logic_var repr y in
+    let x, y = x.name, y.name in
+    let c =
+      if k1 = k2 then
+        if oc.v.l > oc.v.c then
+          TCmp (Var x, LEQ, Cst (d, ty))
+        else
+          TCmp (Var x, GEQ, Cst (d, ty))
       else
-        Cmp (Var x, GEQ, Cst (d, ty))
-    else
-      let x = if oc.v.c = k1 * 2 then Var x else Unary (NEG, Var x) in
-      let y = if oc.v.l = k2 * 2 then Var y else Unary (NEG, Var y) in
-      Cmp (Binary (x, SUB, y), LEQ, Cst (d, ty))
+        let x = if oc.v.c = k1 * 2 then Var x else Unary (NEG, Var x) in
+        let y = if oc.v.l = k2 * 2 then Var y else Unary (NEG, Var y) in
+        TCmp (Binary (x, SUB, y), LEQ, Cst (d, ty))
+    in
+      (IG.uid repr, c)
 
-  let to_formula repr cs =
-    Rewritting.conjunction (List.map (to_formula_one repr) cs)
+  let to_qformula repr cs = IG.to_qformula_gen repr cs to_formula_one
 
-  let to_qformula repr cs = equantify repr (to_formula repr cs)
 end

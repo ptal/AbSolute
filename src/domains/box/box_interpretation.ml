@@ -23,7 +23,7 @@ sig
   module Vardom: Vardom_sig
   module Store: Var_store_sig with module V=Vardom
 
-  include module type of (Interpretation_base(struct type var_id=Store.key end))
+  include module type of (Interpretation_ground(struct type var_id=Store.key end))
 
   type var_dom = Store.cell
 
@@ -55,8 +55,8 @@ struct
   module Vardom = Vardom
   module Store = Var_store.Make(Vardom)
 
-  module IB = Interpretation_base(struct type var_id=Store.key end)
-  include IB
+  module IG = Interpretation_ground(struct type var_id=Store.key end)
+  include IG
 
   type var_dom = Store.cell
 
@@ -113,27 +113,8 @@ struct
     [(interpret_expr repr e1, op, interpret_expr repr e2)]
 
   let interpret repr approx tf =
-    if snd tf = ctrue then repr, []
-    else
-    begin
-      if (fst tf) <> (IB.uid repr) then
-        raise (Wrong_modelling ("Box.interpret: The formula has the UID "
-          ^ (string_of_int (fst tf)) ^ " but the box has the UID "
-          ^ (string_of_int (IB.uid repr)) ^ "."));
-      let rec aux (uid, f) =
-        match f with
-        | TCmp c -> interpret_bconstraint repr c
-        | TFVar x -> interpret_bconstraint repr (Var x, EQ, one)
-        | TNot ((_,TFVar x)) -> interpret_bconstraint repr (Var x, EQ, zero)
-        | TAnd (tf1, tf2) -> (aux tf1)@(aux tf2)
-        | _ -> raise (Wrong_modelling (
-            "Box.interpret: Box do not support logical constraints (see e.g. `Logic_completion`). UID = " ^
-            (string_of_int uid) ^ " - Box UID: " ^ (string_of_int (IB.uid repr)) ^
-            " - Formula " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula (uid,f)))))
-      in
-      check_approx_typing repr tf approx;
-      (repr, aux tf)
-    end
+    check_approx_typing repr tf approx;
+    IG.interpret_gen repr "Box" tf interpret_bconstraint
 
   let to_logic_expr repr expr =
     let rec aux expr =
@@ -147,14 +128,9 @@ struct
     aux expr
 
   let to_formula_one repr (e1, op, e2) =
-    (IB.uid repr, TCmp (to_logic_expr repr e1, op, to_logic_expr repr e2))
+    (IG.uid repr, TCmp (to_logic_expr repr e1, op, to_logic_expr repr e2))
 
-  let to_qformula repr cs =
-    let fs = List.map (fun c -> TQFFormula (to_formula_one repr c)) cs in
-    let tqf = q_conjunction (IB.uid repr) fs in
-    match tqf with
-    | TQFFormula tf -> equantify repr tf
-    | _ -> failwith "unreachable (to_qformula): no variable inserted."
+  let to_qformula repr cs = IG.to_qformula_gen repr cs to_formula_one
 
   let rec vars_of_expr expr =
     match expr.node with

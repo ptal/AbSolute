@@ -10,9 +10,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** This module provides functions to detect and rewrite arbitrary constraint into an equivalent and relaxed octagonal constraints, if possible. *)
+(** This module provides functions to detect and rewrite arbitrary constraints into an equivalent and relaxed octagonal constraints, if possible. *)
 
-open Lang.Ast
+open Typing
 open Bounds
 open Dbm
 open Domains.Interpretation
@@ -21,7 +21,7 @@ module type Octagon_interpretation_sig =
 sig
   module B: Bound_sig.S
   type rconstraint = B.t dbm_constraint
-  include module type of (Interpretation_base(
+  include module type of (Interpretation_ground(
     struct type
       var_id=dbm_var (** A logic variable is identified by the DBM variable representing the lower bound of the interval. *)
     end))
@@ -31,12 +31,12 @@ sig
       For discrete bound, exact approximation is supported for (strict) inequalities.
       For continuous bound strict inequalities must be over- or under-approximated:
         * Over-approximation: it rewrites strict inequalities `<`,`>` into the inequalities `<=`,`>=`.
-        * Under-approximation: `x + y < d` into `x + y <= d - w` where `w` is a small as possible.
+        * Under-approximation: `x + y < d` into `x + y <= d - w` where `w` is as small as possible.
       See also [Interpretation.interpret].*)
-  val interpret: t -> approx_kind -> formula -> t * rconstraint list
+  val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
 
   (** See [Interpretation.to_qformula] *)
-  val to_qformula: t -> rconstraint list -> qformula
+  val to_qformula: t -> rconstraint list -> Tast.tqformula
 
   val negate: rconstraint -> rconstraint
 end

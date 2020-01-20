@@ -84,3 +84,39 @@ struct
       raise (Ast.Wrong_modelling
         ("Variable `" ^ vname ^ "` does not belong to the current abstract element."))
 end
+
+module Interpretation_ground(V_ID:sig type var_id end) =
+struct
+  module IB = Interpretation_base(V_ID)
+  include IB
+
+  let interpret_gen repr ad_name tf interpret_bconstraint =
+    let open Ast in
+    if snd tf = ctrue then repr, []
+    else
+    begin
+      if (fst tf) <> (IB.uid repr) then
+        raise (Wrong_modelling (ad_name ^ ".interpret: The formula has the UID "
+          ^ (string_of_int (fst tf)) ^ " but the " ^ ad_name ^ " element has the UID "
+          ^ (string_of_int (IB.uid repr)) ^ "."));
+      let rec aux (uid, f) =
+        match f with
+        | TCmp c -> interpret_bconstraint repr c
+        | TFVar x -> interpret_bconstraint repr (Var x, EQ, one)
+        | TNot ((_,TFVar x)) -> interpret_bconstraint repr (Var x, EQ, zero)
+        | TAnd (tf1, tf2) -> (aux tf1)@(aux tf2)
+        | _ -> raise (Wrong_modelling (
+            ad_name ^ ".interpret: " ^ ad_name ^ " do not support logical constraints (see e.g. `Logic_completion`). UID = " ^
+            (string_of_int uid) ^ " - " ^ ad_name ^ " UID: " ^ (string_of_int (IB.uid repr)) ^
+            " - Formula " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula (uid,f)))))
+      in
+      (repr, aux tf)
+    end
+
+  let to_qformula_gen repr cs to_formula_one =
+    let fs = List.map (fun c -> TQFFormula (to_formula_one repr c)) cs in
+    let tqf = q_conjunction (IB.uid repr) fs in
+    match tqf with
+    | TQFFormula tf -> equantify repr tf
+    | _ -> failwith "unreachable (to_qformula): no variable should be inserted."
+end

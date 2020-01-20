@@ -1,7 +1,8 @@
 (executable
  (name run_tests)
- (libraries alcotest absolute absolute.box absolute.direct_product
-    absolute.event_loop absolute.logic_completion absolute.lang absolute.bounds)
+ (libraries alcotest absolute absolute.box absolute.octagon
+    absolute.direct_product absolute.event_loop absolute.logic_completion
+    absolute.lang absolute.bounds)
 )
 
 (alias

@@ -15,13 +15,11 @@
 *)
 
 let test_suites: unit Alcotest.test list = [
-  (* "BoxedOctagon", Test_boxed_octagon.tests; *)
-  (* "Octagon", Test_octagon.tests; *)
-  (* "Octagon_utilities", Test_octagon_utilities.tests; *)
+  "Octagon", Test_octagon.tests;
   "Box", Test_box.tests;
   "Logic completion", Test_logic_completion.tests;
-  (* "Rewriter", Test_rewriter.tests; *)
-  (* "Split strategies", Test_split_strategies.tests; *)
+  "Octagon rewriter", Test_rewriter.tests;
+  "Split strategies", Test_split_strategies.tests;
   "Type inference of formula", Test_typing.tests;
 ]
 

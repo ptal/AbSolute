@@ -13,9 +13,9 @@
 open Core
 open Dbm
 open Typing.Ad_type
+open Typing.Tast
 open Octagon_interpretation
 open Domains.Abstract_domain
-open Event_loop.Event_abstract_domain
 
 module Octagon_interpretation = Octagon_interpretation
 module Dbm = Dbm
@@ -27,7 +27,7 @@ sig
   module DBM: DBM_sig
   module B = DBM.B
   module I : module type of (Octagon_interpretation(DBM.B))
-  include Event_abstract_domain with
+  include Abstract_domain with
     module I := I and
     module B := B
 
@@ -50,30 +50,35 @@ struct
   module Itv_view = Interval_view_dbm.Interval_view(B)
 
   type t = {
-    uid: ad_uid;
     r: I.t;
     dbm: DBM.t;
     (* These constraints must fulfils the coherency rule (see `Dbm.ml`). *)
     constraints: I.rconstraint list;
   }
 
-  let empty uid = {
-    uid;
-    r=I.empty ();
-    dbm=DBM.empty;
-    constraints=[] }
-
-  let uid octagon = octagon.uid
-  let name = "Octagon(" ^ B.name ^ ")"
-
-  let type_of octagon = Some (octagon.uid, Octagon B.type_of)
-
   let interpretation octagon = octagon.r
   let map_interpretation octagon f = {octagon with r=(f octagon.r)}
 
-  let extend ?ty octagon =
-    let (dbm, v, aty) = DBM.extend ?ty octagon.dbm in
-    ({octagon with dbm=dbm}, v, aty)
+  let empty uid = {
+    r=I.empty uid;
+    dbm=DBM.empty;
+    constraints=[] }
+
+  let uid octagon = I.uid octagon.r
+  let name = "Octagon(" ^ B.name ^ ")"
+
+  let type_of octagon = Some (uid octagon, Octagon B.type_of)
+
+  let interpret octagon approx tqf =
+    let rec aux octagon = function
+      | TQFFormula tf ->
+          let r, cs = I.interpret octagon.r approx tf in
+          {octagon with r}, cs
+      | TExists(tv, tqf) ->
+          let (dbm, idx, aty) = DBM.extend ~ty:(tv.ty) octagon.dbm in
+          let r = I.extend octagon.r (idx, {tv with ty = Abstract aty}) in
+          aux {octagon with r; dbm} tqf
+    in aux octagon tqf
 
   let project' octagon itv =
     Itv_view.dbm_to_itv itv (DBM.project octagon.dbm itv)
@@ -140,23 +145,13 @@ struct
   let unwrap octagon = octagon.dbm
 
   let make_events octagon vars : event list =
-    List.map (fun v -> (octagon.uid, v)) vars
+    List.map (fun v -> (uid octagon, v)) vars
 
   let drain_events octagon =
     let dbm, deltas = DBM.delta octagon.dbm in
     { octagon with dbm }, (make_events octagon deltas)
 
-  let events_of octagon c = [(octagon.uid, event_of_var c.v)]
-
-  type t' = t
-  include QInterpreter_base(struct
-    type t=t'
-    module I=I
-    let name=name
-    let interpretation=interpretation
-    let map_interpretation=map_interpretation
-    let extend=extend
-    let weak_incremental_closure=weak_incremental_closure end)
+  let events_of octagon c = [(uid octagon, event_of_var c.v)]
 end
 
 module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureHoistZ)(SPLIT)

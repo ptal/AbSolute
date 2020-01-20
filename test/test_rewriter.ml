@@ -17,27 +17,33 @@ open Octagon.Dbm
 open Lang.Ast
 open Lang.Rewritting
 
+open Test_typing
+
 module I = Octagon_interpretation(Bound_int)
 
 let x_i = {l=0;c=1}
 let xy_i = {l=2;c=0}
 
-let ty = Types.(Machine Z)
-let vars = [("x", x_i, ty);
-            ("y", {l=2;c=3}, ty);
-            ("xy", xy_i, ty)]
+let ty = Types.(Abstract (Machine Z))
+
+let tvs = [
+  (mtv "x" ty 0);
+  (mtv "y" ty 0);
+  (mtv "xy" ty 0)]
+
+let vars = List.combine [x_i; {l=2; c=3}; xy_i] tvs
 
 let ten = Cst (Bound_rat.of_int 10, Int)
 
-let init_rewriter vars = List.fold_left I.extend (I.empty ()) vars
+let init_rewriter vars = List.fold_left I.extend (I.empty 0) vars
 
 let test_init () =
   let r = init_rewriter vars in
   begin
-    Alcotest.(check bool) "init" true ((compare (x_i,ty) (I.to_abstract_var r "x")) = 0);
-    Alcotest.(check bool) "init" true ((compare (xy_i,ty) (I.to_abstract_var r "xy")) = 0);
-    Alcotest.(check bool) "init" true ((compare ("x",ty) (I.to_logic_var r x_i)) = 0);
-    Alcotest.(check bool) "init" true ((compare ("xy",ty) (I.to_logic_var r xy_i)) = 0);
+    Alcotest.(check bool) "init" true ((compare (List.nth vars 0) (I.to_abstract_var r "x")) = 0);
+    Alcotest.(check bool) "init" true ((compare (List.nth vars 2) (I.to_abstract_var r "xy")) = 0);
+    Alcotest.(check bool) "init" true ((compare (List.nth tvs 0) (I.to_logic_var r x_i)) = 0);
+    Alcotest.(check bool) "init" true ((compare (List.nth tvs 2) (I.to_logic_var r xy_i)) = 0);
   end
 
 let check_dbm_constraint' name expected obtained =
@@ -52,14 +58,14 @@ end
 
 let check_dbm_constraint name r c expected =
 begin
-  let (_,obtained) = I.interpret r Exact (Cmp c) in
+  let (_,obtained) = I.interpret r Exact (0, TCmp c) in
   check_dbm_constraint' name expected obtained
 end
 
 let check_neg_dbm_constraint name r c expected =
 begin
   check_dbm_constraint ("negate bconstraint " ^ name) r (neg_bconstraint c) expected;
-  let (_,obtained) = I.interpret r Exact (Cmp c) in
+  let (_,obtained) = I.interpret r Exact (0, TCmp c) in
   Alcotest.(check int) (name ^ "-singleton") (List.length obtained) 1;
   let negate_obtained = List.map I.negate obtained in
   check_dbm_constraint' ("negate dbm_constraint " ^ name) expected negate_obtained;

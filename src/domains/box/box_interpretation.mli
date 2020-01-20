@@ -26,7 +26,7 @@ sig
       NOTE: We could parametrize Box_interpretation_sig with a `Store` if we have different kind of stores in the future. *)
   module Store: Var_store_sig with module V=Vardom
 
-  include module type of (Interpretation_base(struct type var_id=Store.key end))
+  include module type of (Interpretation_ground(struct type var_id=Store.key end))
 
   type var_dom = Store.cell
 

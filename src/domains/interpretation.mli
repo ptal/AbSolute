@@ -101,3 +101,19 @@ sig
   (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
   val to_abstract_var_wm: t -> Ast.vname -> (var_id * Tast.tvariable)
 end
+
+(** Helper functions to interpret and transform constraints in ground abstract domains. *)
+module Interpretation_ground(V_ID:sig type var_id end):
+sig
+  include module type of (Interpretation_base(V_ID))
+
+  (** [interpret_helper repr ad_name approx tf interpret_bconstraint] is a helper function to interpret a formula.
+      It checks that the formula's UID matches the one of the domain, and that the formula is not a tautology.
+      It also checks that only ground constraints connected with conjunction are used in the formula. *)
+  val interpret_gen: t -> string -> Tast.tformula
+    -> (t -> Ast.bconstraint -> 'a list) -> t * 'a list
+
+  (** [to_qformula repr cs to_formula_one] creates a typed quantified formula.
+      The function `to_formula_one` turns a rconstraint into its unquantified typed formula. *)
+  val to_qformula_gen: t -> 'a list -> (t -> 'a -> Tast.tformula) -> Tast.tqformula
+end

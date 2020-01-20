@@ -55,7 +55,6 @@ struct
   type vardom = V.t
 
   type t = {
-    uid: ad_uid;
     r: I.t;
     store: Store.t;
     constraints: I.rconstraint Parray.t;
@@ -71,7 +70,6 @@ struct
   let entailment box = Closure.entailment box.store
 
   let empty uid = {
-    uid;
     r = I.empty uid;
     store=Store.empty;
     constraints = Tools.empty_parray ();
@@ -79,11 +77,11 @@ struct
     num_active_tasks = 0;
   }
 
-  let uid box = box.uid
+  let uid box = I.uid box.r
 
   let name = "Box(" ^ V.name ^ ")"
 
-  let type_of box = Some (box.uid, Box (V.type_of ()))
+  let type_of box = Some (uid box, Box (V.type_of ()))
 
   let interpret box approx tqf =
     let rec aux box = function
@@ -170,7 +168,7 @@ struct
     { box with store; num_active_tasks }, entailed
 
   let make_events box vars : event list =
-    List.map (fun v -> (box.uid, v)) vars
+    List.map (fun v -> (uid box, v)) vars
 
   let drain_events box =
     let store, deltas = Store.delta box.store in
@@ -184,7 +182,7 @@ struct
     let drain_one acc c_idx =
       let c = Parray.get box.constraints c_idx in
       let events = events_of box c in
-      ((box.uid, c_idx), events)::acc in
+      ((uid box, c_idx), events)::acc in
     let tasks_events = List.fold_left drain_one [] box.new_tasks in
     ({ box with new_tasks=[] }, tasks_events)
 end

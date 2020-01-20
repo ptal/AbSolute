@@ -15,6 +15,9 @@ open Core.Kleene
 open Bounds
 open Octagon
 open Octagon.Dbm
+open Typing.Tast
+
+open Test_typing
 
 (* I. Data and utilities *)
 
@@ -56,7 +59,10 @@ let string_of_bool = function
 
 let octagon_empty2D =
   let o = OctagonZ.empty 0 in
-  List.fold_left (fun o _ -> let (o,_,_) = OctagonZ.extend o in o) o [();()]
+  fst (OctagonZ.interpret o Exact
+    (TExists((mtv "x" (Concrete Int) 0),
+    TExists((mtv "y" (Concrete Int) 0),
+    ttrue))))
 
 let make_octagon dim values =
   let vars = List.rev (Fold_intervals.fold (fun a x -> x::a) [] dim) in

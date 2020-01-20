@@ -12,7 +12,7 @@
 
 open Dbm
 open Octagon_interpretation
-open Event_loop.Event_abstract_domain
+open Domains.Abstract_domain
 
 module Octagon_interpretation = Octagon_interpretation
 module Dbm = Dbm
@@ -24,7 +24,7 @@ sig
   module DBM: DBM_sig
   module B = DBM.B
   module I : module type of (Octagon_interpretation(DBM.B))
-  include Event_abstract_domain with
+  include Abstract_domain with
     module I := I and
     module B := B
 
