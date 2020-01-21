@@ -35,6 +35,7 @@ module type Interpretation_sig = sig
   type t
   type var_id
   type rconstraint
+  val exact_interpretation: bool
   val empty: ad_uid -> t
   val exists: t -> Ast.vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable

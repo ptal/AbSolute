@@ -36,6 +36,7 @@ sig
   type var_id = unit
   type rconstraint
 
+  val exact_interpretation: bool
   val empty: ad_uid -> t
   val exists: t -> vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable

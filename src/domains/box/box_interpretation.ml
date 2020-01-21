@@ -40,6 +40,7 @@ sig
 
   type rconstraint = rexpr * cmpop * rexpr
 
+  val exact_interpretation: bool
   val interpret: t -> approx_kind -> tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> tqformula
 
@@ -72,6 +73,8 @@ struct
     | BCst     of Vardom.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
+
+  let exact_interpretation = not (Types.is_continuous Vardom.B.abstract_ty)
 
   let make_expr e = { node=e; value=fst (Vardom.top ()) }
 

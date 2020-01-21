@@ -21,6 +21,8 @@ sig
       var_id=Minisatml.Solver.var
     end))
 
+  val exact_interpretation: bool
+
   (** Create a set of clauses from a formula.
       The formula is rewritten into CNF. *)
   val interpret: t -> approx_kind -> tformula -> t * rconstraint list

@@ -26,6 +26,8 @@ sig
       var_id=dbm_var (** A logic variable is identified by the DBM variable representing the lower bound of the interval. *)
     end))
 
+  val exact_interpretation: bool
+
   (** Create octagonal constraints from a formula.
       Multiple constraints mean the formula has been decomposed into several octagonal constraints.
       For discrete bound, exact approximation is supported for (strict) inequalities.

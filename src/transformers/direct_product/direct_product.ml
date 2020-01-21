@@ -32,6 +32,7 @@ sig
   type t
   type var_id = gvar
   type rconstraint = gconstraint
+  val exact_interpretation: bool
   val count: int
   val name: string
 
@@ -81,7 +82,7 @@ struct
     var_map_bt: A.I.var_id list;
     constraint_map_bt: A.I.rconstraint list;
   }
-
+  let exact_interpretation = A.I.exact_interpretation
   let count = 1
   let name = A.name
 
@@ -245,7 +246,7 @@ struct
 
   type init_t = Atom.init_t * B.init_t
   type t = Atom.t * B.t
-
+  let exact_interpretation = Atom.exact_interpretation && B.exact_interpretation
   let count = Atom.count + B.count
   let name = A.name ^ "," ^ B.name
 
@@ -375,6 +376,7 @@ struct
     }
     type var_id = P.var_id
     type rconstraint = P.rconstraint
+    let exact_interpretation = P.exact_interpretation
     let wrap p prod = {p with prod}
     let init uid prod = { uid; prod=(P.init prod) }
     let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}

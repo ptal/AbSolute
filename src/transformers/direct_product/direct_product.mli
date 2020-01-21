@@ -31,6 +31,7 @@ sig
   type t
   type var_id = gvar
   type rconstraint = gconstraint
+  val exact_interpretation: bool
   val count: int
   val name: string
 

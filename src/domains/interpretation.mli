@@ -46,6 +46,9 @@ module type Interpretation_sig = sig
   (** Constraint representation in the abstract domain. *)
   type rconstraint
 
+  (** `true` if `interpret` always exactly interpret constraint (or fail), false if under- or over-approximations are possible. *)
+  val exact_interpretation: bool
+
   (** An empty interpretation. *)
   val empty: ad_uid -> t
 

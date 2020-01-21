@@ -25,6 +25,8 @@ sig
       var_id=Solver.var
     end))
 
+  val exact_interpretation: bool
+
   (** Create a set of clauses from a formula.
       The formula is rewritten into CNF. *)
   val interpret: t -> approx_kind -> tformula -> t * rconstraint list
@@ -122,6 +124,8 @@ struct
 
   module IG = Interpretation_ground(struct type var_id=Solver.var end)
   include IG
+
+  let exact_interpretation = true
 
   let rewrite_clause repr clause =
     let rec aux tf =

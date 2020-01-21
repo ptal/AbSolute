@@ -17,6 +17,7 @@ type t = unit
 type var_id = unit
 type rconstraint = unit
 
+let exact_interpretation = true
 let empty _ = ()
 let exists _ _ = false
 let to_logic_var _ _ = raise Not_found

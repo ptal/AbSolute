@@ -46,6 +46,8 @@ sig
 
   type rconstraint = rexpr * cmpop * rexpr
 
+  val exact_interpretation: bool
+
   (** Over-approximation is always supported.
       No special effort is currently made for supporting under-approximations, it is considered equivalent to Exact representation.
       Exact representation is supported if the abstract types of the variables of `f` are all different from floating point numbers. *)

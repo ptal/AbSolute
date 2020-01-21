@@ -31,6 +31,7 @@ sig
   type var_id = unit
   type rconstraint
 
+  val exact_interpretation: bool
   val empty: ad_uid -> t
   val exists: t -> Ast.vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable
@@ -78,6 +79,8 @@ struct
     negative: approx_formula;
   }
 
+  let exact_interpretation = A.I.exact_interpretation
+
   let empty _ = raise (Wrong_modelling "`Logic_completion_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Logic_completion`.")
   let to_logic_var _ _ = no_variable_exn "Logic_completion_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_completion_interpretation.to_abstract_var"
@@ -100,9 +103,13 @@ struct
         or_f ()
     in
     let rec make_approx_formula r approx tf =
-      let r, ask = aux r UnderApprox tf in
-      let r, tell = aux r approx tf in
-      r, { ask; tell }
+      if exact_interpretation && approx = Exact then
+        let r, c = aux r approx tf in
+        r, {ask=c; tell=c}
+      else
+        let r, ask = aux r UnderApprox tf in
+        let r, tell = aux r approx tf in
+        r, { ask; tell }
     and make_pn_formula r approx tf =
       let r, positive = make_approx_formula r approx tf in
       let r, negative = make_approx_formula r approx (Tast.neg_formula r.uid tf) in

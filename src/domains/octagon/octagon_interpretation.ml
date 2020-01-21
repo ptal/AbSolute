@@ -39,6 +39,7 @@ sig
   type rconstraint = B.t dbm_constraint
   include module type of (Interpretation_ground(struct type var_id=dbm_var end))
 
+  val exact_interpretation: bool
   val interpret: t -> approx_kind -> tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> tqformula
   val negate: rconstraint -> rconstraint
@@ -50,6 +51,8 @@ struct
   module IG = Interpretation_ground(struct type var_id=dbm_var end)
   include IG
   type rconstraint = B.t dbm_constraint
+
+  let exact_interpretation = not (Types.is_continuous B.abstract_ty)
 
   let dim_of_var repr v =
     let (v,_) = to_abstract_var repr v in
