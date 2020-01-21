@@ -12,7 +12,7 @@
 
 open Lang
 open Lang.Ast
-open Lang.Rewritting
+open Typing.Tast
 open Domains.Interpretation
 open Minisatml
 open Minisatml.Types
@@ -20,125 +20,136 @@ open Minisatml.Types
 module type Sat_interpretation_sig =
 sig
   type rconstraint = Lit.lit Vec.t
-  include module type of (Interpretation_base(
+  include module type of (Interpretation_ground(
     struct type
       var_id=Solver.var
     end))
 
   (** Create a set of clauses from a formula.
       The formula is rewritten into CNF. *)
-  val interpret: t -> approx_kind -> formula -> t * rconstraint list
+  val interpret: t -> approx_kind -> tformula -> t * rconstraint list
 
   (** See [Interpretation.to_qformula] *)
-  val to_qformula: t -> rconstraint list -> qformula
+  val to_qformula: t -> rconstraint list -> tqformula
 end
 
 (* Replace `Equiv` and `Imply` with their logical equivalent using `And` and `Or`.
    NOTE: It duplicates formulas if they occur in `<=>`. *)
-let eliminate_imply_and_equiv formula =
-  let rec aux = function
-    | Cmp _ as f -> f
-    | FVar _ as f -> f
-    | Equiv (f1,f2) ->
-        let f1 = aux f1 in
-        let f2 = aux f2 in
-        And (Or (f1, Not f2), Or (Not f1, f2))
-    | Imply (f1,f2) -> Or (Not (aux f1), aux f2)
-    | And (f1,f2) -> And (aux f1, aux f2)
-    | Or (f1,f2) -> Or (aux f1, aux f2)
-    | Not f -> Not (aux f) in
-  aux formula
+let eliminate_imply_and_equiv tf =
+  let rec aux tf =
+    let uid = fst tf in
+    match snd tf with
+    | TCmp _ -> tf
+    | TFVar _ -> tf
+    | TEquiv (tf1,tf2) ->
+        let tf1 = aux tf1 in
+        let tf2 = aux tf2 in
+        (uid, TAnd ((uid, TOr (tf1, (uid, TNot tf2))), (uid, TOr ((uid, TNot tf1), tf2))))
+    | TImply (tf1,tf2) -> (uid, TOr ((uid, TNot (aux tf1)), aux tf2))
+    | TAnd (tf1,tf2) -> (uid, TAnd (aux tf1, aux tf2))
+    | TOr (tf1,tf2) -> (uid, TOr (aux tf1, aux tf2))
+    | TNot tf -> (uid, TNot (aux tf)) in
+  aux tf
 
 (* Move logical negation inwards the formula by De Morgan's Law, e.g. not (a \/ b) --> (not a /\ not b).
    It supposes `eliminate_imply_and_equiv` has already been applied. *)
-let move_not_inwards formula =
-  let rec aux neg formula =
+let move_not_inwards tf =
+  let rec aux neg tf =
+    let uid = fst tf in
     if neg then
-      match formula with
-      | Cmp (e1, op, e2) -> Cmp (e1,Rewritting.neg op,e2)
-      | FVar f -> Not (FVar f)
-      | And (f1,f2) -> Or (aux true f1, aux true f2)
-      | Or (f1,f2) -> And (aux true f1, aux true f2)
-      | Not f -> aux false f
-      | Equiv _ | Imply _ -> failwith "`move_not_inwards` must be called after `eliminate_imply_and_equiv`."
+      match snd tf with
+      | TCmp c -> uid, TCmp (Rewritting.neg_bconstraint c)
+      | TFVar v -> uid, TNot (uid, TFVar v)
+      | TAnd (tf1,tf2) -> uid, TOr (aux true tf1, aux true tf2)
+      | TOr (tf1,tf2) -> uid, TAnd (aux true tf1, aux true tf2)
+      | TNot tf -> aux false tf
+      | TEquiv _ | TImply _ -> failwith "`move_not_inwards` must be called after `eliminate_imply_and_equiv`."
     else
-      match formula with
-      | Cmp _ as f -> f
-      | FVar _ as f -> f
-      | And (f1,f2) -> And (aux false f1, aux false f2)
-      | Or (f1,f2) -> Or (aux false f1, aux false f2)
-      | Not f -> aux true f
-      | Equiv _ | Imply _ -> failwith "`move_not_inwards` must be called after `eliminate_imply_and_equiv`." in
-  aux false formula
+      match snd tf with
+      | TCmp _ -> tf
+      | TFVar _ -> tf
+      | TAnd (tf1,tf2) -> uid, TAnd (aux false tf1, aux false tf2)
+      | TOr (tf1,tf2) -> uid, TOr (aux false tf1, aux false tf2)
+      | TNot tf -> aux true tf
+      | TEquiv _ | TImply _ -> failwith "`move_not_inwards` must be called after `eliminate_imply_and_equiv`." in
+  aux false tf
 
 (* Distribute `Or` over `And`: a \/ (b /\ c) --> (a \/ b) /\ (a \/ c). *)
-let distribute_or formula =
-  let rec aux = function
-    | Cmp _ as f -> f, false
-    | FVar _ as f -> f, false
-    | Or (f1, And (f2, f3)) -> And(Or(f1,f2), Or(f1,f3)), true
-    | Or (And(f1,f2), f3) -> aux (Or(f3, And(f1,f2)))
-    | And (f1,f2) ->
-        let (f1, t1) = aux f1 in
-        let (f2, t2) = aux f2 in
-        And (f1, f2), (t1 || t2)
-    | Or (f1,f2) ->
-        let (f1, t1) = aux f1 in
-        let (f2, t2) = aux f2 in
-        Or (f1, f2), (t1 || t2)
-    | Not f -> let (f1, t1) = aux f in Not f1, t1
-    | Equiv _ | Imply _ -> failwith "`distribute_or` must be called after `eliminate_imply_and_equiv`." in
-  let rec iter_aux (formula, has_changed) =
-    if has_changed then iter_aux (aux formula)
-    else formula in
-  iter_aux (formula, true)
+let distribute_or tf =
+  let rec aux tf =
+    let uid = fst tf in
+    match snd tf with
+    | TCmp _ -> tf, false
+    | TFVar _ -> tf, false
+    | TOr (tf1, (_,TAnd (tf2, tf3))) -> (uid, TAnd ((uid, TOr(tf1,tf2)), (uid, TOr(tf1,tf3)))), true
+    | TOr ((_, TAnd(tf1,tf2)), tf3) -> aux (uid, TOr(tf3, (uid, TAnd(tf1,tf2))))
+    | TAnd (tf1,tf2) ->
+        let (tf1, t1) = aux tf1 in
+        let (tf2, t2) = aux tf2 in
+        (uid, TAnd (tf1, tf2)), (t1 || t2)
+    | TOr (tf1,tf2) ->
+        let (tf1, t1) = aux tf1 in
+        let (tf2, t2) = aux tf2 in
+        (uid, TOr (tf1, tf2)), (t1 || t2)
+    | TNot f -> let (tf1, t1) = aux f in (uid, TNot tf1), t1
+    | TEquiv _ | TImply _ -> failwith "`distribute_or` must be called after `eliminate_imply_and_equiv`." in
+  let rec iter_aux (tf, has_changed) =
+    if has_changed then iter_aux (aux tf)
+    else tf in
+  iter_aux (tf, true)
 
 (* Naive conversion of a Boolean formula to a conjunctive normal form (CNF). *)
-let formula_to_cnf formula =
-  let formula = eliminate_imply_and_equiv formula in
-  let formula = move_not_inwards formula in
-  distribute_or formula
+let tformula_to_cnf tf =
+  let tf = eliminate_imply_and_equiv tf in
+  let tf = move_not_inwards tf in
+  distribute_or tf
 
 (* Given a formula in CNF, maps to each of its clauses.
    NOTE: this function assumes the formula is CNF. *)
-let map_clauses f formula =
-  let rec aux formula =
-    match formula with
-    | And(f1, f2) -> (aux f1)@(aux f2)
-    | Or _
-    | FVar _
-    | Not FVar _ -> [f formula]
+let map_clauses f tf =
+  let rec aux tf =
+    match snd tf with
+    | TAnd(tf1, tf2) -> (aux tf1)@(aux tf2)
+    | TOr _
+    | TFVar _
+    | TNot (_,TFVar _) -> [f tf]
     | _ -> failwith "`map_clauses` assumes the formula is in CNF." in
-  aux formula
+  aux tf
 
 module Sat_interpretation =
 struct
   type rconstraint = Lit.lit Vec.t
 
-  include Interpretation_base(struct type var_id=Solver.var end)
+  module IG = Interpretation_ground(struct type var_id=Solver.var end)
+  include IG
 
   let rewrite_clause repr clause =
-    let rec aux = function
-      | Cmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports Boolean variables (`FVar`).")
-      | FVar v -> [Lit.lit (to_abstract_var' repr v) false]
-      | Not (FVar v) -> [Lit.lit (to_abstract_var' repr v) true]
-      | Or (f1, f2) -> (aux f1)@(aux f2)
+    let rec aux tf =
+      match snd tf with
+      | TCmp _ -> raise (Wrong_modelling "Constraints are not supported in Boolean domain, it only supports Boolean variables (`FVar`).")
+      | TFVar v -> [Lit.lit (to_abstract_var' repr v) false]
+      | TNot ((_,TFVar v)) -> [Lit.lit (to_abstract_var' repr v) true]
+      | TOr (tf1, tf2) -> (aux tf1)@(aux tf2)
       | _ -> failwith "`rewrite_clause` is called on something else than a clause." in
     let clauses = aux clause in
     Vec.fromList clauses (List.length clauses)
 
-  let interpret repr _ formula =
-    let cnf = formula_to_cnf formula in
-    repr, map_clauses (rewrite_clause repr) cnf
+  let interpret repr _ tf =
+    IG.interpret_gen' repr "SAT" tf (fun repr tf ->
+      let cnf = tformula_to_cnf tf in
+      repr, map_clauses (rewrite_clause repr) cnf
+    )
 
-  let lit_to_formula repr lit =
-    let var = FVar (to_logic_var' repr (Lit.var lit)) in
-    if Lit.sign lit then Not var else var
+  let lit_to_formula (repr:t) lit =
+    let var = (uid repr), TFVar (to_logic_var' repr (Lit.var lit)) in
+    if Lit.sign lit then (uid repr), TNot var else var
 
   let to_disjunction repr clause =
-    disjunction (List.map (lit_to_formula repr) (Array.to_list (Vec.get_data clause)))
+    let literals = List.map (lit_to_formula repr) (Array.to_list (Vec.get_data clause)) in
+    let literals = List.map (fun l -> TQFFormula l) literals in
+    match q_disjunction (uid repr) literals with
+    | TQFFormula tf -> tf
+    | TExists _ -> failwith "unreachable because no variable has been added yet."
 
-  let to_formula repr cs = conjunction (List.map (to_disjunction repr) cs)
-
-  let to_qformula repr cs = equantify repr (to_formula repr cs)
+  let to_qformula repr cs = IG.to_qformula_gen repr cs to_disjunction
 end

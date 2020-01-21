@@ -18,6 +18,7 @@ open Domains.Abstract_domain
 open Sat_interpretation
 open Lang.Ast
 open Typing.Ad_type
+open Typing.Tast
 open Minisatml
 open Minisatml.Solver
 open Minisatml.Types
@@ -30,7 +31,6 @@ struct
   (* Unfortunately, minisatml relies on global variables.
      We should update it later. *)
   type t = {
-    uid: ad_uid;
     r: I.t;
     (* The depth is necessary to backtrack the state of minisat, it corresponds to the decision level. *)
     depth: int;
@@ -45,8 +45,10 @@ struct
 
   let dummy_learnt_clause = Vec.init 0 dummy_lit
 
+
+  let uid b = I.uid b.r
   let name = "SAT"
-  let type_of sat = Some (sat.uid, SAT)
+  let type_of sat = Some (uid sat, SAT)
 
   let interpretation sat = sat.r
   let map_interpretation sat f = {sat with r=(f sat.r)}
@@ -54,15 +56,12 @@ struct
   let empty uid =
     resetEnv ();
     {
-      uid;
-      r=I.empty ();
+      r=I.empty uid;
       depth=0;
       decision=dummy_lit;
       last_trail_idx=0;
       learnt_clause=dummy_learnt_clause;
     }
-
-  let uid b = b.uid
 
   type snapshot = t
 
@@ -82,12 +81,20 @@ struct
       cancelUntil snapshot.depth);
     { snapshot with learnt_clause=b.learnt_clause }
 
-  let extend ?(ty = Abstract Bool) b =
-    match ty with
-    | Abstract Bool -> let v = newVar () in
-        let _ = Printf.printf "Extend %d\n" v; flush_all () in
-        (b, v, Bool)
-    | ty -> raise (Wrong_modelling ("SAT abstract domain does not support variables of type " ^ (string_of_ty ty) ^ "."))
+  let interpret sat approx tqf =
+    let rec aux sat = function
+      | TQFFormula tf ->
+          let r, cs = I.interpret sat.r approx tf in
+          {sat with r}, cs
+      | TExists(tv, tqf) ->
+          match tv.ty with
+          | Abstract Bool ->
+              let v = newVar () in
+              let r = I.extend sat.r (v, tv) in
+              let _ = Printf.printf "Extend %d\n" v; flush_all () in
+              aux {sat with r} tqf
+          | ty -> raise (Wrong_modelling ("SAT abstract domain does not support variables of type " ^ (string_of_ty ty) ^ "."))
+    in aux sat tqf
 
   let project _ v =
     let open Types.Lbool in
@@ -176,21 +183,11 @@ struct
 
   let print _ _ = ()
 
-  type t' = t
-  include QInterpreter_base(struct
-    type t=t'
-    module I=I
-    let name=name
-    let interpretation=interpretation
-    let map_interpretation=map_interpretation
-    let extend=extend
-    let weak_incremental_closure=weak_incremental_closure end)
-
   let drain_events b =
     let trail = getTrail () in
     let rec aux i =
       if i >= Vec.size trail then []
-      else (b.uid, Vec.get trail i)::(aux (i+1))
+      else (uid b, Vec.get trail i)::(aux (i+1))
     in
     let events = aux b.last_trail_idx in
     {b with last_trail_idx = (Vec.size trail)}, events
@@ -198,7 +195,7 @@ struct
   let events_of b clause =
     let rec aux i =
       if i >= Vec.size clause then []
-      else (b.uid, Lit.var (Vec.get clause i))::(aux (i+1))
+      else (uid b, Lit.var (Vec.get clause i))::(aux (i+1))
     in
     aux 0
 end

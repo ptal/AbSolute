@@ -112,8 +112,11 @@ struct
   let interpret_bconstraint repr (e1, op, e2) =
     [(interpret_expr repr e1, op, interpret_expr repr e2)]
 
+  (* let c = ref 0 *)
+
   let interpret repr approx tf =
     check_approx_typing repr tf approx;
+    (* let _ = Printf.printf "Interpreted %d constraints in Box: %s.\n" (c := !c + 1; !c) (Lang.Pretty_print.string_of_formula (tformula_to_formula tf)); flush_all () in *)
     IG.interpret_gen repr "Box" tf interpret_bconstraint
 
   let to_logic_expr repr expr =

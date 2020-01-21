@@ -97,7 +97,8 @@ struct
 
   let debug typer make_msg =
     if typer.debug then
-      Printf.printf "%s%s\n" (make_indent typer.indent) (make_msg ())
+      (Printf.printf "%s%s\n" (make_indent typer.indent) (make_msg ());
+      flush_all ())
     else ()
 
   let string_of_adtys adtys =
@@ -114,12 +115,12 @@ struct
         string_of_adtys (List.map (fun x -> UID2Adty.find x typer.ad_env) ad_uids)
 
   let debug_adty typer make_msg adty =
-    if typer.debug then
+    if typer.debug && false then
       Printf.printf "%s%s %s\n" (make_indent typer.indent) (make_msg ()) (string_of_adty adty)
     else ()
 
   let debug_ty typer term ty =
-    if typer.debug then
+    if typer.debug && false then
       Printf.printf "%s%s:%s\n" (make_indent typer.indent)
         (term ()) (string_of_ity typer ty)
     else ()
@@ -624,4 +625,5 @@ let infer_type adty f =
   let tf = infer_constraints_ty_or_fail typer tf in
   let (typer, _) = restrict_variable_ty typer tf in
   let tf = instantiate_qformula_ty typer tf in
+  debug typer (fun () -> "\nFormula successfully typed.\n");
   make_tqformula tf

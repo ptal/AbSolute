@@ -86,6 +86,8 @@ struct
 
   let wrap r a = r.a := a; r
 
+  (* let c = ref 0 *)
+
   let interpret r approx tf =
     let forward_or r (uid, f) map_atom or_f =
       (* NOTE: It is important to check `r.uid <> uid` instead of `uid = A.uid !(r.a)`,
@@ -129,8 +131,10 @@ struct
             let r, f1 = top_aux r approx tf1 in
             let r, f2 = top_aux r approx tf2 in
             r, f1@f2
-        | _ -> let r, f = aux r approx tf in r, [f])
+        | _ ->
+            let r, f = aux r approx tf in r, [f])
     in
+      (* let _ = Printf.printf "Interpreted %d constraints in logic completion: (%s) %s.\n" (c := !c + 1; !c) (string_of_approx approx) (Lang.Pretty_print.string_of_formula (tformula_to_formula tf)); flush_all () in *)
       top_aux r approx tf
 
   let to_qformula r fs =

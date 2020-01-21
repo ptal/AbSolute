@@ -113,6 +113,10 @@ sig
   val interpret_gen: t -> string -> Tast.tformula
     -> (t -> Ast.bconstraint -> 'a list) -> t * 'a list
 
+  (** Same than [interpret_gen] but with a more general sub-interpretation function. *)
+  val interpret_gen': t -> string -> Tast.tformula
+    -> (t -> Tast.tformula -> t * 'a list) -> t * 'a list
+
   (** [to_qformula repr cs to_formula_one] creates a typed quantified formula.
       The function `to_formula_one` turns a rconstraint into its unquantified typed formula. *)
   val to_qformula_gen: t -> 'a list -> (t -> 'a -> Tast.tformula) -> Tast.tqformula

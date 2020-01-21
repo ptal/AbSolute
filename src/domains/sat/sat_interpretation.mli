@@ -10,23 +10,23 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Lang.Ast
+open Typing.Tast
 open Domains.Interpretation
 
 module type Sat_interpretation_sig =
 sig
   type rconstraint = Minisatml.Types.Lit.lit Minisatml.Vec.t
-  include module type of (Interpretation_base(
+  include module type of (Interpretation_ground(
     struct type
       var_id=Minisatml.Solver.var
     end))
 
   (** Create a set of clauses from a formula.
       The formula is rewritten into CNF. *)
-  val interpret: t -> approx_kind -> formula -> t * rconstraint list
+  val interpret: t -> approx_kind -> tformula -> t * rconstraint list
 
-  (** See [Interpretation.to_qformula] *)
-  val to_qformula: t -> rconstraint list -> qformula
+  (** See [Interpretation.to_tqformula] *)
+  val to_qformula: t -> rconstraint list -> tqformula
 end
 
 module Sat_interpretation: Sat_interpretation_sig

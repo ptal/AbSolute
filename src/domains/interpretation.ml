@@ -90,7 +90,7 @@ struct
   module IB = Interpretation_base(V_ID)
   include IB
 
-  let interpret_gen repr ad_name tf interpret_bconstraint =
+  let interpret_gen' repr ad_name tf interpret =
     let open Ast in
     if snd tf = ctrue then repr, []
     else
@@ -99,6 +99,12 @@ struct
         raise (Wrong_modelling (ad_name ^ ".interpret: The formula has the UID "
           ^ (string_of_int (fst tf)) ^ " but the " ^ ad_name ^ " element has the UID "
           ^ (string_of_int (IB.uid repr)) ^ "."));
+      interpret repr tf
+    end
+
+  let interpret_gen repr ad_name tf interpret_bconstraint =
+    let open Ast in
+    interpret_gen' repr ad_name tf (fun repr tf ->
       let rec aux (uid, f) =
         match f with
         | TCmp c -> interpret_bconstraint repr c
@@ -111,7 +117,7 @@ struct
             " - Formula " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula (uid,f)))))
       in
       (repr, aux tf)
-    end
+    )
 
   let to_qformula_gen repr cs to_formula_one =
     let fs = List.map (fun c -> TQFFormula (to_formula_one repr c)) cs in

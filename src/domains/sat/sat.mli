@@ -15,9 +15,9 @@
 
 open Bounds
 open Sat_interpretation
-open Event_loop.Event_abstract_domain
+open Domains.Abstract_domain
 
 module Sat:
-  Event_abstract_domain with
+  Abstract_domain with
     module B=Bound_int and
     module I=Sat_interpretation

@@ -165,7 +165,10 @@ struct
       | UnderApprox -> interpret_one_under_approx repr c
       | OverApprox -> interpret_one_over_approx repr c
 
+  (* let c = ref 0 *)
+
   let interpret repr approx tf =
+    (* let _ = Printf.printf "Interpreted %d constraints in Octagon (%s) %s.\n" (c := !c + 1; !c) (string_of_approx approx) (Lang.Pretty_print.string_of_formula (tformula_to_formula tf)); flush_all () in *)
     IG.interpret_gen repr "Octagon" tf (interpret_one approx)
 
   let negate c =

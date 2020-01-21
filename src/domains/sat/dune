@@ -2,7 +2,7 @@
   (name sat)
   (public_name absolute.sat)
   (libraries absolute.core absolute.bounds absolute.vardom absolute.lang absolute.domains
-    minisatml absolute.event_loop)
+    minisatml)
   (flags :standard)
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))

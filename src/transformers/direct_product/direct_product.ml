@@ -365,6 +365,7 @@ end
 module Direct_product(P: Prod_combinator) =
 struct
   module B = Bound_rat
+  let name = "Direct_product(" ^ P.name ^ ")"
 
   module I =
   struct
@@ -403,7 +404,6 @@ struct
 
   type t = I.t
 
-  let name = "Direct_product(" ^ P.name ^ ")"
 
   let init = I.init
   (* The UIDs of the product components are generated as follows `uid,...,uid+(n-1)`.
