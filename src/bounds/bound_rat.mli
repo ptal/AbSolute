@@ -15,6 +15,7 @@ val abstract_ty: Core.Types.var_abstract_ty
 val concrete_ty: Core.Types.var_concrete_ty
 val succ: t -> t
 val prec: t -> t
+val next_after: t -> t -> t
 val zero : t
 val one : t
 val two : t

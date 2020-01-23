@@ -45,6 +45,7 @@ let sign (x:t) : int =
 
 let succ x = x
 let prec x = x
+let next_after x y = Float.next_after x y
 
 (* conversion, printing *)
 

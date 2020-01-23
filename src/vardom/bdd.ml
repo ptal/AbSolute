@@ -18,6 +18,7 @@ open Core.Bot
 open Bounds
 open Vardom_sig
 open Lang
+open Typing
 
 (************************************************************************)
 (** {1 TYPES} *)
@@ -25,6 +26,7 @@ open Lang
 
 (** You should never use the N constructor but `bdd_of` instead (to ensure maximal sharing) *)
 type t = T | F | N of t*t
+type vardom_constraint = Tast.tvariable * Ast.cmpop * t
 module B = Bound_int
 type bound = B.t
 
@@ -63,6 +65,8 @@ let zero = T
 let one = N (F, T)
 
 let default_depth = 6
+
+let interpret _ _ = raise (Ast.Wrong_modelling "BDD.interpret is not implemented.")
 
 let top ?(ty = Types.Concrete Types.Int) ()=
   match ty with

@@ -28,13 +28,13 @@ end with module R=R
 module type Distributor = functor (R: Box_interpretation_sig) ->
 sig
   module R: Box_interpretation_sig
-  val distribute: R.var_id -> R.Vardom.B.t -> R.rconstraint list
+  val distribute: R.t -> R.var_id -> R.Vardom.t -> R.rconstraint list
 end with module R=R
 
 module type Box_split_sig = functor (R: Box_interpretation_sig) ->
 sig
   module R: Box_interpretation_sig
-  val split: R.Store.t -> R.rconstraint list
+  val split: R.t -> R.Store.t -> R.rconstraint list
 end with module R=R
 
 module Input_order(R: Box_interpretation_sig) =
@@ -116,24 +116,33 @@ module Assign (R: Box_interpretation_sig) =
 struct
   module R=R
   module V=R.Vardom
-  let make_cst v =
-    let v, ty = V.of_bounds (v,v) in
-    R.(make_expr (BCst (v, ty)))
-  let distribute var_idx value =
-    R.[(make_expr (BVar var_idx), Ast.EQ, make_cst value);
-       (make_expr (BVar var_idx), Ast.NEQ, make_cst value)]
+  let distribute repr var_idx value =
+    let tv = R.to_logic_var repr var_idx in
+    let left = V.interpret Exact (tv,Ast.EQ,value) in
+    let right = V.interpret Exact (tv,Ast.NEQ,value) in
+    [(var_idx,left);(var_idx,right)]
 end
 
 module Bisect (R: Box_interpretation_sig) =
 struct
   module R=R
   module V=R.Vardom
-  let make_cst v =
-    let v, ty = V.of_bounds (v,v) in
-    R.(make_expr (BCst (v, ty)))
-  let distribute var_idx value =
-    R.[(make_expr (BVar var_idx), Ast.LEQ, make_cst value);
-       (make_expr (BVar var_idx), Ast.GT, make_cst value)]
+  let distribute repr var_idx value =
+    let tv = R.to_logic_var repr var_idx in
+    let left = V.interpret Exact (tv,Ast.LEQ,value) in
+    let right = V.interpret Exact (tv,Ast.GT,value) in
+    [(var_idx,left);(var_idx,right)]
+end
+
+module ReverseBisect (R: Box_interpretation_sig) =
+struct
+  module R=R
+  module V=R.Vardom
+  let distribute repr var_idx value =
+    let tv = R.to_logic_var repr var_idx in
+    let left = V.interpret Exact (tv,Ast.GEQ,value) in
+    let right = V.interpret Exact (tv,Ast.LT,value) in
+    [(var_idx,left);(var_idx,right)]
 end
 
 module Make
@@ -147,15 +156,16 @@ struct
   module Value = VALUE(R)
   module Distrib = DISTRIB(R)
 
-  let split store =
+  let split repr store =
     match Variable.select store with
     | None -> []
     | Some (var_idx, vardom) ->
-        Distrib.distribute var_idx (Value.select vardom)
+        let value = R.Vardom.of_bound (Value.select vardom) in
+        Distrib.distribute repr var_idx value
 end
 
 module First_fail_bisect = Make(First_fail)(Middle)(Bisect)
-module First_fail_LB = Make(First_fail)(Lower_bound)(Assign)
-module Anti_first_fail_LB = Make(Anti_first_fail)(Lower_bound)(Assign)
-module Anti_first_fail_UB = Make(Anti_first_fail)(Upper_bound)(Assign)
+module First_fail_LB = Make(First_fail)(Lower_bound)(Bisect)
+module Anti_first_fail_LB = Make(Anti_first_fail)(Lower_bound)(Bisect)
+module Anti_first_fail_UB = Make(Anti_first_fail)(Upper_bound)(ReverseBisect)
 module MSLF_simple = First_fail_LB

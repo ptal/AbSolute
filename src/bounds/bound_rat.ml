@@ -18,11 +18,6 @@ let type_of = Types.Q
 let abstract_ty = Types.Machine Types.Q
 let concrete_ty = Types.Real
 
-(* ordering *)
-
-let succ x = x
-let prec x = x
-
 (* useful constants *)
 let zero : t = Mpqf.of_int 0
 let one : t = Mpqf.of_int 1
@@ -72,7 +67,7 @@ let min (x:t) (y:t) : t = if (compare x y) <= 0 then x else y
 let max (x:t) (y:t) : t = if (compare x y) >= 0 then x else y
 
 let sign (x:t) : int =
-    match classify x with
+  match classify x with
   | FINITE -> Mpqf.sgn x
   | INF -> 1
   | MINF -> -1
@@ -221,3 +216,16 @@ let pow_up x n = of_float ((to_float_up x) ** (float n))
 let pow_down x n =  of_float (-. ((-. (to_float_up x)) ** (float n)))
 let root_up x n =  of_float (exp((log (to_float_up x)) /. (float n)))
 let root_down x n =  of_float (exp((log (to_float_up x)) /. (float n)))
+
+
+(* ordering *)
+
+(* Yes, this epsilon is arbitrary. *)
+let epsilon = of_float 0.000000001
+
+let succ x = x
+let prec x = x
+let next_after x y =
+  if gt x y then sub_down x epsilon
+  else if lt x y then add_up x epsilon
+  else y

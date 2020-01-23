@@ -15,6 +15,7 @@ open Core.Bot
 open Bounds
 open Lang
 open Typing
+open Domains.Interpretation
 
 module Make(B: Bound_sig.S) = struct
   module OC_itv_of_bounds =
@@ -26,6 +27,8 @@ module Make(B: Bound_sig.S) = struct
 
     type real_bound = kind * bound
     type t = real_bound * real_bound
+
+    type vardom_constraint = Tast.tvariable * Ast.cmpop * t
 
     (* returns the half space defined by a bound and a direction.
        - true for going toward +oo
@@ -876,6 +879,52 @@ module Make(B: Bound_sig.S) = struct
       in
       Nb i'
     with Invalid_argument _ -> Bot
+
+  let neq_not_supported () =
+    raise (Ast.Wrong_modelling ("[" ^ name ^ "] <> is not supported."))
+  let approximated_constant_err op =
+    raise (Ast.Wrong_modelling ("[" ^ name ^ "] Constant could not be interpreted exactly (operator " ^ op ^ ") but an exact interpretation is required."))
+
+  let interpret approx (_,op,i) =
+    let open Ast in
+    let exact_constant = is_singleton i in
+    let ((_,l),(_,u)) = i in
+    match op with
+    | NEQ -> neq_not_supported ()
+    | EQ when exact_constant -> i
+    | EQ -> approximated_constant_err "="
+    | GEQ when exact_constant -> half_sup u
+    | GEQ ->
+      begin
+        match approx with
+        | Exact -> approximated_constant_err ">="
+        | OverApprox -> strict l B.inf
+        | UnderApprox -> large_strict u B.inf
+      end
+    | LEQ when exact_constant -> half_inf l
+    | LEQ ->
+      begin
+        match approx with
+        | Exact -> approximated_constant_err "<="
+        | OverApprox -> strict B.minus_inf u
+        | UnderApprox -> strict_large B.minus_inf l
+      end
+    | GT when exact_constant -> strict l B.inf
+    | GT ->
+      begin
+        match approx with
+        | Exact -> approximated_constant_err ">"
+        | OverApprox -> strict l B.inf
+        | UnderApprox -> large_strict u B.inf
+      end
+    | LT when exact_constant -> strict B.minus_inf u
+    | LT ->
+      begin
+        match approx with
+        | Exact -> approximated_constant_err "<"
+        | OverApprox -> strict B.minus_inf u
+        | UnderApprox -> strict_large B.minus_inf l
+      end
 end
 
 module Test = Make(Bound_float)

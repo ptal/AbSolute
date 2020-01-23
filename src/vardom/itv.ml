@@ -21,6 +21,7 @@ open Bounds
 open Lang
 open Typing
 open Vardom_sig
+open Domains.Interpretation
 
 module Itv(B : Bound_sig.S) = struct
 
@@ -55,6 +56,7 @@ module Itv(B : Bound_sig.S) = struct
   end
 
   include Vardom_factory.Make(Itv_of_bounds)
+  type vardom_constraint = Tast.tvariable * Ast.cmpop * t
 
   let validate = Itv_of_bounds.validate
 
@@ -609,6 +611,63 @@ module Itv(B : Bound_sig.S) = struct
         |> validate
         |> to_bot
     with Invalid_argument _ -> Bot
+
+  let neq_not_supported () =
+    raise (Ast.Wrong_modelling ("[" ^ name ^ "] <> is not supported."))
+  let no_exact_interpretation_err op =
+    raise (Ast.Wrong_modelling ("[" ^ name ^ "] " ^ op ^ " has no exact interpretation in this vardom."))
+  let approximated_constant_err op =
+    raise (Ast.Wrong_modelling ("[" ^ name ^ "] Constant could not be interpreted exactly (operator " ^ op ^ ") but an exact interpretation is required."))
+
+  let singleton l = of_bound l
+
+  let rewrite_strict_inequalities approx op (l,u) =
+    let open Ast in
+    match op with
+    | LT ->
+        if B.concrete_ty = Real then
+          match approx with
+          | Exact -> no_exact_interpretation_err "<"
+          | UnderApprox -> LEQ, singleton (B.next_after l (B.sub_down l B.one))
+          | OverApprox -> LEQ, (l,l)
+        else
+          LEQ, singleton (B.prec l)
+    | GT ->
+        if B.concrete_ty = Real then
+          match approx with
+          | Exact -> no_exact_interpretation_err ">"
+          | UnderApprox -> GEQ, singleton (B.next_after l (B.add_up l B.one))
+          | OverApprox -> GEQ, (u,u)
+        else
+          GEQ, singleton (B.succ u)
+    | _ -> op, (l,u)
+
+  let interpret approx (_,op,(l,u)) =
+    let open Ast in
+    let op, (l,u) = rewrite_strict_inequalities approx op (l,u) in
+    let exact_constant = is_singleton (l,u) in
+    match op with
+    | NEQ -> neq_not_supported ()
+    | EQ when exact_constant -> (l,u)
+    | EQ -> approximated_constant_err "="
+    | GEQ when exact_constant -> u, B.inf
+    | GEQ ->
+      begin
+        match approx with
+        | Exact -> approximated_constant_err ">="
+        | OverApprox -> l, B.inf
+        | UnderApprox -> u, B.inf
+      end
+    | LEQ when exact_constant -> B.minus_inf, l
+    | LEQ ->
+      begin
+        match approx with
+        | Exact -> approximated_constant_err "<="
+        | OverApprox -> B.minus_inf, l
+        | UnderApprox -> B.minus_inf, u
+      end
+    | LT | GT -> failwith
+        "Unreachable because LT and GT are rewritten in `rewrite_strict_inequalities`."
 end
 
 module ItvF = Itv(Bound_float)

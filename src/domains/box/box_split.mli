@@ -28,13 +28,13 @@ end with module R=R
 module type Distributor = functor (R: Box_interpretation_sig) ->
 sig
   module R: Box_interpretation_sig
-  val distribute: R.var_id -> R.Vardom.B.t -> R.rconstraint list
+  val distribute: R.t -> R.var_id -> R.Vardom.t -> R.rconstraint list
 end with module R=R
 
 module type Box_split_sig = functor (R: Box_interpretation_sig) ->
 sig
   module R: Box_interpretation_sig
-  val split: R.Store.t -> R.rconstraint list
+  val split: R.t -> R.Store.t -> R.rconstraint list
 end with module R=R
 
 module Input_order : Variable_order
@@ -46,7 +46,12 @@ module Lower_bound : Value_order
 module Upper_bound : Value_order
 
 module Assign : Distributor
+
+(** X <= m \/ X > m *)
 module Bisect : Distributor
+
+(** X >= m \/ X < m *)
+module ReverseBisect : Distributor
 
 module Make
   (VARIABLE: Variable_order)

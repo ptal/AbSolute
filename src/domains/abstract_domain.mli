@@ -157,27 +157,3 @@ sig
   (** [events_of t c] returns the events of the constraints `c`. *)
   val events_of: t -> I.rconstraint -> event list
 end
-
-(*
-(** This module is just useful for `QInterpreter_base` below. *)
-module type Small_abstract_domain =
-sig
-  type t
-  module I: Interpretation_sig
-  val name: string
-  val interpretation: t -> I.t
-  val map_interpretation: t -> (I.t -> I.t) -> t
-  val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
-  val weak_incremental_closure: t -> I.rconstraint -> t
-end
-
-(** `QInterpret_base` provides a default implementation of the function `qinterpret`.
-    It can be included in the abstract domains. *)
-module QInterpreter_base(A: Small_abstract_domain) :
-sig
-  (** Extends the abstract element with a fresh variable.
-      Returns `true` if the variable has been added, and `false` if it was already present. *)
-  val extend_var: A.t -> (Ast.var * Types.var_ty) -> A.t * bool
-  val qinterpret: A.t -> approx_kind -> Tast.tqformula -> A.t
-end
-*)

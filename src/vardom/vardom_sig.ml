@@ -19,6 +19,7 @@ open Core.Bot
 open Bounds
 open Lang
 open Typing
+open Domains.Interpretation
 open Vardom_factory
 
 (** Language of unary and binary operations that can be applied to `vardom`. *)
@@ -29,11 +30,19 @@ module type Vardom_sig = sig
 
   include Vardom_factory_sig
 
+  (** See [interpret]. *)
+  type vardom_constraint = Tast.tvariable * Ast.cmpop * t
+
   (** Name of the Vardom.
       See also `Abstract_domain.name`. *)
   val name: string
 
   val type_of: unit -> Ad_type.vardom_ty
+
+  (** Interpret the expression `v <op> constant` where constant has already been evaluated in this vardom.
+      Returns the value of `v` fulfilling this constraint according to the approximation.
+      Raise Wrong_modelling if the interpretation is not possible. *)
+  val interpret: approx_kind -> vardom_constraint -> t
 
   (** Top element (the less precise element) of the Vardom.
       In case of a concrete type, a suited abstract representation is picked,

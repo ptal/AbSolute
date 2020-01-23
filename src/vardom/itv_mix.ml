@@ -15,6 +15,7 @@ open Core.Bot
 open Bounds
 open Lang
 open Typing
+open Typing.Tast
 
 module I = Itv.ItvI
 module R = Open_close_itv.Test
@@ -22,6 +23,7 @@ module R = Open_close_itv.Test
 module Itv_mix_of_bounds =
 struct
   type t = Int of I.t | Real of R.t
+  type vardom_constraint = Tast.tvariable * Ast.cmpop * t
   (* Rational can represent both floating point numbers and integers. *)
   module B = Bound_rat
   type bound = B.t
@@ -464,3 +466,8 @@ let filter_fun (name:string) (args:t list) (res:t) : (t list) bot =
   let args = List.map (function Real x -> x | Int x -> (to_float x)) args in
   let float_res = match res with Real x -> x | Int x -> to_float x in
   lift_bot (List.map make_real) (R.filter_fun name args float_res)
+
+let interpret approx (tv,op,v) =
+  Itv_mix_of_bounds.type_dispatch tv.ty
+    (fun _ -> Int (I.interpret approx (tv,op,I.of_rat v)))
+    (fun _ -> Real (R.interpret approx (tv,op,R.of_rat v)))

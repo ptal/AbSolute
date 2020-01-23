@@ -46,6 +46,7 @@ let sign _ = 0
 
 let succ x = x
 let prec x = x
+let next_after _ y = y
 
 let of_int_up _ = ()
 let of_int_down _ = ()

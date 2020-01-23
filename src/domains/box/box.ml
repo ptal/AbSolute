@@ -12,27 +12,23 @@
 
 module Box_split = Box_split
 module Box_interpretation = Box_interpretation
-module Hc4 = Hc4
 module Var_store = Var_store
 
 open Core
 open Core.Kleene
 open Domains.Abstract_domain
-open Lang
-open Typing
 open Typing.Ad_type
 open Typing.Tast
 open Bounds
 open Vardom
 open Box_interpretation
-open Event_loop.Schedulable_abstract_domain
 
 module type Box_sig =
 sig
   module B: Bound_sig.S
   module Vardom: Vardom_sig.Vardom_sig with module B := B
   type vardom = Vardom.t
-  include Schedulable_abstract_domain with module B := B
+  include Abstract_domain with module B := B
 
   (** `project_vardom box v` projects the domain of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom
@@ -48,7 +44,6 @@ struct
   module Vardom = VARDOM(B)
   module I = Box_interpretation(Vardom)
   module Store = I.Store
-  module Closure = Hc4.Make(I)
   module Split = SPLIT(I)
   module V = Vardom
   module B = V.B
@@ -57,24 +52,20 @@ struct
   type t = {
     r: I.t;
     store: Store.t;
-    constraints: I.rconstraint Parray.t;
-    (* Store the new constraint's indices since last call to `drain_tasks`. *)
-    new_tasks: int list;
-    num_active_tasks: int;
   }
 
   let interpretation box = box.r
   let map_interpretation box f = {box with r=(f box.r)}
 
-  (* Reexported functions from the parametrized modules. *)
-  let entailment box = Closure.entailment box.store
+  let entailment box (vid,v) =
+    try
+      let store = Store.set box.store vid v in
+      box.store == store
+    with Bot.Bot_found -> false
 
   let empty uid = {
     r = I.empty uid;
     store=Store.empty;
-    constraints = Tools.empty_parray ();
-    new_tasks = [];
-    num_active_tasks = 0;
   }
 
   let uid box = I.uid box.r
@@ -91,7 +82,7 @@ struct
       | TExists(tv, tqf) ->
           let (store, idx, aty) = Store.extend ~ty:(tv.ty) box.store in
           let r = I.extend box.r (idx, {tv with ty = Abstract aty}) in
-          aux {box with r; store} tqf
+          aux {r; store} tqf
     in aux box tqf
 
   let project_vardom box v = Store.get box.store v
@@ -99,7 +90,8 @@ struct
   let project box v = V.to_range (project_vardom box v)
 
   type snapshot = t
-  let lazy_copy box n = List.map (fun s -> { box with store=s }) (Store.lazy_copy box.store n)
+  let lazy_copy box n =
+    List.map (fun s -> { box with store=s }) (Store.lazy_copy box.store n)
   let restore _ s = s
 
   let volume box =
@@ -114,58 +106,26 @@ struct
     else
       vol
 
-  let print_store fmt (repr,store) =
-    let print_entry idx vardom =
-      Format.fprintf fmt "%s=%a \n" (I.to_logic_var' repr idx) V.print vardom in
-    Store.iter print_entry store
-
-  let print_box_cons fmt f =
-    let f = Tast.quantifier_free_of f in
-    Format.fprintf fmt "%a\n" Pretty_print.print_formula
-      (Tast.tformula_to_formula f)
-
   let print fmt box =
-    Format.fprintf fmt "%a\n" print_store (box.r,box.store);
-    Parray.iter (fun c -> print_box_cons fmt (I.to_qformula box.r [c])) box.constraints
+    let print_entry idx vardom =
+      Format.fprintf fmt "%s=%a \n" (I.to_logic_var' box.r idx) V.print vardom in
+    Store.iter print_entry box.store
 
-  (** Closure is performed by `Event_loop` calling `exec_task`. *)
+  (** A box is always directly closed when adding the constraint. *)
   let closure box = box, false
 
-  (** We propagate the constraint immediately.
-      If the constraint is not entailed, it is added into the box. *)
-  let weak_incremental_closure box c =
-    (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula box.r [c]); flush_all () in *)
-    (* Format.fprintf Format.std_formatter "%a\n" print_store (box.r,box.store); *)
-    let store, entailed = Closure.incremental_closure box.store c in
-    let box = { box with store } in
-    if entailed then box
-    else
-      let c_idx = Parray.length box.constraints in
-      let constraints = Tools.extend_parray box.constraints c in
-      { box with constraints;
-          new_tasks=c_idx::box.new_tasks;
-          num_active_tasks=box.num_active_tasks+1 }
+  let weak_incremental_closure box (vid, v) =
+    let store = Store.set box.store vid v in
+    { box with store }
 
-  (* Entailed constraints are automatically deactivated by `Event_loop`. *)
-  let state box =
-    if box.num_active_tasks = 0 then True
-    else Unknown
+  let state _ = True
 
   let split box =
-    let branches = Split.split box.store in
-    (* Printf.printf "Box.Split %d\n" (List.length branches); flush_all (); *)
+    let branches = Split.split box.r box.store in
     let boxes = lazy_copy box (List.length branches) in
-    (* We remove the branch that are unsatisfiable. *)
     List.flatten (List.map2 (fun box branch ->
-      (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula box.r [branch]); flush_all () in *)
       try [weak_incremental_closure box branch]
-      with Bot.Bot_found -> (* Printf.printf "unsat\n"; flush_all (); *) []) boxes branches)
-
-  let exec_task box (_,c_idx) =
-    let store, entailed = Closure.incremental_closure box.store
-      (Parray.get box.constraints c_idx) in
-    let num_active_tasks = box.num_active_tasks - (if entailed then 1 else 0) in
-    { box with store; num_active_tasks }, entailed
+      with Bot.Bot_found -> []) boxes branches)
 
   let make_events box vars : event list =
     List.map (fun v -> (uid box, v)) vars
@@ -174,17 +134,7 @@ struct
     let store, deltas = Store.delta box.store in
     { box with store }, (make_events box deltas)
 
-  let events_of box c =
-    let vars = List.sort_uniq compare (I.vars_of_constraint c) in
-    make_events box vars
-
-  let drain_tasks box =
-    let drain_one acc c_idx =
-      let c = Parray.get box.constraints c_idx in
-      let events = events_of box c in
-      ((uid box, c_idx), events)::acc in
-    let tasks_events = List.fold_left drain_one [] box.new_tasks in
-    ({ box with new_tasks=[] }, tasks_events)
+  let events_of box (vid,_) = make_events box [vid]
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor =

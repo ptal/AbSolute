@@ -10,8 +10,6 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Core
-open Lang.Ast
 open Typing
 open Vardom
 open Var_store
@@ -29,37 +27,11 @@ sig
   include module type of (Interpretation_ground(struct type var_id=Store.key end))
 
   type var_dom = Store.cell
-
-  (** We annotate each node of this expression with its interval evaluation.
-    This is useful for the HC4 algorithm.
-    The `value` field is get_vars_set_formulanever backtracked, it is only useful to propagate inside on node of the search tree. *)
-  type rexpr = {
-    node: node;
-    mutable value: Vardom.t
-  }
-  and node =
-    | BFuncall of string * rexpr list
-    | BUnary   of unop * rexpr
-    | BBinary  of rexpr * binop * rexpr
-    | BVar     of var_id
-    | BCst     of Vardom.t * Types.var_abstract_ty
-
-  type rconstraint = rexpr * cmpop * rexpr
+  type rconstraint = var_id * var_dom
 
   val exact_interpretation: bool
-
-  (** Over-approximation is always supported.
-      No special effort is currently made for supporting under-approximations, it is considered equivalent to Exact representation.
-      Exact representation is supported if the abstract types of the variables of `f` are all different from floating point numbers. *)
   val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> Tast.tqformula
-
-  (** Create an expression from a node.
-      The vardom ref is initialized to TOP. *)
-  val make_expr: node -> rexpr
-
-  (** List of variables occuring in the constraint (duplicates possible). *)
-  val vars_of_constraint: rconstraint -> var_id list
 end
 
 module type Box_interpretation_functor = functor (Vardom: Vardom_sig.Vardom_sig) -> Box_interpretation_sig

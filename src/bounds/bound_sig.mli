@@ -49,6 +49,11 @@ module type S = sig
   val succ: t -> t
   val prec: t -> t
 
+  (** [next_after x y] returns the next representable bound following x in the direction of y.
+      Note that for rational, this next element is not necessarily the closest.
+      See [OCaml.Float.next_after]. *)
+  val next_after: t -> t -> t
+
   (* construction *)
   (* ************ *)
 

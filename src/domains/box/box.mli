@@ -12,12 +12,11 @@
 
 module Box_split = Box_split
 module Box_interpretation = Box_interpretation
-module Hc4 = Hc4
 module Var_store = Var_store
 
 open Bounds
 open Vardom
-open Event_loop.Schedulable_abstract_domain
+open Domains.Abstract_domain
 
 (** Box are an event-based abstract domain and must be encapsulated in an `Event_loop`.
     The `closure` operator is the identity function since it is decomposed in many tasks
@@ -27,7 +26,7 @@ sig
   module B: Bound_sig.S
   module Vardom: Vardom_sig.Vardom_sig with module B := B
   type vardom = Vardom.t
-  include Schedulable_abstract_domain with module B := B
+  include Abstract_domain with module B := B
 
   (** `project_vardom box v` projects the domain of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom

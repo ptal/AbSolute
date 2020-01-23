@@ -119,6 +119,10 @@ let classify (x:t) : kind =
 let is_continuous = false
 let succ x = if x = inf || x = minus_inf then x else x + 1
 let prec x = if x = inf || x = minus_inf then x else x - 1
+let next_after x y =
+  if x > y then prec x
+  else if x < y then succ x
+  else y
 
 let neg x =
   if x = inf then minus_inf
