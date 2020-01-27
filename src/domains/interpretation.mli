@@ -29,6 +29,9 @@ val neg_approx: approx_kind -> approx_kind
 (** Past participle form of the verb representing the approximation (i.e. "under-approximated"). *)
 val string_of_approx: approx_kind -> string
 
+(** Common error message for abstract domains that do not support variables (although their sub-domains might support variables). *)
+val no_variable_exn: string -> unit
+
 (** Every abstract domain may have a different variable and constraint representation according to their internal implementation.
   We ask every abstract domain to provide an interpretation module in order to connect the logic specification (`Ast.tqformula`) and the representation of the abstract domain.
   This module can also interpret a logic constraint into a more suited representation of the abstract domain.
@@ -51,11 +54,6 @@ module type Interpretation_sig = sig
 
   (** An empty interpretation. *)
   val empty: ad_uid -> t
-
-  (** `True` if the variable `v` exists in the abstract element.
-      Note that it does not necessarily implies that a mapping exists.
-      This is convenient for abstract domain that are defined on top of others domains such as `Logic_product`. *)
-  val exists: t -> Ast.vname -> bool
 
   (** Conversions utilities between logical variables and their
      representations. *)
@@ -90,6 +88,9 @@ sig
   (** Add a mapping between a logical variable and its representation
      in the abstract domain. *)
   val extend: t -> var_id * Tast.tvariable -> t
+
+  (** `True` if the variable `v` exists in the abstract element.
+    Note that it does not necessarily implies that a mapping exists. *)
   val exists: t -> Ast.vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
@@ -105,18 +106,26 @@ sig
   val to_abstract_var_wm: t -> Ast.vname -> (var_id * Tast.tvariable)
 end
 
+(** [guarded_interpret a uid ad_name tf next] is a helper function to interpret a formula.
+    It checks that the formula's UID matches the one of the domain, and that the formula is not a tautology. *)
+val guarded_interpret: 'a -> ad_uid -> string -> Tast.tformula
+  -> ('a -> Tast.tformula -> 'a * 'b list) -> 'a * 'b list
+
+(** [ground_interpret a uid ad_name tf interpret_bconstraint] traverses the formula and interpret every constraint.
+    Raises Wrong_modelling if logic connectors other than conjunctions are present in the formula.  *)
+val ground_interpret: 'a -> ad_uid -> string -> Tast.tformula
+  -> ('a -> Ast.bconstraint -> 'b list) -> 'a * 'b list
+
 (** Helper functions to interpret and transform constraints in ground abstract domains. *)
 module Interpretation_ground(V_ID:sig type var_id end):
 sig
   include module type of (Interpretation_base(V_ID))
 
-  (** [interpret_helper repr ad_name approx tf interpret_bconstraint] is a helper function to interpret a formula.
-      It checks that the formula's UID matches the one of the domain, and that the formula is not a tautology.
-      It also checks that only ground constraints connected with conjunction are used in the formula. *)
+  (** Convenient aggregation of [guarded_interpret] and [ground_interpret]. *)
   val interpret_gen: t -> string -> Tast.tformula
     -> (t -> Ast.bconstraint -> 'a list) -> t * 'a list
 
-  (** Same than [interpret_gen] but with a more general sub-interpretation function. *)
+  (** Conveniency version of [guarded_interpret]. *)
   val interpret_gen': t -> string -> Tast.tformula
     -> (t -> Tast.tformula -> t * 'a list) -> t * 'a list
 

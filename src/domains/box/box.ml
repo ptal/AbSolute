@@ -26,7 +26,7 @@ open Box_interpretation
 module type Box_sig =
 sig
   module B: Bound_sig.S
-  module Vardom: Vardom_sig.Vardom_sig with module B := B
+  module Vardom: Vardom_sig.S with module B := B
   type vardom = Vardom.t
   include Abstract_domain with module B := B
 
@@ -135,6 +135,7 @@ struct
     { box with store }, (make_events box deltas)
 
   let events_of box (vid,_) = make_events box [vid]
+  let events_of_var box vid = make_events box [vid]
 end
 
 module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor =

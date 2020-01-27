@@ -11,12 +11,12 @@
    Lesser General Public License for more details. *)
 
 open Core
-open Vardom.Vardom_sig
+open Vardom
 
 module type Var_store_sig =
 sig
   type t
-  module V: Vardom_sig
+  module V: Vardom_sig.S
   type cell=V.t
   type key=int
 
@@ -31,9 +31,9 @@ sig
   val delta: t -> t * key list
 end
 
-module type Var_store_functor = functor (V: Vardom_sig) -> Var_store_sig with module V=V
+module type Var_store_functor = functor (V: Vardom_sig.S) -> Var_store_sig with module V=V
 
-module Make(V: Vardom_sig) =
+module Make(V: Vardom_sig.S) =
 struct
   module V = V
   type cell = V.t

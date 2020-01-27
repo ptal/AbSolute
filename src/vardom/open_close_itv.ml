@@ -15,6 +15,7 @@ open Core.Bot
 open Bounds
 open Lang
 open Typing
+open Typing.Tast
 open Domains.Interpretation
 
 module Make(B: Bound_sig.S) = struct
@@ -925,6 +926,26 @@ module Make(B: Bound_sig.S) = struct
         | OverApprox -> strict B.minus_inf u
         | UnderApprox -> strict_large B.minus_inf l
       end
+
+  let to_formula ((k,l),(k',u)) tv =
+    let make_cons x op v = Some (tv.uid, TCmp (Var x, op, Cst (B.to_rat v, B.concrete_ty))) in
+    let lb_cons =
+      if B.classify l = FINITE then
+        match k with
+        | Strict -> make_cons tv.name GT l
+        | Large -> make_cons tv.name GEQ l
+      else None in
+    let ub_cons =
+      if B.classify u = FINITE then
+        match k' with
+        | Strict -> make_cons tv.name LT u
+        | Large -> make_cons tv.name LEQ u
+      else None in
+    match lb_cons, ub_cons with
+    | Some c1, Some c2 -> (tv.uid, TAnd(c1,c2))
+    | Some c1, None -> c1
+    | None, Some c2 -> c2
+    | None, None -> (tv.uid, ctrue)
 end
 
 module Test = Make(Bound_float)

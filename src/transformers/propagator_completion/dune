@@ -1,0 +1,10 @@
+(library
+  (name propagator_completion)
+  (public_name absolute.propagator_completion)
+  (libraries absolute.core absolute.bounds absolute.vardom absolute.lang absolute.lang.typing
+     absolute.domains absolute.event_loop)
+  (flags :standard)
+  (ocamlopt_flags (:standard -O3))
+  ;(ocamlopt_flags (:standard -p))
+  (modules :standard)
+)

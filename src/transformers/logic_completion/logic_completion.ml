@@ -33,17 +33,13 @@ sig
 
   val exact_interpretation: bool
   val empty: ad_uid -> t
-  val exists: t -> Ast.vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
   val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
 
-(* We do not support variable in this product to avoid overlap with `Direct_product` in functionalities. *)
-let no_variable_exn from = raise (Wrong_modelling
-  (from ^ " abstract domain does not support variable. \
-   Variables should be manipulated directly in the corresponding subdomain or through another product."))
+let no_variable_exn msg = no_variable_exn msg; failwith "unreachable"
 
 module Logic_completion_interpretation(A: Abstract_domain) =
 struct
@@ -84,8 +80,6 @@ struct
   let empty _ = raise (Wrong_modelling "`Logic_completion_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Logic_completion`.")
   let to_logic_var _ _ = no_variable_exn "Logic_completion_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_completion_interpretation.to_abstract_var"
-
-  let exists repr x = A.I.exists (A.interpretation !(repr.a)) x
 
   let wrap r a = r.a := a; r
 
@@ -337,6 +331,8 @@ struct
       (aux f1.positive.tell)@(aux f2.positive.tell)
     in List.sort_uniq compare (aux qf)
 
+  let events_of_var _ _ = []
+
   let drain_tasks lc =
     let drain_one acc c_idx =
       let c = Parray.get lc.constraints c_idx in
@@ -353,5 +349,4 @@ struct
   | TQFFormula tf ->
       let (repr, fs) = I.interpret lc.repr approx tf in
       { lc with repr }, fs
-
 end

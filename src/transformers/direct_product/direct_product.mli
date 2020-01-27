@@ -37,7 +37,6 @@ sig
 
   val init: init_t -> t
   val empty: unit -> t
-  val exists: t -> vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
   val to_qformula: t -> gconstraint list -> tqformula list
@@ -65,6 +64,7 @@ sig
   val print: Format.formatter -> t -> unit
   val drain_events: t -> (t * event list)
   val events_of: t -> rconstraint -> event list
+  val events_of_var: t -> var_id -> event list
 end
 
 module Prod_atom(A: Abstract_domain) :

@@ -59,10 +59,10 @@ struct
   let positive = of_bounds' (B.zero, B.inf)
   let negative = of_bounds' (B.minus_inf, B.zero)
 
-  let of_ints l h = of_bounds' ~ty:Types.(Concrete Int) ((B.of_int_down l),(B.of_int_up h))
+  let of_ints l h = of_bounds' ~ty:Types.(Concrete B.concrete_ty) ((B.of_int_down l),(B.of_int_up h))
   let of_int x = of_ints x x
-  let of_rats l h = of_bounds' ~ty:Types.(Concrete Real) ((B.of_rat_down l),(B.of_rat_up h))
+  let of_rats l h = of_bounds' ~ty:Types.(Concrete B.concrete_ty) ((B.of_rat_down l),(B.of_rat_up h))
   let of_rat x = of_rats x x
-  let of_floats l h = of_bounds' ~ty:Types.(Concrete Real) ((B.of_float_down l),(B.of_float_up h))
+  let of_floats l h = of_bounds' ~ty:Types.(Concrete B.concrete_ty) ((B.of_float_down l),(B.of_float_up h))
   let of_float x = of_floats x x
 end

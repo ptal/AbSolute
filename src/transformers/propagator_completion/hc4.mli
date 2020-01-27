@@ -10,18 +10,16 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-open Box_interpretation
+open Pc_interpretation
 
-module type Box_closure_sig = functor (R: Box_interpretation_sig) ->
+module type PC_closure_sig = functor (I: PC_interpretation_sig) ->
 sig
-  module R : Box_interpretation_sig
-  module Store = R.Store
+  module I: PC_interpretation_sig
 
   (** Perform the filtering of the constraint.
-      Returns `(store, b)` where `store` is the resulting store and `b` is true if the constraint is entailed. *)
-  val incremental_closure: Store.t -> R.rconstraint -> (Store.t * bool)
-  val entailment: Store.t -> R.rconstraint -> bool
+      Returns `(a, b)` where `a` is the resulting abstract element and `b` is true if the constraint is entailed. *)
+  val incremental_closure: I.A.t -> I.rconstraint -> I.A.t * bool
+  val entailment: I.A.t -> I.rconstraint -> bool
+end with module I=I
 
-end with module R=R
-
-module Make : Box_closure_sig
+module Make : PC_closure_sig

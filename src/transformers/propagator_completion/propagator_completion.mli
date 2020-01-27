@@ -1,4 +1,4 @@
-(* Copyright 2019 AbSolute Team
+(* Copyright 2020 Pierre Talbot
 
    This program is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
@@ -10,33 +10,30 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-module Box_split = Box_split
-module Box_interpretation = Box_interpretation
-module Var_store = Var_store
+module PC_interpretation = Pc_interpretation
+module Hc4 = Hc4
 
 open Bounds
 open Vardom
 open Domains.Abstract_domain
+open Event_loop.Schedulable_abstract_domain
+open Pc_interpretation
 
-(** Box are an event-based abstract domain and must be encapsulated in an `Event_loop`.
+(** Propagator_completion is an event-based abstract domain and must be encapsulated in an `Event_loop`.
     The `closure` operator is the identity function since it is decomposed in many tasks
     handled by `Event_loop`. *)
-module type Box_sig =
+module type Propagator_completion_sig =
 sig
   module B: Bound_sig.S
-  module Vardom: Vardom_sig.S with module B := B
-  type vardom = Vardom.t
-  include Abstract_domain with module B := B
-
-  (** `project_vardom box v` projects the domain of the variable `v`. *)
-  val project_vardom: t -> I.var_id -> vardom
+  module V: Vardom_sig.S
+  module I: PC_interpretation_sig
+  type vardom = V.t
+  include Schedulable_abstract_domain with
+    module B := B and module I := I
+  val init: I.t -> t
 end
 
-module type Box_functor = functor (B: Bound_sig.S) -> Box_sig
-
-module Make
-  (B: Bound_sig.S)
-  (VARDOM: Vardom_sig.Vardom_functor)
-  (SPLIT: Box_split.Box_split_sig) : Box_sig
-
-module Box_base(SPLIT: Box_split.Box_split_sig) : Box_functor
+module Propagator_completion
+  (V: Vardom_sig.S)
+  (A: Abstract_domain) : Propagator_completion_sig
+with module V = V and module I.A = A

@@ -40,6 +40,8 @@ In a more detailed way:
 5. Publish the new version (see below).
 
 If you modify interfaces that are shared by several abstract domains (such as [abstract_domain.mli](https://github.com/ptal/AbSolute/blob/master/src/domains/abstract_domain.mli)), you should create an issue on Github to discuss about it with the team, since it impacts virtually all the project.
+It is important to try to keep the number of functions in the signature minimal.
+If you notice a function is not used anymore, you should not hesitate to remove it; but please contact us to validate your hypothesis so you don't lose time trying to remove it.
 
 About the coding guidelines, you should try to code in the same way than the rest of the project, please observe how we code and do the same.
 One very important rule is that you indent using *2 spaces* and __not tabulations__, and create `.ml` and its documented `.mli` companion for every new file.

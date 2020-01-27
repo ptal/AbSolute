@@ -19,6 +19,7 @@ open Core.Bot
 open Bounds
 open Lang
 open Typing
+open Typing.Tast
 open Domains.Interpretation
 open Vardom_factory
 
@@ -26,12 +27,12 @@ open Vardom_factory
 type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
 type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
 
-module type Vardom_sig = sig
+module type S = sig
 
   include Vardom_factory_sig
 
   (** See [interpret]. *)
-  type vardom_constraint = Tast.tvariable * Ast.cmpop * t
+  type vardom_constraint = tvariable * Ast.cmpop * t
 
   (** Name of the Vardom.
       See also `Abstract_domain.name`. *)
@@ -43,6 +44,9 @@ module type Vardom_sig = sig
       Returns the value of `v` fulfilling this constraint according to the approximation.
       Raise Wrong_modelling if the interpretation is not possible. *)
   val interpret: approx_kind -> vardom_constraint -> t
+
+  (** Create a formula from the current vardom for the variable in parameter. *)
+  val to_formula: t -> tvariable -> tformula
 
   (** Top element (the less precise element) of the Vardom.
       In case of a concrete type, a suited abstract representation is picked,
@@ -148,4 +152,4 @@ module type Vardom_sig = sig
   val filter_binop_f: binop_kind -> t -> t -> t -> t bot
 end
 
-module type Vardom_functor = functor (B: Bound_sig.S) -> Vardom_sig with module B=B
+module type Vardom_functor = functor (B: Bound_sig.S) -> S with module B=B

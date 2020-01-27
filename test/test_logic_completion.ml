@@ -13,39 +13,45 @@
 open Core.Types
 open Typing.Tast
 open Domains.Interpretation
-open Event_loop.Schedulable_abstract_domain
 open Event_loop
 open Direct_product
 open Logic_completion
+open Vardom
+open Propagator_completion
+open Box
 
 open Test_box
 
-module LC_tester(S: Schedulable_abstract_domain) =
+let box_uid = 1
+let s_uid = 2
+let lc_uid = 3
+
+module LC_tester(Box: Box_sig) =
 struct
-  module LC = Logic_completion(S)
-  module E = Event_loop(Event_cons(S)(Event_atom(LC)))
+  module PC = Propagator_completion(Itv.Itv(B))(Box)
+  module LC = Logic_completion(PC)
+  module E = Event_loop(Event_cons(PC)(Event_atom(LC)))
   module A = Direct_product(
-      Prod_cons(S)(
+      Prod_cons(Box)(
+      Prod_cons(PC)(
       Prod_cons(LC)(
-      Prod_atom(E))))
+      Prod_atom(E)))))
 
   module I = A.I
 
-  let s_uid = 1
-  let lc_uid = 2
-
   let init_vars vars =
-    let s = ref (S.empty s_uid) in
-    let lc = ref (LC.init LC.I.{uid=lc_uid;a=s}) in
-    let event = ref (E.init 3 (s,lc)) in
-    let a = A.init 0 (s, (lc, event)) in
+    let box = ref (Box.empty box_uid) in
+    let pc = ref (PC.init {a=box; uid=s_uid}) in
+    let lc = ref (LC.init LC.I.{uid=lc_uid;a=pc}) in
+    let event = ref (E.init 4 (pc,lc)) in
+    let a = A.init 0 (box, (pc, (lc, event))) in
     let tf = List.fold_left
-      (fun f name -> TExists(({name; ty=(Concrete Int); uid=s_uid}),f)) ttrue vars in
+      (fun f name -> TExists(({name; ty=(Concrete Int); uid=box_uid}),f)) ttrue vars in
     fst (A.interpret a Exact tf)
 
   (** Type all c in cs with s_uid, and assemble them in a disjunction typed with the logic_completion. *)
   let init_constraints a cs =
-    let cs = List.map (fun c -> TQFFormula ((s_uid, TCmp c))) cs in
+    let cs = List.map (fun (_,c) -> TQFFormula ((s_uid, TCmp c))) cs in
     let cs = q_disjunction lc_uid cs in
     let a, cs = A.interpret a Exact cs in
     List.fold_left A.weak_incremental_closure a cs

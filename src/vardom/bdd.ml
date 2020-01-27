@@ -67,6 +67,7 @@ let one = N (F, T)
 let default_depth = 6
 
 let interpret _ _ = raise (Ast.Wrong_modelling "BDD.interpret is not implemented.")
+let to_formula _ _ = raise (Ast.Wrong_modelling "BDD.to_formula is not implemented.")
 
 let top ?(ty = Types.Concrete Types.Int) ()=
   match ty with

@@ -69,6 +69,8 @@ sig
   val create_typing_error: string -> iformula -> string
 
   val variable_not_in_dom_err: t -> ad_uid -> vname -> inferred_type
+  val variable_not_in_subdom_err: t -> ad_uid -> ad_uid -> vname -> inferred_type
+  val not_a_box_constraint_err: t -> ad_uid -> inferred_type
   val not_an_octagonal_constraint_err: t -> ad_uid -> inferred_type
   val ground_dom_does_not_handle_logic_connector_err: t -> ad_uid -> inferred_type
   val no_domain_support_this_variable_err: t -> ad_uid -> vname -> var_ty -> inferred_type
@@ -99,7 +101,7 @@ sig
   val fully_defined_over: t -> ad_uid -> bconstraint -> vname option
 
   (** Infer the type of all the box constraints. *)
-  val box_infer: t -> ad_uid -> iformula -> iformula
+  val box_infer: t -> ad_uid -> vardom_ty -> iformula -> iformula
 
   (** Infer the type of all the octagonal constraints. *)
   val octagon_infer: t -> ad_uid -> iformula -> iformula
@@ -116,6 +118,9 @@ sig
 
   (** Infer the type of all subformulas compatible with the logic completion of the given domain's type. *)
   val logic_completion_infer: t -> ad_uid -> iformula -> ad_ty -> iformula
+
+  (** Infer the type of all constraints compatible with the propagator completion of the given domain's type. *)
+  val propagator_completion_infer: t -> ad_uid -> iformula -> ad_ty -> iformula
 
   (** General inference of a formula with regards to the available abstract domain type. *)
   val infer_constraints_ty: t -> iformula -> ad_ty -> iformula

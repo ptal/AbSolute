@@ -20,6 +20,7 @@ open Core.Bot
 open Bounds
 open Lang
 open Typing
+open Typing.Tast
 open Vardom_sig
 open Domains.Interpretation
 
@@ -668,6 +669,22 @@ module Itv(B : Bound_sig.S) = struct
       end
     | LT | GT -> failwith
         "Unreachable because LT and GT are rewritten in `rewrite_strict_inequalities`."
+
+  let to_formula (l,u) tv =
+    let make_cons x op v = Some (tv.uid, TCmp (Var x, op, Cst (B.to_rat v, B.concrete_ty))) in
+    let lb_cons =
+      if B.classify l = FINITE then
+        make_cons tv.name GEQ l
+      else None in
+    let ub_cons =
+      if B.classify u = FINITE then
+        make_cons tv.name LEQ u
+      else None in
+    match lb_cons, ub_cons with
+    | Some c1, Some c2 -> (tv.uid, TAnd(c1,c2))
+    | Some c1, None -> c1
+    | None, Some c2 -> c2
+    | None, None -> (tv.uid, ctrue)
 end
 
 module ItvF = Itv(Bound_float)

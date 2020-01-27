@@ -152,6 +152,7 @@ struct
     { octagon with dbm }, (make_events octagon deltas)
 
   let events_of octagon c = [(uid octagon, event_of_var c.v)]
+  let events_of_var octagon v = [(uid octagon, event_of_var v)]
 end
 
 module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureHoistZ)(SPLIT)

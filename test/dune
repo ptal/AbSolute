@@ -1,7 +1,7 @@
 (executable
  (name run_tests)
  (libraries alcotest absolute absolute.box absolute.octagon
-    absolute.direct_product absolute.event_loop absolute.logic_completion
+    absolute.direct_product absolute.event_loop absolute.logic_completion absolute.propagator_completion
     absolute.lang absolute.bounds)
 )
 

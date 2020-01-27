@@ -24,6 +24,8 @@ open Typing.Ad_type
 exception Conflict of int
 
 type task = ad_uid * int
+
+(** An event is usually a variable index of some sort. *)
 type event = ad_uid * int
 
 (** We require that abstract domains internalize their connection to the logical formula.
@@ -156,4 +158,9 @@ sig
 
   (** [events_of t c] returns the events of the constraints `c`. *)
   val events_of: t -> I.rconstraint -> event list
+
+  (** [events_of_var t v] creates the events relevant to the variable `v`.
+      Product domains should not subsume the events of their sub-domains (by replacing the UID).
+      For instance, the domain `Box X Oct` where a variable is both in Box and Oct returns two events for a same variable. *)
+  val events_of_var: t -> I.var_id -> event list
 end

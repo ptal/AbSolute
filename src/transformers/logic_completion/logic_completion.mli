@@ -38,7 +38,6 @@ sig
 
   val exact_interpretation: bool
   val empty: ad_uid -> t
-  val exists: t -> vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
 

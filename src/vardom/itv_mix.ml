@@ -471,3 +471,8 @@ let interpret approx (tv,op,v) =
   Itv_mix_of_bounds.type_dispatch tv.ty
     (fun _ -> Int (I.interpret approx (tv,op,I.of_rat v)))
     (fun _ -> Real (R.interpret approx (tv,op,R.of_rat v)))
+
+let to_formula itv tv =
+  match itv with
+  | Int itv -> I.to_formula itv tv
+  | Real itv -> R.to_formula itv tv

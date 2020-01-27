@@ -12,25 +12,24 @@
 
 open Lang.Ast
 open Core.Bot
-open Vardom.Vardom_sig
+open Typing.Tast
 open Lang.Rewritting
-open Box_interpretation
+open Pc_interpretation
 
-module type Box_closure_sig = functor (R: Box_interpretation_sig) ->
+module type PC_closure_sig = functor (I: PC_interpretation_sig) ->
 sig
-  module R: Box_interpretation_sig
-  module Store = R.Store
-  val incremental_closure: Store.t -> R.rconstraint -> Store.t * bool
-  val entailment: Store.t -> R.rconstraint -> bool
-end with module R=R
+  module I: PC_interpretation_sig
+  val incremental_closure: I.A.t -> I.rconstraint -> I.A.t * bool
+  val entailment: I.A.t -> I.rconstraint -> bool
+end with module I=I
 
-module Make(R: Box_interpretation_sig) =
+module Make(I: PC_interpretation_sig) =
 struct
-  module R = R
-  module Store = R.Store
-  module V = Store.V
+  module I = I
+  module A = I.A
+  module V = I.V
 
-  let expr_val expr = R.(expr.value)
+  let expr_val expr = I.(expr.value)
   let exprs_val exprs = List.map expr_val exprs
 
   (* I. Evaluation part
@@ -43,21 +42,23 @@ struct
      - We raise Bot_found in case the expression only evaluates to error values.
      - Otherwise, we return only the non-error values.
    *)
-  let rec eval store expr =
-    let open R in
+  let rec eval abs expr =
+    let open I in
     match expr.node with
-    | BVar v -> expr.value <- R.Store.get store v
+    | BVar (vid, _) ->
+        let (l,u) = A.project abs vid in
+        expr.value <- V.of_rats (A.B.to_rat l) (A.B.to_rat u)
     | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
       begin
-        eval store e1;
+        eval abs e1;
         match o with
         | NEG -> expr.value <- V.unop NEG (expr_val e1)
       end
     | BBinary (e1,o,e2) ->
       begin
-        eval store e1;
-        eval store e2;
+        eval abs e1;
+        eval abs e2;
         let v1 = expr_val e1 and v2 = expr_val e2 in
         let v = match o with
         | ADD -> V.binop ADD v1 v2
@@ -74,7 +75,7 @@ struct
       end
     | BFuncall(name, args) ->
       begin
-        List.iter (eval store) args;
+        List.iter (eval abs) args;
         let r = debot (V.eval_fun name (exprs_val args)) in
         expr.value <- r
       end
@@ -94,7 +95,7 @@ struct
 
   (* refines binary operator to handle constants *)
   let refine_bop f1 f2 e1 e2 x (b:bool) =
-    let open R in
+    let open I in
     match e1.node, e2.node, b with
     | BCst _, BCst _, _ -> Nb (e1.value, e2.value)
     | BCst _, _, true -> merge_bot2 (Nb e1.value) (f2 e2.value e1.value x)
@@ -119,18 +120,21 @@ struct
   let refine_div u v r =
     refine_bop V.filter_div_f (V.filter_binop_f MUL) u v r false
 
-  let rec refine store root expr =
-    let open R in
+  let rec refine abs root expr =
+    let open I in
     match expr with
     | BFuncall(name,args) ->
-       let res = V.filter_fun name (List.map (fun e -> R.(e.value)) args) root in
-       List.fold_left2 (fun acc res e -> refine acc res e.node) store (debot res) args
-    | BVar v -> R.Store.set store v root
-    | BCst (i,_) -> ignore (debot (V.meet root i)); store
+       let res = V.filter_fun name (List.map (fun e -> I.(e.value)) args) root in
+       List.fold_left2 (fun acc res e -> refine acc res e.node) abs (debot res) args
+    | BVar (_, tv) ->
+        let tf = TQFFormula (V.to_formula root tv) in
+        let abs, cs = A.interpret abs OverApprox tf in
+        List.fold_left A.weak_incremental_closure abs cs
+    | BCst (i,_) -> ignore (debot (V.meet root i)); abs
     | BUnary (op,e) ->
        let j = match op with
          | NEG -> V.filter_unop NEG e.value root
-       in refine store (debot j) e.node
+       in refine abs (debot j) e.node
     | BBinary (e1,o,e2) ->
        let j = match o with
          | ADD -> refine_add e1 e2 root
@@ -140,14 +144,14 @@ struct
          | POW -> V.filter_binop POW e1.value e2.value root
        in
        let j1,j2 = debot j in
-       refine (refine store j1 e1.node) j2 e2.node
+       refine (refine abs j1 e1.node) j2 e2.node
 
   (* III. HC4-revise algorithm (combining eval and refine).
 
      Apply the evaluation followed by the refine step of the HC4-revise algorithm.
-     It prunes the domain of the variables in `store` according to the constraint `e1 o e2`.
+     It prunes the domain of the variables in `abs` according to the constraint `e1 o e2`.
   *)
-  let hc4_revise store (e1,op,e2) =
+  let hc4_revise abs (e1,op,e2) =
     let i1,i2 = expr_val e1, expr_val e2 in
     let j1,j2 = match op with
       | LT  -> debot (V.filter_lt i1 i2)
@@ -158,27 +162,27 @@ struct
       | NEQ -> debot (V.filter_neq i1 i2)
       | EQ  -> debot (V.filter_eq i1 i2)
     in
-    let refined_store = if V.equal j1 i1 then store else refine store j1 R.(e1.node) in
-    if j2 = i2 then refined_store else refine refined_store j2 R.(e2.node)
+    let refined_store = if V.equal j1 i1 then abs else refine abs j1 I.(e1.node) in
+    if j2 = i2 then refined_store else refine refined_store j2 I.(e2.node)
 
-  let hc4_eval_revise store (e1,op,e2) =
+  let hc4_eval_revise abs (e1,op,e2) =
   begin
-    eval store e1;
-    eval store e2;
-    let store = hc4_revise store (e1,op,e2) in
+    eval abs e1;
+    eval abs e2;
+    let abs = hc4_revise abs (e1,op,e2) in
     try
-      ignore(hc4_revise store (e1,neg op,e2));
-      store, false
-    with Bot_found -> store, true
+      ignore(hc4_revise abs (e1,neg op,e2));
+      abs, false
+    with Bot_found -> abs, true
   end
 
-  let incremental_closure store c = hc4_eval_revise store c
+  let incremental_closure abs c = hc4_eval_revise abs c
 
-  let entailment store (e1,op,e2) =
+  let entailment abs (e1,op,e2) =
     try
-      eval store e1;
-      eval store e2;
-      ignore(hc4_revise store (e1,neg op,e2));
+      eval abs e1;
+      eval abs e2;
+      ignore(hc4_revise abs (e1,neg op,e2));
       false
     with
     | Bot_found -> true

@@ -17,7 +17,7 @@ open Domains.Interpretation
 
 module type Box_interpretation_sig =
 sig
-  module Vardom: Vardom_sig.Vardom_sig
+  module Vardom: Vardom_sig.S
 
   (** We depend on the store to represent the `var_id`.
       However, the store is contained in `Box` itself and not here.
@@ -34,7 +34,7 @@ sig
   val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
 
-module type Box_interpretation_functor = functor (Vardom: Vardom_sig.Vardom_sig) -> Box_interpretation_sig
+module type Box_interpretation_functor = functor (Vardom: Vardom_sig.S) -> Box_interpretation_sig
   with module Vardom=Vardom
 
 module Box_interpretation: Box_interpretation_functor

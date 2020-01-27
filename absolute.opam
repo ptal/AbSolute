@@ -2,11 +2,11 @@ url {
   src: "https://github.com/ptal/AbSolute/zipball/v0.6.0"
 }
 opam-version: "2.0"
-maintainer: "Pierre Talbot <pierre.talbot@univ-nantes.fr>"
+maintainer: "Pierre Talbot <pierre.talbot@uni.lu>"
 authors: [
   "Marie Pelleau <marie.pelleau@i3s.unice.fr>"
   "Ghiles Ziat <ghiles.ziat@lip6.fr>"
-  "Pierre Talbot <pierre.talbot@univ-nantes.fr>"
+  "Pierre Talbot <pierre.talbot@uni.lu>"
 ]
 homepage: "https://github.com/ptal/AbSolute"
 bug-reports: "https://github.com/ptal/AbSolute/issues"

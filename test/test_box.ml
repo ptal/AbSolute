@@ -14,32 +14,37 @@ open Core.Types
 open Lang
 open Lang.Ast
 open Typing.Tast
+open Typing.Ad_type
 open Domains.Interpretation
 open Domains.Abstract_domain
 open Event_loop
 open Direct_product
+open Propagator_completion
 open Bounds
 open Box
+open Vardom
 
 (* I. Data *)
 
 let x = Ast.Var "x"
 let y = Ast.Var "y"
 
+let box_uid = 1
+let pc_uid = 2
+
 let constraints_Z =
   let open Ast in
   let constraints =
-    [(x, GEQ); (* x >= -1 *)
-     (x, LEQ); (* x <= 5 *)
-     (y, GEQ); (* y >= 0 *)
-     (y, LEQ); (* y <= 5 *)
-     (Binary (x, ADD, y), LEQ)] (* x + y <= 3 *)
+    [(box_uid, x, GEQ, -1); (* x >= -1 *)
+     (box_uid, x, LEQ, 5); (* x <= 5 *)
+     (box_uid, y, GEQ, 0); (* y >= 0 *)
+     (box_uid, y, LEQ, 5); (* y <= 5 *)
+     (pc_uid, Binary (x, ADD, y), LEQ, 3)] (* x + y <= 3 *)
   in
-  List.map2 (fun (l,op) r -> (l, op, Cst (Bound_rat.of_int r, Int)))
+  List.map (fun (uid, l,op,r) -> uid, (l, op, Cst (Bound_rat.of_int r, Int)))
     constraints
-    [-1; 5; 0; 5; 3]
 
-let x_eq_one = Ast.(x, EQ, Cst (Bound_rat.one, Int))
+let x_eq_one = (box_uid, Ast.(x, EQ, Cst (Bound_rat.one, Int)))
 
 (* II. Tests utilities *)
 
@@ -50,7 +55,7 @@ module type Abstract_tester_sig =
 sig
   module A: Abstract_domain
   val init_vars: vname list -> A.t
-  val init_constraints: A.t -> bconstraint list -> A.t
+  val init_constraints: A.t -> (ad_uid * bconstraint) list -> A.t
   val expect_bound_eq: string -> string -> int -> int -> unit
   val expect_domain_eq: A.t -> (string * int * int) list -> unit
 end
@@ -58,26 +63,28 @@ end
 module Box_tester(Box: Box_sig) =
 struct
   module Box = Box
-  module E = Event_loop(Event_atom(Box))
+  module PC = Propagator_completion(Itv.Itv(B))(Box)
+  module E = Event_loop(Event_atom(PC))
   module A = Direct_product(
       Prod_cons(Box)(
-      Prod_atom(E)))
+      Prod_cons(PC)(
+      Prod_atom(E))))
 
   module I = A.I
 
-  let box_uid = 1
-
   let init_vars vars =
     let box = ref (Box.empty box_uid) in
-    let event = ref (E.init 2 box) in
-    let a = A.init 0 (box, event) in
+    let pc = ref (PC.init PC.I.{a=box;uid=pc_uid}) in
+    let event = ref (E.init 3 pc) in
+    let a = A.init 0 (box, (pc, event)) in
     let tf = List.fold_left
       (fun f name -> TExists(({name; ty=(Concrete Int); uid=box_uid}),f)) ttrue vars in
     fst (A.interpret a Exact tf)
 
   let init_constraints a cs =
-    let cs = List.map (fun c -> TQFFormula ((box_uid, TCmp c))) cs in
-    let cs = q_conjunction box_uid cs in
+    let max_uid = List.fold_left (fun x (y,_) -> max x y) 0 cs in
+    let cs = List.map (fun (uid,c) -> TQFFormula ((uid, TCmp c))) cs in
+    let cs = q_conjunction max_uid cs in
     let a, cs = A.interpret a Exact cs in
     List.fold_left A.weak_incremental_closure a cs
 
@@ -120,7 +127,7 @@ let test_Z () =
 
 open Box_split
 module Input_order_bisect = Make(Input_order)(Middle)(Bisect)
-module Input_order_assign_lb = Make(Input_order)(Lower_bound)(Assign)
+module Input_order_assign_lb = Make(Input_order)(Lower_bound)(Bisect)
 
 let test_split name (module Box: Box_sig) left_branch right_branch =
 begin

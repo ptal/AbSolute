@@ -11,17 +11,16 @@
    Lesser General Public License for more details. *)
 
 open Core
-open Bounds
 open Domains.Interpretation
 open Typing.Tast
 open Lang
 open Lang.Ast
-open Vardom.Vardom_sig
+open Vardom
 open Var_store
 
 module type Box_interpretation_sig =
 sig
-  module Vardom: Vardom_sig
+  module Vardom: Vardom_sig.S
   module Store: Var_store_sig with module V=Vardom
 
   include module type of (Interpretation_ground(struct type var_id=Store.key end))
@@ -33,10 +32,10 @@ sig
   val to_qformula: t -> rconstraint list -> tqformula
 end
 
-module type Box_interpretation_functor = functor (Vardom: Vardom_sig) -> Box_interpretation_sig
+module type Box_interpretation_functor = functor (Vardom: Vardom_sig.S) -> Box_interpretation_sig
   with module Vardom=Vardom
 
-module Box_interpretation = functor (Vardom: Vardom_sig) ->
+module Box_interpretation = functor (Vardom: Vardom_sig.S) ->
 struct
   module Vardom = Vardom
   module Store = Var_store.Make(Vardom)
@@ -63,25 +62,9 @@ struct
   let interpret repr approx tf =
     IG.interpret_gen repr "Box" tf (interpret_bconstraint approx)
 
-  (* NOTE: It would be more precise if we add to_formula in Vardom as well, and use this one here.
-     For instance, we could have `x > l` from Open_close_itv. *)
   let to_formula_one repr (vid, v) =
-    let x = IG.to_logic_var' repr vid in
-    let make_cons x op v = Some (IG.uid repr, TCmp (Var x, op, Cst (v, Vardom.B.concrete_ty))) in
-    let (l,u) = Vardom.to_rational_range v in
-    let lb_cons =
-      if Bound_rat.classify l = FINITE then
-        make_cons x GEQ l
-      else None in
-    let ub_cons =
-      if Bound_rat.classify u = FINITE then
-        make_cons x LEQ u
-      else None in
-    match lb_cons, ub_cons with
-    | Some c1, Some c2 -> (IG.uid repr, TAnd(c1,c2))
-    | Some c1, None -> c1
-    | None, Some c2 -> c2
-    | None, None -> (IG.uid repr, ctrue)
+    let tv = IG.to_logic_var repr vid in
+    Vardom.to_formula v tv
 
   let to_qformula repr cs = IG.to_qformula_gen repr cs to_formula_one
 end

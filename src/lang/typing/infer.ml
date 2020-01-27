@@ -115,12 +115,12 @@ struct
         string_of_adtys (List.map (fun x -> UID2Adty.find x typer.ad_env) ad_uids)
 
   let debug_adty typer make_msg adty =
-    if typer.debug && false then
+    if typer.debug then
       Printf.printf "%s%s %s\n" (make_indent typer.indent) (make_msg ()) (string_of_adty adty)
     else ()
 
   let debug_ty typer term ty =
-    if typer.debug && false then
+    if typer.debug then
       Printf.printf "%s%s:%s\n" (make_indent typer.indent)
         (term ()) (string_of_ity typer ty)
     else ()
@@ -139,8 +139,17 @@ struct
   let variable_not_in_dom_err typer uid v =
     gen_err typer uid (fun () -> "Variable `" ^ v ^ "` does not belong to the abstract domain.")
 
-  let not_an_octagonal_constraint_err typer uid =
-    gen_err typer uid (fun () -> "Constraint is not an octagonal constraint, so we cannot add it into octagon.")
+  let variable_not_in_subdom_err typer uid sub_uid v =
+   gen_err typer uid (fun () -> "Variable `" ^ v ^ "` does not belong to the sub-domain `"
+    ^ (ad_name typer sub_uid) ^ "`.\n"
+    ^ "Note that this domain do not represent variables by itself but relies on the sub-domain.")
+
+  let not_a_constraint_err typer uid ad_name_adj ad_name =
+    gen_err typer uid (fun () ->
+      ("The constraint is not a " ^ ad_name_adj ^ " constraint, so we cannot add it into " ^ ad_name ^ "."))
+
+  let not_a_box_constraint_err typer uid = not_a_constraint_err typer uid "box" "box"
+  let not_an_octagonal_constraint_err typer uid = not_a_constraint_err typer uid "octagonal" "octagon"
 
   let ground_dom_does_not_handle_logic_connector_err typer uid =
     gen_err typer uid (fun () -> "Ground abstract domain does not support logic connectors other than conjunction.")
@@ -218,6 +227,10 @@ struct
     | Abstract (Machine ty) -> vty = ty
     | Abstract Bool -> vty = Z
     | Abstract _ -> false
+
+  (* For now, no vardom support hole in their domains. *)
+  let is_vardom_support_neq = function
+    | Interval _ | Interval_oc _ | Interval_mix -> false
 
   let rec infer_var ty adty =
     let is_boolean = function
@@ -309,11 +322,22 @@ struct
     let vars = vars_of_bconstraint c in
     List.find_opt (fun v -> not (belong typer uid v)) vars
 
-  let box_infer typer box_uid tf =
+  let box_infer typer box_uid vardom tf =
+    let is_box_constraint ((_, op, _) as c) =
+      let vars = vars_of_bconstraint c in
+      if List.length vars <= 1 then
+        match op with
+        | NEQ -> is_vardom_support_neq vardom
+        | _ -> true
+      else
+        false in
     let term_infer c =
-      match fully_defined_over typer box_uid c with
-      | None -> Typed [box_uid]
-      | Some v -> variable_not_in_dom_err typer box_uid v
+      if is_box_constraint c then
+        match fully_defined_over typer box_uid c with
+        | None -> Typed [box_uid]
+        | Some v -> variable_not_in_dom_err typer box_uid v
+      else
+        not_a_box_constraint_err typer box_uid
     in ground_dom_infer typer box_uid term_infer tf
 
   let octagon_infer typer oct_uid tf =
@@ -379,11 +403,12 @@ struct
     debug_adty typer (fun () -> "Typing of `" ^ (string_of_aformula tf) ^ "` with abstract domain") (uid, adty);
     let typer = indent typer in
     match adty with
-    | Box _ -> box_infer typer uid tf
+    | Box vardom -> box_infer typer uid vardom tf
     | Octagon _ -> octagon_infer typer uid tf
     | SAT -> sat_infer typer uid tf
     | Direct_product adtys -> direct_product_infer typer uid tf adtys
     | Logic_completion adty -> logic_completion_infer typer uid tf adty
+    | Propagator_completion adty -> propagator_completion_infer typer uid tf adty
   and direct_product_infer typer dp_uid tf adtys =
     (* (1) Attempt to give a type to the formula `tf` in every component individually. *)
     let tf = List.fold_left (infer_constraints_ty typer) tf adtys in
@@ -419,9 +444,6 @@ struct
              However, we do not assign `dp_uid` to this formula, if we did, it means we want this formula to be treated in every domain of the product (redundant information).
              Redundant constraints might be interesting to explore, but this is for future work (at least the typing framework already support it). *)
           ty,f
-(*           match ty with
-          | Typed uids when List.length (Tools.intersect adtys_uids uids) > 0 -> ty, f
-          | _ -> ty, f *)
     in
       match aux tf with
       | CannotType msg, f -> direct_product_no_subdomain_err typer dp_uid msg, f
@@ -432,10 +454,18 @@ struct
     let tf = infer_constraints_ty (indent typer) tf adty in
     (* Whenever this term is typed in the sub-domain of the completion, the completion can handle it too. *)
     let lc_term _ tf =
-      if is_mgad adty (uids_of tf) then Typed [lc_uid]
-      else logic_completion_subdomain_failed_on_term_err typer lc_uid
+      match fst tf with
+      | Typed _ when is_mgad adty (uids_of tf) -> Typed [lc_uid]
+      | _ -> logic_completion_subdomain_failed_on_term_err typer lc_uid
     in
     generic_formula_infer typer lc_uid tf lc_term lc_term
+  and propagator_completion_infer typer pc_uid tf adty =
+    let tf = infer_constraints_ty (indent typer) tf adty in
+    let term_infer c =
+      match fully_defined_over typer (fst adty) c with
+        | None -> Typed [pc_uid]
+        | Some v -> variable_not_in_subdom_err typer pc_uid (fst adty) v
+    in ground_dom_infer typer pc_uid term_infer tf
 
   let infer_constraints_ty_or_fail typer tf =
     debug typer (fun () -> "\nII. Typing of the sub-formulas & constraints.\n");
@@ -483,6 +513,12 @@ struct
       | _, ANot tf -> aux vcm tf
     in aux VarConsCounter.empty tf
 
+  let find_in_vcm v uid vcm =
+    try
+      VarConsCounter.find (v,uid) vcm
+    (* If Not_found, it means that the variable does not appear with this UID in any constraint. *)
+    with Not_found -> (0,0)
+
   let restrict_unary_var_dom typer uids =
     let is_octagon uid =
       match UID2Adty.find uid typer.ad_env with
@@ -506,7 +542,7 @@ struct
       | AQFFormula tqf -> AQFFormula tqf
       | AExists (v,ty,Typed uids,tqf) ->
           let nary = List.filter
-            (fun uid -> snd (VarConsCounter.find (v,uid) vcm) > 0)
+            (fun uid -> snd (find_in_vcm v uid vcm) > 0)
             uids in
           let uids =
             if (List.length nary) > 0 then nary
@@ -526,8 +562,10 @@ struct
   let instantiate_var_ty typer vcm vname uids =
     let useful_uids = List.filter
       (fun uid ->
-        let u,n = try VarConsCounter.find (vname,uid) vcm with Not_found -> (0,0) in
+        let u,n = find_in_vcm vname uid vcm in
         u > 0 || n > 0) uids in
+    (* In case the variable does not occur in any constraint, we keep the list of UIDs. *)
+    let useful_uids = if List.length useful_uids = 0 then uids else useful_uids in
     let adtys = List.map (fun uid -> UID2Adty.find uid typer.ad_env) useful_uids in
     match select_mgad adtys with
     | None -> no_var_mgad_err vname adtys
@@ -578,7 +616,7 @@ struct
             (first_supporting typer [uid1] sorted_uids, ANot (uid1,tf1))
         | _ -> failwith "instantiate_formula_ty: Formula should all be typed after the call to `infer_constraints_ty_or_fail`."
       in
-        (* debug_ty typer (fun () -> string_of_aformula tf) (fst tf); *)
+        debug_ty typer (fun () -> string_of_aformula tf) (fst tf);
         debug_ty typer (fun () -> string_of_aformula tf) (Typed [uid]);
         (uid,f)
     and binary_aux uids tf1 tf2 make =

@@ -44,43 +44,5 @@ sig
   val print: Format.formatter -> t -> unit
   val drain_events: t -> (t * event list)
   val events_of: t -> I.rconstraint -> event list
+  val events_of_var: t -> I.var_id -> event list
 end
-
-(*
-module type Small_abstract_domain =
-sig
-  type t
-  module I: Interpretation_sig
-  val name: string
-  val interpretation: t -> I.t
-  val map_interpretation: t -> (I.t -> I.t) -> t
-  val extend: ?ty:Types.var_ty -> t -> (t * I.var_id * Types.var_abstract_ty)
-  val weak_incremental_closure: t -> I.rconstraint -> t
-end
-
-module QInterpreter_base(A: Small_abstract_domain) =
-struct
-  module I = A.I
-
-  let extend_var a (v, ty) =
-    if I.exists (A.interpretation a) v then
-      a, false
-    else
-      let a, v_id, aty = A.extend ~ty a in
-      A.map_interpretation a (fun r -> I.extend r (v, v_id, aty)), true
-
-  let qinterpret a approx f =
-    let rec aux a approx = function
-    | QFFormula f ->
-        let (i, cs) = I.interpret (A.interpretation a) approx f in
-        let a = A.map_interpretation a (fun _ -> i) in
-        List.fold_left A.weak_incremental_closure a cs
-    | Exists (v, ty, qf) ->
-        let a = fst (extend_var a (v, ty)) in
-        aux a approx qf
-    in
-      try aux a approx f
-      with Wrong_modelling msg ->
-        raise (Wrong_modelling ("[" ^ A.name ^ "] " ^ msg))
-end
- *)

@@ -61,11 +61,21 @@ let rec check_same_type_qformula = function
   | _ -> mismatch_formula_error ()
 
 let test_typing_exn ad_name dp f =
+  Printexc.record_backtrace true;
   try
     Infer.infer_type dp f
-  with Wrong_modelling msg ->
-    (Printf.printf "%s\n" msg;
-     Alcotest.(check bool) ("Could not type the formula in " ^ ad_name) true false; failwith "")
+  with
+  | Wrong_modelling msg ->
+      (Printf.printf "%s\n" msg;
+       Printexc.print_backtrace stdout;
+       Alcotest.(check bool) ("Could not type the formula in " ^ ad_name) true false; failwith "")
+  | Not_found -> (Printexc.print_backtrace stdout; failwith "Not_found exception in infer.")
+
+let expect_typing_exn ad_name dp f =
+  try
+    ignore(Infer.infer_type dp f);
+    Alcotest.(check bool) ("Typing succeeded in " ^ ad_name ^ " but should have failed.") true false
+  with Wrong_modelling _ -> ()
 
 let test_simple_direct_product () =
   let x = Var "x" in
@@ -94,12 +104,13 @@ let test_simple_direct_product () =
 let test_typing_logic_completion () =
   let x = Var "x" in
   let y = Var "y" in
-  let c1 = (Binary(Unary(NEG,x), ADD, one), LEQ, y) in
-  let equiv_formula =
+  let c1 = (one, LEQ, y) in
+  let make_equiv_formula c =
     Exists("x", Concrete Int,
     Exists("y", Concrete Int,
     Exists("b1", Abstract Bool,
-    QFFormula(Equiv(FVar "b1", Cmp c1))))) in
+    QFFormula(Equiv(FVar "b1", Cmp c))))) in
+  let equiv_formula = make_equiv_formula c1 in
 
   let du, bu, lu = 0, 1, 2 in
   let box = (bu, Box (Interval Z)) in
@@ -116,6 +127,10 @@ let test_typing_logic_completion () =
   let res = check_same_type_qformula (lcb_expected_type, lcb_obtained_type) in
   Alcotest.(check bool) "Test logic completion" true res;
 
+  let c2 = (Binary(Unary(NEG,x), ADD, one), LEQ, y) in
+  let equiv_formula = make_equiv_formula c2 in
+  expect_typing_exn "LC(Box)" dp equiv_formula;
+
   let bu, ou, obu, lu, du = 1, 2, 3, 4, 0 in
   let box = (bu, Box (Interval Z)) in
   let oct = (ou, Octagon Z) in
@@ -127,7 +142,7 @@ let test_typing_logic_completion () =
     TExists((mtv "y" (Concrete Int) ou),
     TExists((mtv "b1" (Abstract Bool) bu),
     TQFFormula(
-      (lu, TEquiv((bu, TFVar "b1"), (ou, TCmp c1)))
+      (lu, TEquiv((bu, TFVar "b1"), (ou, TCmp c2)))
     )))) in
   let lc_ob_obtained_type = test_typing_exn "LC(Box X Oct)" dp equiv_formula in
   let res = check_same_type_qformula (lc_ob_expected_type, lc_ob_obtained_type) in
@@ -155,45 +170,47 @@ let test_typing_rcpsp_like () =
       Cmp c7 (* Box - resource constraints*)
     ))))))))) in
 
-  (* We first try to type this formula in the most basic abstract domain `Logic_completion(Box)`. *)
-  let bu, lu, du = 1, 2, 0 in
+  (* We first try to type this formula in the most basic abstract domain `Logic_completion(Propagator_completion(Box))`. *)
+  let bu, pu, lu, du = 1, 2, 3, 0 in
   let box = (bu, Box (Interval Z)) in
-  let lc_box = (lu, Logic_completion(box)) in
-  let dp = (du, Direct_product([box; lc_box])) in
+  let pc_box = (pu, Propagator_completion box) in
+  let lc_box = (lu, Logic_completion pc_box) in
+  let dp = (du, Direct_product([box; pc_box; lc_box])) in
   let lc_box_expected_type =
     TExists((mtv "x" (Concrete Int) bu),
     TExists((mtv "y" (Concrete Int) bu),
     TExists((mtv "b1" (Abstract Bool) bu),
     TExists((mtv "b2" (Abstract Bool) bu),
     TQFFormula(
-      (du, TAnd((bu, TCmp c1),
-      (du, TAnd((lu, TEquiv((bu, TFVar "b1"), (bu, TAnd((bu, TCmp c2), (bu, TCmp c3))))),
-      (du, TAnd((lu, TEquiv((bu, TFVar "b2"), (bu, TAnd((bu, TCmp c4), (bu, TCmp c5))))),
-      (bu, TAnd((bu, TCmp c6),
-      (bu, TCmp c7)
+      (lu, TAnd((pu, TCmp c1),
+      (lu, TAnd((lu, TEquiv((bu, TFVar "b1"), (pu, TAnd((pu, TCmp c2), (pu, TCmp c3))))),
+      (lu, TAnd((lu, TEquiv((bu, TFVar "b2"), (pu, TAnd((pu, TCmp c4), (pu, TCmp c5))))),
+      (pu, TAnd((pu, TCmp c6),
+      (pu, TCmp c7)
     ))))))))))))) in
-  let lc_box_obtained_type = test_typing_exn "LC(Box)" dp rcpsp_like_formula in
+  let lc_box_obtained_type = test_typing_exn "LC(PC(Box))" dp rcpsp_like_formula in
   let res = check_same_type_qformula (lc_box_expected_type, lc_box_obtained_type) in
-  Alcotest.(check bool) "RCPSP-like typing with LC(Box)" true res;
+  Alcotest.(check bool) "RCPSP-like typing with LC(PC(Box))" true res;
 
   (* A more involved domain includes box, octagon and the logic completion of their product. *)
-  let bu, ou, obu, lu, du = 1, 2, 3, 4, 0 in
+  let bu, pu, ou, obu, lu, du = 1, 2, 3, 4, 5, 0 in
   let box = (bu, Box (Interval Z)) in
+  let pc_box = (pu, Propagator_completion box) in
   let oct = (ou, Octagon Z) in
-  let ob = (obu, Direct_product([box;oct])) in
+  let ob = (obu, Direct_product([pc_box;oct])) in
   let lc_ob = (lu, Logic_completion ob) in
-  let dp = (du, Direct_product([box; oct; ob; lc_ob])) in
+  let dp = (du, Direct_product([box; pc_box; oct; ob; lc_ob])) in
   let lc_ob_expected_type =
     TExists((mtv "x" (Concrete Int) ou),
     TExists((mtv "y" (Concrete Int) ou),
     TExists((mtv "b1" (Abstract Bool) bu),
     TExists((mtv "b2" (Abstract Bool) bu),
     TQFFormula(
-      (du, TAnd((ou, TCmp c1),
-      (du, TAnd((lu, TEquiv((bu, TFVar "b1"), (ou, TAnd((ou, TCmp c2), (ou, TCmp c3))))),
-      (du, TAnd((lu, TEquiv((bu, TFVar "b2"), (ou, TAnd((ou, TCmp c4), (ou, TCmp c5))))),
-      (du, TAnd((ou, TCmp c6),
-      (bu, TCmp c7)
+      (lu, TAnd((ou, TCmp c1),
+      (lu, TAnd((lu, TEquiv((bu, TFVar "b1"), (ou, TAnd((ou, TCmp c2), (ou, TCmp c3))))),
+      (lu, TAnd((lu, TEquiv((bu, TFVar "b2"), (ou, TAnd((ou, TCmp c4), (ou, TCmp c5))))),
+      (obu, TAnd((ou, TCmp c6),
+      (pu, TCmp c7)
     ))))))))))))) in
   let lc_ob_obtained_type = test_typing_exn "LC(Box X Oct)" dp rcpsp_like_formula in
   let res = check_same_type_qformula (lc_ob_expected_type, lc_ob_obtained_type) in

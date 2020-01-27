@@ -38,7 +38,6 @@ sig
 
   val init: init_t -> t
   val empty: unit -> t
-  val exists: t -> vname -> bool
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
   val to_qformula: t -> gconstraint list -> tqformula list
@@ -62,6 +61,7 @@ sig
   val print: Format.formatter -> t -> unit
   val drain_events: t -> (t * event list)
   val events_of: t -> rconstraint -> event list
+  val events_of_var: t -> var_id -> event list
 end
 
 module Prod_atom(A: Abstract_domain) =
@@ -126,11 +126,9 @@ struct
 
   let get_constraint pa (uid', c_id) =
     if uid pa != uid' then raise
-      (Wrong_modelling "This constraint does not belong to this ordered product.")
+      (Wrong_modelling "This constraint does not belong to this direct product.")
     else
       List.nth pa.constraint_map c_id
-
-  let exists pa v = A.I.exists (interpretation pa) v
 
   let to_logic_var' pa var_id =
     A.I.to_logic_var (interpretation pa) (List.nth pa.var_map var_id)
@@ -236,6 +234,9 @@ struct
 
   let events_of pa c =
     A.events_of (unwrap pa) (get_constraint pa c)
+
+  let events_of_var pa v_id =
+    A.events_of_var (unwrap pa) (List.nth pa.var_map (snd v_id))
 end
 
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) =
@@ -268,10 +269,6 @@ struct
     let a_snapshots = Atom.lazy_copy a n in
     let b_snapshots = B.lazy_copy b n in
     List.combine a_snapshots b_snapshots
-
-  let exists (a,b) v =
-    if Atom.exists a v then true
-    else B.exists b v
 
   let to_logic_var (a,b) ((uid, var_id) as v) =
     if Atom.uid a != uid then B.to_logic_var b v
@@ -361,6 +358,10 @@ struct
   let events_of (a,b) c =
     if Atom.uid a != (fst c) then B.events_of b c
     else Atom.events_of a c
+
+  let events_of_var (a,b) v_id =
+    if (Atom.uid a) != (fst v_id) then B.events_of_var b v_id
+    else Atom.events_of_var a v_id
 end
 
 module Direct_product(P: Prod_combinator) =
@@ -380,7 +381,6 @@ struct
     let wrap p prod = {p with prod}
     let init uid prod = { uid; prod=(P.init prod) }
     let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}
-    let exists p name = P.exists p.prod name
     let to_logic_var p vid = P.to_logic_var p.prod vid
     let to_abstract_var p vname = P.to_abstract_var p.prod vname
 
@@ -455,4 +455,5 @@ struct
     I.wrap p prod, events
 
   let events_of (p:t) c = P.events_of p.prod c
+  let events_of_var (p:t) v_id = P.events_of_var p.prod v_id
 end

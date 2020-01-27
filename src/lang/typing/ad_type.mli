@@ -31,6 +31,7 @@ type ad_ty_ =
   | Octagon of value_ty
   | SAT
   | Logic_completion of ad_ty
+  | Propagator_completion of ad_ty
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
 

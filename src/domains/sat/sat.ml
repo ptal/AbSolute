@@ -198,4 +198,6 @@ struct
       else (uid b, Lit.var (Vec.get clause i))::(aux (i+1))
     in
     aux 0
+
+  let events_of_var b vid = [(uid b, vid)]
 end

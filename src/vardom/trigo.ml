@@ -23,7 +23,7 @@ open Bounds
 
 module F = Bound_float
 
-module Make (I:Vardom_sig.Vardom_sig) = struct
+module Make (I:Vardom_sig.S) = struct
 
   (* All the classical interval computations are kept *)
   include I

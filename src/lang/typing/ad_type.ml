@@ -25,6 +25,7 @@ type ad_ty_ =
   | Octagon of value_ty
   | SAT
   | Logic_completion of ad_ty
+  | Propagator_completion of ad_ty
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
 
@@ -40,6 +41,7 @@ let string_of_adty adty =
     | Octagon vty -> "Oct(" ^ (string_of_value_ty_short vty) ^ ")"
     | SAT -> "SAT"
     | Logic_completion adty -> "LC(" ^ (aux false adty) ^ ")"
+    | Propagator_completion adty -> "PC(" ^ (aux false adty) ^ ")"
     | Direct_product adtys ->
         let sty =
           List.fold_left (fun msg adty -> msg ^ " X " ^ (aux false adty))
@@ -64,14 +66,36 @@ let rec is_more_specialized_vardom vd1 vd2 =
     | Interval_mix, _ -> False
     | _ -> not_kleene (is_more_specialized_vardom vd2 vd1)
 
+let rec subtype a1 a2 =
+  if a1 = a2 then true
+  else
+    match snd a2 with
+    | SAT | Box _ | Octagon _ -> false
+    | Propagator_completion a2
+    | Logic_completion a2 -> subtype a1 a2
+    | Direct_product adtys -> List.exists (subtype a1) adtys
+
 let rec is_more_specialized (u1,a1) (u2,a2) =
-  if a1 = a2 then True
+  if subtype (u1,a1) (u2,a2) then True
+  else if subtype (u2,a2) (u1,a1) then False
   else
     match a1, a2 with
     | SAT, _ -> True
     | Box vd1, Box vd2 -> is_more_specialized_vardom vd1 vd2
+    | Box _, Octagon _ -> True
+    | Octagon _, (Propagator_completion (_,(Box _))) -> True
+    | (Propagator_completion (_,(Box _))), Octagon _ -> False
     | Octagon vty1, Octagon vty2 -> is_more_specialized_value vty1 vty2
-    | Octagon _, _ -> True
+    | Propagator_completion a1, Propagator_completion a2 ->
+        (* Since propagator completion only relies on the projection of the sub-domain,
+           we prefer the sub-domain that is the most efficient (less specialized). *)
+        is_more_specialized a2 a1
+    | Propagator_completion a1, Logic_completion a2 ->
+        (* Propagator_completion is more specialized than Logic_completion unless a2 is more specialized then a1 or unknown, in which case they are unordered. *)
+        (match is_more_specialized a1 a2 with
+        | True -> True
+        | _ -> Unknown)
+    | Propagator_completion a1, a2
     | Logic_completion a1, a2 -> not_kleene (is_more_specialized (u2,a2) a1)
     | Direct_product adtys, a2 ->
         let specs = List.map (is_more_specialized (u2,a2)) adtys in
@@ -87,7 +111,8 @@ let build_adenv adty =
   let rec aux env ((uid, adty_) as adty) =
     match adty_ with
     | Box _ | Octagon _ | SAT -> UID2Adty.add uid adty env
-    | Logic_completion adty' ->
+    | Logic_completion adty'
+    | Propagator_completion adty' ->
         UID2Adty.add uid adty (aux env adty')
     | Direct_product adtys ->
         UID2Adty.add uid adty (List.fold_left aux env adtys)
@@ -99,7 +124,8 @@ let uids_of adty =
     | Box _ -> [uid]
     | Octagon _ -> [uid]
     | SAT -> [uid]
-    | Logic_completion adty -> uid::(aux adty)
+    | Logic_completion adty
+    | Propagator_completion adty -> uid::(aux adty)
     | Direct_product adtys ->
         List.fold_left (fun r adty -> r@(aux adty)) [uid] adtys
   in List.sort_uniq compare (aux adty)

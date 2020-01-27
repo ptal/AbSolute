@@ -132,4 +132,5 @@ struct
   let interpret _ _ _ = meta_exn ()
   let drain_events _ = meta_exn ()
   let events_of _ _ = meta_exn ()
+  let events_of_var _ _ = meta_exn ()
 end
