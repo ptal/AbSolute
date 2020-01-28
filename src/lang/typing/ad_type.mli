@@ -44,6 +44,10 @@ val is_more_specialized_value: value_ty -> value_ty -> Kleene.t
 
 val is_more_specialized_vardom: vardom_ty -> vardom_ty -> Kleene.t
 
+(** [subtype a b] is true if a is included in b.
+    Example: Box is included in PC(Box X Oct). *)
+val subtype: ad_ty -> ad_ty -> bool
+
 (** Give an order over the abstract domains.
     An abstract domain A1 is more specialized than A2 if:
      (1) The constraint language of A1 is included in A2, and

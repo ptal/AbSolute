@@ -22,7 +22,6 @@ open Direct_product
 open Propagator_completion
 open Bounds
 open Box
-open Vardom
 
 (* I. Data *)
 
@@ -63,7 +62,7 @@ end
 module Box_tester(Box: Box_sig) =
 struct
   module Box = Box
-  module PC = Propagator_completion(Itv.Itv(B))(Box)
+  module PC = Propagator_completion(Box.Vardom)(Box)
   module E = Event_loop(Event_atom(PC))
   module A = Direct_product(
       Prod_cons(Box)(
@@ -76,7 +75,7 @@ struct
     let box = ref (Box.empty box_uid) in
     let pc = ref (PC.init PC.I.{a=box;uid=pc_uid}) in
     let event = ref (E.init 3 pc) in
-    let a = A.init 0 (box, (pc, event)) in
+    let a = A.init 0 (Owned box, (Owned pc, Owned event)) in
     let tf = List.fold_left
       (fun f name -> TExists(({name; ty=(Concrete Int); uid=box_uid}),f)) ttrue vars in
     fst (A.interpret a Exact tf)
@@ -136,7 +135,7 @@ begin
   let box = BT.init_constraints box (x_eq_one::constraints_Z) in
   let box, _ = BT.A.closure box in
   let boxes = BT.A.split box in
-  Alcotest.(check int) name 2 (List.length boxes);
+  Alcotest.(check int) (name ^ " (length)") 2 (List.length boxes);
   let box = BT.A.restore box (List.hd boxes) in
   let box, _ = BT.A.closure box in
   BT.expect_domain_eq box left_branch;

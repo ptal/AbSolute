@@ -64,21 +64,33 @@ sig
   val events_of_var: t -> var_id -> event list
 end
 
+type 'a owned_or_shared =
+  Owned of 'a
+| Shared of 'a
+
 module Prod_atom(A: Abstract_domain) =
 struct
   module A = A
 
-  type init_t = A.t ref
+  type init_t = (A.t ref) owned_or_shared
+
   type t = {
-    a: init_t;
+    a: A.t ref;
+    owned: bool;
     var_map: A.I.var_id list;
     constraint_map: A.I.rconstraint list;
   }
   type var_id = gvar
   type rconstraint = gconstraint
 
+  (* Depending if the underlying domain is owned or shared, this product takes care of the backtracking or not.
+     This is to ensure that only one product takes care of the memory management of a domain. *)
+  type a_snapshot =
+    Backtrack of A.snapshot
+  | RefOnly
+
   type snapshot = {
-    a_bt: A.snapshot;
+    a_bt: a_snapshot;
     var_map_bt: A.I.var_id list;
     constraint_map_bt: A.I.rconstraint list;
   }
@@ -95,28 +107,45 @@ struct
     | None -> []
 
   let restore pa snapshot =
-    pa.a := A.restore !(pa.a) snapshot.a_bt;
+    (match snapshot.a_bt with
+    | Backtrack a_bt ->
+        pa.a := A.restore !(pa.a) a_bt
+    | RefOnly -> ());
     {pa with
       var_map=snapshot.var_map_bt;
       constraint_map=snapshot.constraint_map_bt }
 
-  let make_snapshot pa a_bt =
-    {a_bt; var_map_bt=pa.var_map; constraint_map_bt=pa.constraint_map}
+  let make_snapshots pa n make_children =
+    let children =
+      if pa.owned then
+        List.map (fun a_bt -> Backtrack a_bt) (make_children !(pa.a))
+      else
+        List.map (fun _ -> RefOnly) (Tools.range 1 n) in
+    List.map
+      (fun a_bt -> {a_bt; var_map_bt=pa.var_map; constraint_map_bt=pa.constraint_map})
+      children
 
-  let lazy_copy pa n =
-    List.map (make_snapshot pa) (A.lazy_copy !(pa.a) n)
+  let lazy_copy pa n = make_snapshots pa n (fun a -> A.lazy_copy a n)
 
+  (* For the time of the execution of `f`, we own `a` and restore it if an exception occurs. *)
   let safe_wrap pa f =
-    let snapshots = lazy_copy pa 2 in
+    let pa' = {pa with owned=true} in
+    let snapshots = lazy_copy pa' 2 in
     try
-      let pa = restore pa (List.hd snapshots) in
-      f pa
+      let pa' = restore pa' (List.hd snapshots) in
+      f {pa' with owned=pa.owned}
     with e ->
-      (ignore(restore pa (List.nth snapshots 1)); (* To restore mutable effects. *)
+      (ignore(restore pa' (List.nth snapshots 1)); (* To restore mutable effects. *)
       raise e)
 
-  let init a = { a; var_map=[]; constraint_map=[] }
-  let empty' uid = init (ref (A.empty uid))
+  let init a =
+    let (a, owned) =
+      match a with
+      | Owned a -> (a, true)
+      | Shared a -> (a, false) in
+    { a; owned; var_map=[]; constraint_map=[] }
+
+  let empty' uid = init (Owned (ref (A.empty uid)))
 
   let uid pa = A.uid !(pa.a)
   let interpretation pa = A.interpretation !(pa.a)
@@ -189,15 +218,14 @@ struct
 
   let state pa = A.state !(pa.a)
   let entailment pa c = A.entailment !(pa.a) (get_constraint pa c)
-  let split pa = List.map (make_snapshot pa) (A.split !(pa.a))
-  let volume pa = A.volume !(pa.a)
-  let print fmt pa = Format.fprintf fmt "%a" A.print !(pa.a)
+  let split pa = make_snapshots pa 0 A.split
+  let volume pa = if pa.owned then A.volume !(pa.a) else 1.
+  let print fmt pa = if pa.owned then Format.fprintf fmt "%a" A.print !(pa.a) else ()
 
   let interpret pa approx tf =
     if snd tf = Tast.ctrue then pa, []
     else
     begin
-      if uid pa != fst tf then raise (Wrong_modelling "`Direct_product.interpret`: this constraint does not belong to this direct product.");
       safe_wrap pa (fun pa ->
         try
           let (i, constraints) = A.I.interpret (interpretation pa) approx tf in
@@ -215,8 +243,6 @@ struct
   let interpret_one = interpret
 
   let extend_var pa approx tv =
-    if uid pa != tv.uid then
-      raise (Wrong_modelling "`Direct_product.extend_var`: this variable does not belong to this direct product.");
     safe_wrap pa (fun pa ->
       let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,TQFFormula(tv.uid, ctrue))) in
       let pa = wrap pa a in
@@ -296,13 +322,24 @@ struct
     let b, has_changed' = B.closure b in
     (a,b), has_changed || has_changed'
 
+ let wrap_wrong_modelling f1 f2 =
+    try f1 ()
+    with Wrong_modelling msg1 ->
+      begin try f2 ()
+      with Wrong_modelling msg2 ->
+        let newline =
+          if msg1.[(String.length msg1) - 1] = '\n' then "" else "\n" in
+        raise (Wrong_modelling (msg1 ^ newline ^ msg2))
+      end
+
   let interpret_one (a,b) approx tf =
-    if (Atom.uid a) = (fst tf) then
-      let a, cs = Atom.interpret_one a approx tf in
-      (a,b), cs
-    else
-      let b, cs = B.interpret_one b approx tf in
-      (a,b), cs
+    wrap_wrong_modelling
+      (fun () ->
+        let a, cs = Atom.interpret_one a approx tf in
+        (a,b), cs)
+      (fun () ->
+        let b, cs = B.interpret_one b approx tf in
+        (a,b), cs)
 
   let interpret_all (a,b) approx tf =
     let a, cs1 = Atom.interpret_one a approx tf in
@@ -310,12 +347,13 @@ struct
     (a,b), cs1@cs2
 
   let extend_var_one (a,b) approx tv =
-    if (Atom.uid a) = tv.uid then
-      let a, cs = Atom.extend_var_one a approx tv in
-      (a,b), cs
-    else
-      let b, cs = B.extend_var_one b approx tv in
-      (a,b), cs
+    wrap_wrong_modelling
+      (fun () ->
+        let a, cs = Atom.extend_var_one a approx tv in
+        (a,b), cs)
+      (fun () ->
+        let b, cs = B.extend_var_one b approx tv in
+        (a,b), cs)
 
   let extend_var_all (a,b) approx tv =
     let a, cs1 = Atom.extend_var_all a approx tv in
@@ -405,7 +443,6 @@ struct
   end
 
   type t = I.t
-
 
   let init = I.init
   (* The UIDs of the product components are generated as follows `uid,...,uid+(n-1)`.

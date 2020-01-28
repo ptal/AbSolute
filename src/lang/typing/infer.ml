@@ -85,7 +85,7 @@ struct
   }
 
   let init adty trace =
-    {trace; debug=false; indent=0; venv = Var2UID.empty; adty; ad_env = (build_adenv adty)}
+    {trace; debug=true; indent=0; venv = Var2UID.empty; adty; ad_env = (build_adenv adty)}
 
   (* Debugging facilities. *)
 
@@ -605,7 +605,20 @@ struct
             let var_uids = Var2UID.find v typer.venv in
             let uids = Tools.intersect uids var_uids in
             (most_specialized typer uids, AFVar v)
-        | Typed uids, ACmp c -> (most_specialized typer uids, ACmp c)
+        | Typed uids, ACmp c ->
+            (* We only keep the UID, s.t. its abstract element is fully defined over the variables of the constraint.
+               Due to `restrict_variable_ty` we must perform this filtering. *)
+            let uids = List.filter
+              (fun uid ->
+                List.for_all
+                  (fun v ->
+                    let adty = UID2Adty.find uid typer.ad_env in
+                    List.exists
+                      (fun u -> subtype (UID2Adty.find u typer.ad_env) adty)
+                      (Var2UID.find v typer.venv))
+                  (vars_of_bconstraint c))
+              uids in
+            (most_specialized typer uids, ACmp c)
         | Typed uids, AAnd (tf1, tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AAnd(tf1, tf2))
         | Typed uids, AOr (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AOr(tf1, tf2))
         | Typed uids, AImply (tf1,tf2) -> binary_aux uids tf1 tf2 (fun tf1 tf2 -> AImply(tf1, tf2))
@@ -616,7 +629,7 @@ struct
             (first_supporting typer [uid1] sorted_uids, ANot (uid1,tf1))
         | _ -> failwith "instantiate_formula_ty: Formula should all be typed after the call to `infer_constraints_ty_or_fail`."
       in
-        debug_ty typer (fun () -> string_of_aformula tf) (fst tf);
+        (* debug_ty typer (fun () -> string_of_aformula tf) (fst tf); *)
         debug_ty typer (fun () -> string_of_aformula tf) (Typed [uid]);
         (uid,f)
     and binary_aux uids tf1 tf2 make =
@@ -661,7 +674,7 @@ let infer_type adty f =
   let typer = init adty true in
   let (typer, tf) = infer_vars_ty typer tf in
   let tf = infer_constraints_ty_or_fail typer tf in
-  let (typer, _) = restrict_variable_ty typer tf in
+  let (typer, tf) = restrict_variable_ty typer tf in
   let tf = instantiate_qformula_ty typer tf in
   debug typer (fun () -> "\nFormula successfully typed.\n");
   make_tqformula tf

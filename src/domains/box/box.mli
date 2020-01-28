@@ -23,16 +23,16 @@ open Domains.Abstract_domain
     handled by `Event_loop`. *)
 module type Box_sig =
 sig
-  module B: Bound_sig.S
-  module Vardom: Vardom_sig.S with module B := B
+  module Vardom: Vardom_sig.S
   type vardom = Vardom.t
-  include Abstract_domain with module B := B
+  include Abstract_domain
 
   (** `project_vardom box v` projects the domain of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom
 end
 
 module type Box_functor = functor (B: Bound_sig.S) -> Box_sig
+  with module B = B and module Vardom.B = B
 
 module Make
   (B: Bound_sig.S)

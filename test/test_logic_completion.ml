@@ -16,19 +16,18 @@ open Domains.Interpretation
 open Event_loop
 open Direct_product
 open Logic_completion
-open Vardom
 open Propagator_completion
 open Box
 
 open Test_box
 
 let box_uid = 1
-let s_uid = 2
+let pc_uid = 2
 let lc_uid = 3
 
 module LC_tester(Box: Box_sig) =
 struct
-  module PC = Propagator_completion(Itv.Itv(B))(Box)
+  module PC = Propagator_completion(Box.Vardom)(Box)
   module LC = Logic_completion(PC)
   module E = Event_loop(Event_cons(PC)(Event_atom(LC)))
   module A = Direct_product(
@@ -41,17 +40,17 @@ struct
 
   let init_vars vars =
     let box = ref (Box.empty box_uid) in
-    let pc = ref (PC.init {a=box; uid=s_uid}) in
+    let pc = ref (PC.init {a=box; uid=pc_uid}) in
     let lc = ref (LC.init LC.I.{uid=lc_uid;a=pc}) in
     let event = ref (E.init 4 (pc,lc)) in
-    let a = A.init 0 (box, (pc, (lc, event))) in
+    let a = A.init 0 (Owned box, (Owned pc, (Owned lc, Owned event))) in
     let tf = List.fold_left
       (fun f name -> TExists(({name; ty=(Concrete Int); uid=box_uid}),f)) ttrue vars in
     fst (A.interpret a Exact tf)
 
-  (** Type all c in cs with s_uid, and assemble them in a disjunction typed with the logic_completion. *)
+  (** Type all c in cs with pc_uid, and assemble them in a disjunction typed with the logic_completion. *)
   let init_constraints a cs =
-    let cs = List.map (fun (_,c) -> TQFFormula ((s_uid, TCmp c))) cs in
+    let cs = List.map (fun (_,c) -> TQFFormula ((pc_uid, TCmp c))) cs in
     let cs = q_disjunction lc_uid cs in
     let a, cs = A.interpret a Exact cs in
     List.fold_left A.weak_incremental_closure a cs

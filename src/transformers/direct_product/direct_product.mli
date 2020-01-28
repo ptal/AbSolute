@@ -67,6 +67,10 @@ sig
   val events_of_var: t -> var_id -> event list
 end
 
+type 'a owned_or_shared =
+  Owned of 'a
+| Shared of 'a
+
 module Prod_atom(A: Abstract_domain) :
 sig
   include Prod_combinator
@@ -74,12 +78,12 @@ sig
   val wrap: t -> A.t -> t
   val get_constraint: t -> rconstraint -> A.I.rconstraint
   val uid: t -> ad_uid
-end with type init_t = A.t ref
+end with type init_t = (A.t ref) owned_or_shared
 
 module Prod_cons(A: Abstract_domain)(B: Prod_combinator) :
   Prod_combinator with
     type t = Prod_atom(A).t * B.t and
-    type init_t = A.t ref * B.init_t
+    type init_t = Prod_atom(A).init_t * B.init_t
 
 module Direct_product(P: Prod_combinator) :
 sig

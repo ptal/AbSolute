@@ -97,7 +97,8 @@ let guarded_interpret a ad_uid ad_name tf next =
     if (fst tf) <> ad_uid then
       raise (Wrong_modelling (ad_name ^ ".interpret: The formula has the UID "
         ^ (string_of_int (fst tf)) ^ " but the " ^ ad_name ^ " element has the UID "
-        ^ (string_of_int ad_uid) ^ "."));
+        ^ (string_of_int ad_uid) ^ ".\n"
+        ^ "Formula: " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula tf))));
     next a tf
   end
 

@@ -17,9 +17,9 @@ open Core
 open Core.Kleene
 open Domains.Interpretation
 open Domains.Abstract_domain
-open Lang
+(* open Lang *)
 open Lang.Ast
-open Typing
+(* open Typing *)
 open Typing.Ad_type
 open Typing.Tast
 open Bounds
@@ -103,7 +103,7 @@ struct
   let volume pc =
     if pc.num_active_tasks = 0 then 1.
     else float_of_int pc.num_active_tasks
-
+(*
   let print_box_cons fmt f =
     let f = Tast.quantifier_free_of f in
     Format.fprintf fmt "%a\n" Pretty_print.print_formula
@@ -111,6 +111,8 @@ struct
 
   let print fmt pc =
     Parray.iter (fun c -> print_box_cons fmt (I.to_qformula pc.repr [c])) pc.constraints
+ *)
+  let print _ _ = ()
 
   (** Closure is performed by `Event_loop` calling `exec_task`. *)
   let closure pc = pc, false
@@ -118,7 +120,7 @@ struct
   (** We propagate the constraint immediately.
       If the constraint is not entailed, it is added into the pc. *)
   let weak_incremental_closure pc c =
-    let _ = Format.printf "%a\n" print_box_cons (I.to_qformula pc.repr [c]); flush_all () in
+    (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
     (* Format.fprintf Format.std_formatter "%a\n" print_store (pc.repr,pc.store); *)
     let a, entailed = Closure.incremental_closure (unwrap pc) c in
     let pc = wrap pc a in

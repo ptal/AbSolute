@@ -28,7 +28,6 @@ type unop_kind = NEG | ABS | NOT | PREF of int | SUFF of int
 type binop_kind = ADD | SUB | MUL | POW | XOR | AND | OR
 
 module type S = sig
-
   include Vardom_factory_sig
 
   (** See [interpret]. *)

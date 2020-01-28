@@ -36,4 +36,4 @@ end
 module Propagator_completion
   (V: Vardom_sig.S)
   (A: Abstract_domain) : Propagator_completion_sig
-with module V = V and module I.A = A
+with module V = V and module B=V.B and module I.A = A

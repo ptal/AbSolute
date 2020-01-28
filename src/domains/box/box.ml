@@ -25,16 +25,16 @@ open Box_interpretation
 
 module type Box_sig =
 sig
-  module B: Bound_sig.S
-  module Vardom: Vardom_sig.S with module B := B
+  module Vardom: Vardom_sig.S
   type vardom = Vardom.t
-  include Abstract_domain with module B := B
+  include Abstract_domain
 
   (** `project_vardom box v` projects the domain of the variable `v`. *)
   val project_vardom: t -> I.var_id -> vardom
 end
 
 module type Box_functor = functor (B: Bound_sig.S) -> Box_sig
+  with module B = B and module Vardom.B = B
 
 module Make
   (B: Bound_sig.S)
@@ -108,7 +108,9 @@ struct
 
   let print fmt box =
     let print_entry idx vardom =
-      Format.fprintf fmt "%s=%a \n" (I.to_logic_var' box.r idx) V.print vardom in
+      let vname = I.to_logic_var' box.r idx in
+      (* if vname.[0] = 's' then *)
+        Format.fprintf fmt "%s=%a \n" vname V.print vardom in
     Store.iter print_entry box.store
 
   (** A box is always directly closed when adding the constraint. *)

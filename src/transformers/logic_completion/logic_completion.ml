@@ -295,10 +295,11 @@ struct
     if lc.num_active_tasks = 0 then 1.
     else float_of_int lc.num_active_tasks
 
-  let print fmt lc =
+  let print _ _ = ()
+(*   let print fmt lc =
     let tf = I.to_qformula lc.repr (Parray.to_list lc.constraints) in
     let f = Tast.tformula_to_formula (Tast.quantifier_free_of tf) in
-    Pretty_print.print_formula fmt f
+    Pretty_print.print_formula fmt f *)
 
   let exec_task lc (_,c_idx) =
     (* let _ = Printf.printf "exec_task %d remaining\n" lc.num_active_tasks; flush_all () in *)
