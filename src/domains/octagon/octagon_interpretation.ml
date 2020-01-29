@@ -182,6 +182,8 @@ struct
 
   let ty = B.concrete_ty
 
+  module IV = Interval_view_dbm.Interval_view(B)
+
   let to_formula_one repr oc =
     let d = B.to_rat oc.d in
     let k1, k2 = oc.v.c / 2, oc.v.l / 2 in
@@ -191,8 +193,10 @@ struct
     let c =
       if k1 = k2 then
         if oc.v.l > oc.v.c then
+          let d = B.to_rat (IV.dbm_to_ub oc.v oc.d) in
           TCmp (Var x, LEQ, Cst (d, ty))
         else
+          let d = B.to_rat (IV.dbm_to_lb oc.v (B.neg oc.d)) in
           TCmp (Var x, GEQ, Cst (d, ty))
       else
         let x = if oc.v.c = k1 * 2 then Var x else Unary (NEG, Var x) in

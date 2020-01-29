@@ -154,6 +154,10 @@ let rec simplify_formula = function
   | Or (b1,b2) -> Or (simplify_formula b1, simplify_formula b2)
   | Not b -> Not (simplify_formula b)
 
+let rec simplify_qformula = function
+  | Exists(v,ty,qf) -> Exists(v, ty, simplify_qformula qf)
+  | QFFormula f -> QFFormula (simplify_formula f)
+
 let left_hand_side (e1, op, e2) =
   match e1, e2 with
   | Cst (c,_), _  when is_zero c -> (inv op, e2)

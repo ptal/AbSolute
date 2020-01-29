@@ -48,6 +48,7 @@ struct
 
   let sqrt2_it = I.of_rats (R.sqrt_down R.two) (R.sqrt_up R.two)
 
+  (* NOTE: We do not negate "2" in the division because the lower bound is already negated in DBM.project. *)
   let dbm_to_lb = wrap lb_rounding (fun v b ->
     if is_rotated v then
       I.lb (Bot.nobot (I.div (I.of_rat b) sqrt2_it))

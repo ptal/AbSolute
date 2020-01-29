@@ -138,6 +138,9 @@ sig
 
   (** The events returned correspond to the position of the variables in the DBM. *)
   val delta: t -> t * int list
+
+  (** True if some deltas were created. *)
+  val has_changed: t -> bool
 end
 
 module Make(B:Bound_sig.S) : DBM_sig

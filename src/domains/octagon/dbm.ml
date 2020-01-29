@@ -132,6 +132,7 @@ sig
   val to_list: t -> bound list
   val print: Format.formatter -> t -> unit
   val delta: t -> t * int list
+  val has_changed: t -> bool
 end
 
 module MakeDBM(A: Array_store_sig)(B:Bound_sig.S) = struct
@@ -163,10 +164,11 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.S) = struct
 
   let get dbm v = A.get dbm.m (matpos v)
 
-  let set dbm dbm_cons =
-    let pos = matpos dbm_cons.v in
-    if B.gt (A.get dbm.m pos) dbm_cons.d then
-      { dbm with m=A.set' dbm.m pos dbm_cons.d;
+  let set dbm oc =
+    let pos = matpos oc.v in
+    if B.gt (A.get dbm.m pos) oc.d then
+      (* let _ = Format.fprintf Format.std_formatter "set %d/%d:%a -> %a\n" oc.v.l oc.v.c B.pp_print (A.get dbm.m pos) B.pp_print oc.d; flush_all () in *)
+      { dbm with m=A.set' dbm.m pos oc.d;
           delta=pos::dbm.delta }
     else
       dbm
@@ -188,6 +190,7 @@ module MakeDBM(A: Array_store_sig)(B:Bound_sig.S) = struct
     done
 
   let delta dbm = { dbm with delta=[] }, dbm.delta
+  let has_changed dbm = List.length dbm.delta > 0
 end
 
 module MakeCopy = MakeDBM(Array_store)

@@ -105,12 +105,16 @@ struct
         |> Closure.closure
       else
         List.fold_left Closure.incremental_closure octagon.dbm octagon.constraints in
-    {octagon with dbm; constraints=[]}, len > 0
+    {octagon with dbm; constraints=[]}, DBM.has_changed octagon.dbm
+
+  (* let print_oc msg octagon oc =
+    Format.fprintf Format.std_formatter "%s: %a\n" msg Lang.Pretty_print.print_formula
+      (tformula_to_formula (quantifier_free_of (I.to_qformula octagon.r oc)));
+    flush_all () *)
 
   (** Add the octagonal constraint in the octagon, if it is not entailed and without closing the DBM. *)
   let weak_incremental_closure octagon oc =
-    (* let _ = Format.fprintf Format.std_formatter "%a\n" Lang.Pretty_print.print_formula
-      (Lang.Rewritting.quantifier_free_of (I.to_qformula octagon.r [oc])); flush_all () in *)
+    (* print_oc "inc" octagon [oc]; *)
     if entailment octagon oc then octagon
     else { octagon with constraints=oc::octagon.constraints }
 
@@ -123,14 +127,9 @@ struct
 
   let split octagon =
     let branches = Split.split octagon.dbm in
+    (* print_oc "branch" octagon branches; *)
     let octagons = lazy_copy octagon (List.length branches) in
     List.map2 weak_incremental_closure octagons branches
-
-  let state octagon =
-    let open Kleene in
-    match octagon.constraints with
-    | [] -> True
-    | _ -> Unknown
 
   (* Get the value of the lower bound and the volume between the lower and upper bound. *)
   let volume_of octagon itv =
@@ -140,6 +139,12 @@ struct
   let volume octagon = B.to_float_up (Fold_intervals_canonical.fold (fun a itv ->
       B.mul_up a (volume_of octagon itv)
     ) B.one (DBM.dimension octagon.dbm))
+
+  let state octagon =
+    let open Kleene in
+    match octagon.constraints with
+    | [] -> True
+    | _ -> Unknown
 
   let print fmt octagon = DBM.print fmt octagon.dbm
   let unwrap octagon = octagon.dbm

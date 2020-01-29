@@ -83,7 +83,6 @@ struct
     | None -> None
 end
 
-
 (* This module factorizes `First_fail` and `Anti_first_fail`. *)
 module Width_order(Fold_interval: Fold_interval_sig)(DBM : DBM_sig) =
 struct

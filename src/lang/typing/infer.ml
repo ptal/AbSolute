@@ -85,7 +85,7 @@ struct
   }
 
   let init adty trace =
-    {trace; debug=true; indent=0; venv = Var2UID.empty; adty; ad_env = (build_adenv adty)}
+    {trace; debug=false; indent=0; venv = Var2UID.empty; adty; ad_env = (build_adenv adty)}
 
   (* Debugging facilities. *)
 
@@ -325,7 +325,7 @@ struct
   let box_infer typer box_uid vardom tf =
     let is_box_constraint ((_, op, _) as c) =
       let vars = vars_of_bconstraint c in
-      if List.length vars <= 1 then
+      if List.length vars = 1 then
         match op with
         | NEQ -> is_vardom_support_neq vardom
         | _ -> true
@@ -350,7 +350,7 @@ struct
     in
     let is_octagonal_constraint ((e1, op, e2) as c) =
       let vars = vars_of_bconstraint c in
-      if List.length vars <= 2 then
+      if List.length vars >= 1 && List.length vars <= 2 then
         match op with
         | NEQ -> false
         | _ -> is_octagonal_term e1 && is_octagonal_term e2

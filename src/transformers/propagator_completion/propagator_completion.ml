@@ -17,9 +17,9 @@ open Core
 open Core.Kleene
 open Domains.Interpretation
 open Domains.Abstract_domain
-(* open Lang *)
+open Lang
 open Lang.Ast
-(* open Typing *)
+open Typing
 open Typing.Ad_type
 open Typing.Tast
 open Bounds
@@ -103,7 +103,7 @@ struct
   let volume pc =
     if pc.num_active_tasks = 0 then 1.
     else float_of_int pc.num_active_tasks
-(*
+
   let print_box_cons fmt f =
     let f = Tast.quantifier_free_of f in
     Format.fprintf fmt "%a\n" Pretty_print.print_formula
@@ -111,8 +111,6 @@ struct
 
   let print fmt pc =
     Parray.iter (fun c -> print_box_cons fmt (I.to_qformula pc.repr [c])) pc.constraints
- *)
-  let print _ _ = ()
 
   (** Closure is performed by `Event_loop` calling `exec_task`. *)
   let closure pc = pc, false
@@ -140,8 +138,10 @@ struct
   let split _ = []
 
   let exec_task pc (_,c_idx) =
+    let c = Parray.get pc.constraints c_idx in
+    (* let _ = Format.printf "%d: %a" c_idx print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
     let a, entailed = Closure.incremental_closure (unwrap pc)
-      (Parray.get pc.constraints c_idx) in
+      c in
     let num_active_tasks = pc.num_active_tasks - (if entailed then 1 else 0) in
     { (wrap pc a) with num_active_tasks }, entailed
 

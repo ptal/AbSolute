@@ -23,6 +23,8 @@ val simplify_fp: expr -> expr
 
 val simplify_formula: formula -> formula
 
+val simplify_qformula: qformula -> qformula
+
 val left_hand_side: (expr * cmpop * expr) -> (cmpop * expr)
 val left_hand: formula -> (cmpop * expr)
 val is_arith: formula -> bool

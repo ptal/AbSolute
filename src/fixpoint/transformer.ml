@@ -143,7 +143,7 @@ struct
     let gs = {gs with stats={gs.stats with fails}} in
     let apply (gs,bs) = function
       | Printer printer ->
-          printer.print_node "false'" bs.bt_stats.depth gs.domain;
+          printer.print_node "false" bs.bt_stats.depth gs.domain;
           (gs,bs)
       | _ -> gs,bs in
     List.fold_left apply (gs,bs) gs.transformers
@@ -156,9 +156,16 @@ struct
       | BAB bab ->
           let v = fst bab.objective in
           let tv = A.I.to_logic_var (A.interpretation gs.domain) v in
-          let (_,ub) = A.project gs.domain v in
-          let ub = Cst (A.B.to_rat ub, Types.to_concrete_ty tv.ty) in
-          let tqf = TQFFormula (tv.uid, TCmp (Var (snd bab.objective), bab.kind, ub)) in
+          let (lb,ub) = A.project gs.domain v in
+          let bound =
+            (* let _ = Format.printf "new solution: [%a..%a]\n" A.B.pp_print lb A.B.pp_print ub in *)
+            match bab.kind with
+            | LT | LEQ -> lb
+            | GT | GEQ -> ub
+            | _ -> failwith "BAB kind should be < or >." in
+          let bound = Cst (A.B.to_rat bound, Types.to_concrete_ty tv.ty) in
+          (* Format.printf "Solution: [%a..%a]\n" A.B.pp_print lb A.B.pp_print ub; *)
+          let tqf = TQFFormula (tv.uid, TCmp (Var (snd bab.objective), bab.kind, bound)) in
           let a = List.hd (A.lazy_copy gs.domain 1) in
           (gs,bs), BAB {bab with best=Some(a, tqf)}
       | Printer printer ->

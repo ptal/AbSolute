@@ -171,9 +171,13 @@ struct
     eval abs e2;
     let abs = hc4_revise abs (e1,op,e2) in
     try
+      (* This revision step must be effect-less on `abs`. *)
       ignore(hc4_revise abs (e1,neg op,e2));
       abs, false
     with Bot_found -> abs, true
+
+    (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
+
   end
 
   let incremental_closure abs c = hc4_eval_revise abs c
