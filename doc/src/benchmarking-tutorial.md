@@ -37,7 +37,7 @@ In this _data directory_, we have two _families of problems_ namely `rcpsp/` and
 A _problem_ is a directory containing one or more data sets of the same underlying problem.
 A _data set_ is a directory containing two things:
 
-1. A file `optimum/optimum.csv` listing the name of each data file along with their optimum values (in case of an optimization problem).
+1. A file `optimum/optimum.csv` or `solution/solution.csv` listing the name of each data file along with their optimum values (in case of an optimization problem) or their satisfiability (in case of a satisfaction problem).
 2. A list of _data instance_ files, for example `j301_1.sm`, `j301_2.sm`,...
 
 Once we have these data, we can proceed to the description of our benchmarks.
@@ -175,3 +175,31 @@ Note that all analysis are done locally in Javascript, so this website can be us
 You can click on "Time step" to have several graphs on our benchmarks ("instance inclusion" and "cactus plot" only work when there are several solvers, this should be fixed).
 
 A limited number of analysis are available currently, but you can participate by contributing to kobeview, or create your own program since the database contains only CSV and JSON files.
+
+## Supporting a new dataset
+
+In case `kobe` does not support your problem, new contributions are welcomed!
+We describe here the basic steps to add a new format and problem specification to kobe, which involves modifying its code.
+To illustrate the necessary steps, we will pretend we add benchmarking support for the jobshop problem:
+
+### Formatting the data set
+
+Format the data instances of your problem (see also "Gather data sets" section above).
+We have one github repository per problem's family (e.g. [scheduling](github.com/ptal/kobe-rcpsp) or [sat](github.com/ptal/kobe-sat)).
+The data in these data sets are usually classified according to the origin of the instances (e.g. "Taillard instances") and the problem's kind (e.g. RCPSP or RCPSP/max).
+Each data directory contains the set of instances, and an additional directory named either `solution` for satisfiability problems or `optimum` for optimization problems.
+
+### Parsing the data
+
+The first step is to parse the data instances into an OCaml structure specific to your problem.
+To achieve that, in `kobe/parsers`, select the sub-directory according to the category of your problem or create one, and create `jobshop_jss.ml` and `jobshop_data.ml` where the first is the parser and the second the data structure parsed.
+Usually, the format follows a similar pattern so you can have a look in existing files to get started.
+Don't forget to also create the corresponding `.mli` and to add some comments in the code and in this manual (e.g. [Scheduling data sets](scheduling-data.html)).
+Please cite your sources (papers and origin of data).
+
+In the file `dispatch.ml` add a variant to `problem` (e.g. `JOBSHOP of jobshop`), and redirect the file to the right parser in the function `dispatch` according to the file extension.
+
+### Create the model
+
+Once we parsed our data into a suited structure, it is time to create the constraints model.
+

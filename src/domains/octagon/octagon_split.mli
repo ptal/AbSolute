@@ -84,7 +84,9 @@ module Anti_first_fail_LB : Octagon_split_sig
 module Anti_first_fail_Bisect : Octagon_split_sig
 module Anti_first_fail_UB : Octagon_split_sig
 module MSLF_simple : Octagon_split_sig
+module MSLF_simple_rotated : Octagon_split_sig
 module MSLF : Octagon_split_sig
 module MSLF_all : Octagon_split_sig
+module MSLF_rotated : Octagon_split_sig
 module MSLF_UB : Octagon_split_sig
 module MSLF_UB_all : Octagon_split_sig

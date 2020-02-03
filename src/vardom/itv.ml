@@ -528,14 +528,17 @@ module Itv(B : Bound_sig.S) = struct
   let filter_root i r n =
      merge_bot2 (meet i (pow r n)) (Nb n)
 
-  (* r = min (i1, i2) *)
-  let filter_min (l1, u1) (l2, u2) (lr, ur) =
-    merge_bot2 (to_bot ((B.max l1 lr), (B.max u1 ur))) (to_bot ((B.max l2 lr), (B.max u2 ur)))
+  (* i1 ∩ r = ∅ => i2 = i2 ∩ r
+     i2 ∩ r = ∅ => i1 = i1 ∩ r  *)
+  let filter_disjunctive_interest i1 i2 r =
+    match meet i1 r, meet i2 r with
+    | Bot, Bot -> Bot
+    | Nb i1, Bot -> Nb (i1,i2)
+    | Bot, Nb i2 -> Nb (i1,i2)
+    | Nb _, Nb _ -> Nb (i1,i2)
 
-  (* r = max (i1, i2) *)
-  let filter_max (l1, u1) (l2, u2) (lr, ur) =
-    merge_bot2 (to_bot ((B.min l1 lr), (B.min u1 ur))) (to_bot ((B.min l2 lr), (B.min u2 ur)))
-
+  let filter_min i1 i2 r = filter_disjunctive_interest i1 i2 r
+  let filter_max i1 i2 r = filter_disjunctive_interest i1 i2 r
 
   (* Function of the signature *)
   let filter_unop op = match op with

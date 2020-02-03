@@ -84,3 +84,38 @@ Data sets:
   3. MMLIB+: 3240 instances, 50 or 100 activities, 3, 6 or 9 modes.
 
 [1] V. Van Peteghem and M. Vanhoucke, “An experimental investigation of metaheuristics for the multi-mode resource-constrained project scheduling problem on new dataset instances,” European Journal of Operational Research, vol. 235, no. 1, pp. 62–72, May 2014.
+
+## Job shop scheduling problem
+
+The data sets and optimum are extracted and formatted from the following sources:
+
+  1. [optimizizer.com](http://optimizizer.com/jobshop.php)
+  2. [Yasumasa Tamura's Github](https://github.com/tamy0612/JSPLIB)
+
+Data sets:
+
+  1. ABZ: 5 instances, due to Adams et al. [1].
+  2. FT: 3 instances, due to Fisher and Thompson [2].
+  3. LA: 40 instances due to Lawrence [3].
+  4. ORB: 10 instances due to Applegate and Cook [4].
+  5. SWV: 20 instances due to Storer et al. [5].
+  6. YN: 4 instances due to Yamada and Nakano [6].
+  7. TA: 80 instances due to Taillard [7].
+  8. Demirkol: 80 instances du to Demirkol et al. [8].
+
+All data sets are formatted according to the following format:
+
+```
+# Comments start with '#'
+<jobs> <machines>
+
+```
+
+[1] J. Adams, E. Balas, D. Zawack. "The shifting bottleneck procedure for job shop scheduling.", Management Science, Vol. 34, Issue 3, pp. 391-401, 1988.
+[2] J.F. Muth, G.L. Thompson. "Industrial scheduling.", Englewood Cliffs, NJ, Prentice-Hall, 1963.
+[3] S. Lawrence. "Resource constrained project scheduling: an experimental investigation of heuristic scheduling techniques (Supplement).", Graduate School of Industrial Administration. Pittsburgh, Pennsylvania, Carnegie-Mellon University, 1984.
+[4] D. Applegate, W. Cook. "A computational study of job-shop scheduling.", ORSA Journal on Computer, Vol. 3, Isuue 2, pp. 149-156, 1991.
+[5] R.H. Storer, S.D. Wu, R. Vaccari. "New search spaces for sequencing problems with applications to job-shop scheduling.", Management Science Vol. 38, Issue 10, pp. 1495-1509, 1992.
+[6] T. Yamada, R. Nakano. "A genetic algorithm applicable to large-scale job-shop problems.", Proceedings of the Second international workshop on parallel problem solving from Nature (PPSN'2). Brussels (Belgium), pp. 281-290, 1992.
+[7] E. Taillard. "Benchmarks for basic scheduling problems", European Journal of Operational Research, Vol. 64, Issue 2, pp. 278-285, 1993.
+[8] Ebru Demirkol, Sanjay Mehta, Reha Uzsoy. "Benchmarks for shop scheduling problems", European Journal of Operational Research, 109(1), 1998, pp. 137-141.

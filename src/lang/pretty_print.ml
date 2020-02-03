@@ -57,7 +57,9 @@ let print_expr fmt t =
     | Funcall (name,args) ->
        Format.fprintf fmt "%a(" print_var name;
        Format.pp_print_list ~pp_sep:pp_sep_comma
-         (loop false (fun () -> Format.fprintf fmt ")"; k())) fmt args;
+         (loop false (fun () -> ())) fmt args;
+      Format.fprintf fmt ")";
+      k()
     | Binary (t1,b,t2) as father ->
        let right_prior = prior_level (father,t2) in
        let k =
