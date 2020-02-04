@@ -16,10 +16,13 @@ open Lang.Ast
 module type S = sig
   module D: Bound_sig.S
 
+  type param_or_var =
+    | Param of D.t
+    | Variable of string
+
   type task = {
-    (* Name of the variable representing the starting date. *)
-    start: string;
-    duration: D.t;
+    start: string; (** Name of the variable representing the starting date. *)
+    duration: param_or_var; (** Duration of a task, it can either be a parameter or a variable. *)
   }
 
   (** Ensure two tasks do not overlap.
@@ -33,12 +36,12 @@ module type S = sig
   (** Ensure that `tasks` are never scheduled at the same time (they do not overlap). *)
   val disjunctive: task list -> formula
 
-  (** Ensure that a task is running at the instant `i`. *)
-  val at_instant: task -> D.t -> formula
+  (** [at_instant t i] Ensure that a task `t` is running at the instant `i`. *)
+  val at_instant: task -> param_or_var -> formula
 
   (** Given two tasks name `s1,s2`, and a duration `d`, ensure that `s2` starts at least `d` units after the start of `s1`.
       The resulting constraint is `s1 + d1 <= s2` that we rewrite to `s1 - s2 <= -d1`. *)
-  val precedence: string -> string -> D.t -> formula
+  val precedence: string -> string -> param_or_var -> formula
 end
 
 module Make(D: Bound_sig.S): S with module D=D

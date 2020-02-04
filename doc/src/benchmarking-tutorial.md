@@ -202,4 +202,18 @@ In the file `dispatch.ml` add a variant to `problem` (e.g. `JOBSHOP of jobshop`)
 ### Create the model
 
 Once we parsed our data into a suited structure, it is time to create the constraints model.
+We create a file `models/jobshop.ml` with a single function `formula_of_jobshop: jobshop -> bab_qformula`.
+`bab_qformula` is a representation of a formula where a value must be minimized or maximized.
+It also works for satisfiability as well.
+You can look to existing models for examples.
+Similarly to `dispatch.ml` in the previous section, you must register your new function in `models.ml`.
+
+If you want to support MiniZinc model, you need to convert the data parsed in the previous section to a DZN file that will be feed to your MiniZinc model.
+To achieve that, create a file `generators/jobshop2dzn.ml` (replace `jobshop` by the name of your problem), and register this function in `mzn.ml`.
+
+### Running the new model
+
+That should be it!
+You can now try and run your new model with various solvers (GeCode, Chuffed, AbSolute).
+Check if the obtained results are right with our analyzer tool `kobeview`.
 

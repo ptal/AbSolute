@@ -101,8 +101,9 @@ struct
 
   let shared_constraints rtasks horizon make_name =
     let formula = QFFormula (conjunction (List.flatten (List.map (fun i ->
+      let instant = Param i in
       List.map (fun t ->
-        Equiv (FVar (make_name t i), at_instant t.task i)
+        Equiv (FVar (make_name t i), at_instant t.task instant)
       ) rtasks
     ) (Tools.range 0 horizon)))) in
     let vars = List.flatten (List.map (fun i -> List.map (fun t ->

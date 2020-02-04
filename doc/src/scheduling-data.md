@@ -101,14 +101,15 @@ Data sets:
   5. SWV: 20 instances due to Storer et al. [5].
   6. YN: 4 instances due to Yamada and Nakano [6].
   7. TA: 80 instances due to Taillard [7].
-  8. Demirkol: 80 instances du to Demirkol et al. [8].
+  8. Demirkol: 80 instances due to Demirkol et al. [8].
+  9. CAR: 8 instances due to Carlier and Pinson [9].
 
 All data sets are formatted according to the following format:
 
 ```
 # Comments start with '#'
 <jobs> <machines>
-
+Each line has N operations where an operation is a couple <machine_idx> <duration>.
 ```
 
 [1] J. Adams, E. Balas, D. Zawack. "The shifting bottleneck procedure for job shop scheduling.", Management Science, Vol. 34, Issue 3, pp. 391-401, 1988.
@@ -119,3 +120,30 @@ All data sets are formatted according to the following format:
 [6] T. Yamada, R. Nakano. "A genetic algorithm applicable to large-scale job-shop problems.", Proceedings of the Second international workshop on parallel problem solving from Nature (PPSN'2). Brussels (Belgium), pp. 281-290, 1992.
 [7] E. Taillard. "Benchmarks for basic scheduling problems", European Journal of Operational Research, Vol. 64, Issue 2, pp. 278-285, 1993.
 [8] Ebru Demirkol, Sanjay Mehta, Reha Uzsoy. "Benchmarks for shop scheduling problems", European Journal of Operational Research, 109(1), 1998, pp. 137-141.
+[9] J. Carlier and E. Pinson. An Algorithm for Solving the Job-Shop Problem. Management Science, 35(2):164–176, 1989.
+
+## Flexible job shop scheduling problem
+
+The information about the data sets have been taken from [5], and optimum bounds from [5,6].
+
+Data sets:
+
+  1. Barnes: 21 instances, due to Chambers and Barnes [1].
+  2. Brandimarte: 10 instances, due to Brandimarte [2].
+  3. Dauzere: 18 instances, due to Dauzère-Pérès and Paulli [3].
+  4. Hurink: 3 data sets of 66 instances each modifying the ABZ, FT, LA, ORB data sets of the job shop scheduling, due to Hurink [4].
+      1. edata: Few operations may be assigned to more than one machine.
+      2. rdata: Most of the operations may be assigned to some machines.
+      3. vdata: All operations may be assigned to several machines.
+
+All data sets have the following format (taken from the file `DataSetExplanation.txt` coming with the benchmarks):
+
+1. In the first line there are (at least) 2 numbers: the first is the number of jobs and the second the number of machines (the 3rd is not necessary, it is the average number of machines per operation)
+2. Every row represents one job: the first number is the number of operations of that job, the second number (let's say k>=1) is the number of machines that can process the first operation; then according to k, there are k pairs of numbers (machine,processing time) that specify which are the machines and the processing times; then the data for the second operation and so on...
+
+[1] J. B. Chambers and J. W. Barnes. Flexible Job Shop Scheduling by Tabu Search. The University of Texas, Austin, TX, Technical Report Series ORP96-09, Graduate Program in Operations Research and Industrial Engineering, 1996.
+[2] P. Brandimarte. Routing and Scheduling in a Flexible Job Shop by Tabu Search. Annals of Operations Research, 41(3):157–183, 1993.
+[3] S. Dauzère-Pérès and J. Paulli. Solving the General Multiprocessor Job-Shop Scheduling Problem. Technical report, Rotterdam School of Management, Erasmus Universiteit Rotterdam, 1994.
+[4]
+[5] Behnke, D., & Geiger, M. J. (2012). Test instances for the flexible job shop scheduling problem with work centers. Arbeitspapier/Research Paper/Helmut-Schmidt-Universität, Lehrstuhl für Betriebswirtschaftslehre, insbes. Logistik-Management.
+[6] A. Schutt, T. Feydy, and P. J. Stuckey, “Scheduling Optional Tasks with Explanation,” in Principles and Practice of Constraint Programming, Berlin, Heidelberg, 2013, vol. 8124, pp. 628–644.
