@@ -52,6 +52,7 @@ sig
   val empty': ad_uid -> t
   val type_of: t -> ad_ty list
   val project: t -> var_id -> (Bound_rat.t * Bound_rat.t)
+  val embed: t -> gvar -> (Bound_rat.t * Bound_rat.t) -> t
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list

@@ -83,7 +83,7 @@ struct
   let project' octagon itv =
     Itv_view.dbm_to_itv itv (DBM.project octagon.dbm itv)
 
-  let project octagon var = project' octagon (as_interval var)
+  let project octagon v = project' octagon (as_interval v)
 
   type snapshot = t
 
@@ -124,6 +124,11 @@ struct
       closure octagon'
     else
       octagon, false
+
+  let embed octagon v (l,u) =
+    let itv = as_interval v in
+    let octagon = weak_incremental_closure octagon {v=itv.lb; d=(B.neg (B.mul_up l B.two))} in
+    weak_incremental_closure octagon {v=itv.ub; d=(B.mul_up u B.two)}
 
   let split octagon =
     let branches = Split.split octagon.dbm in

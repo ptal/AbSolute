@@ -125,6 +125,9 @@ struct
     (* if not (box.store == store) then print_var Format.std_formatter box vid v; *)
     { box with store }
 
+  let embed box v (l,u) =
+    weak_incremental_closure box (v, (V.of_bounds' (l,u)))
+
   let state _ = True
 
   let split box =

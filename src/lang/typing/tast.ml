@@ -123,6 +123,8 @@ let rec q_disjunction uid = function
 
 let neg_formula luid tf =
   let rec aux = function
+    | uid, TCmp(e1, EQ, e2) ->
+        luid, TOr((uid, TCmp(e1,LT,e2)), (uid, TCmp(e1, GT, e2)))
     | uid, TCmp c -> uid, TCmp (Rewritting.neg_bconstraint c)
     | uid, TFVar v -> uid, TNot (uid, TFVar v)
     | _, TEquiv (tf1,tf2) -> luid, TEquiv (aux tf1, tf2)

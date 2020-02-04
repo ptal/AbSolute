@@ -103,6 +103,16 @@ struct
     | LFalse -> (B.zero, B.zero)
     | LUndef -> (B.zero, B.one)
 
+  let embed b v (l,u) =
+    if B.equal l u then
+    begin
+      if B.equal l B.zero then
+        uncheckedEnqueue (Lit.lit v true)
+      else if B.equal l B.one then
+        uncheckedEnqueue (Lit.lit v false)
+    end;
+    b
+
   (* The learnt clause are stored in the watched literals array.
      Actually, there is no explicit "learnt clause database". *)
   let propagate_conflict b =

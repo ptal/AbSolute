@@ -127,6 +127,7 @@ struct
 
   let empty _ = raise (Wrong_modelling "`Event_loop.empty` is not supported, you should first create the abstract domains and then pass their references to `Event_loop.init`.")
   let project _ _ = meta_exn ()
+  let embed _ _ _ = meta_exn ()
   let weak_incremental_closure _ _ = meta_exn ()
   let entailment _ _ = meta_exn ()
   let interpret _ _ _ = meta_exn ()

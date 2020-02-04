@@ -96,6 +96,12 @@ sig
       Raise `Wrong_modelling` if the variable is not in the current abstract element. *)
   val project: t -> I.var_id -> (B.t * B.t)
 
+  (** [embed abs x (l,u)] joins the value of the variable `x` with the interval `(l,u)` into `abs`.
+      It should be equivalent to:
+        `List.fold_left weak_incremental_closure abs (interpret abs Exact (x >= l /\ x <= u))`.
+      This function is mainly useful for efficiency purposes. *)
+  val embed: t -> I.var_id -> (B.t * B.t) -> t
+
   (** A snapshot is a copy of the state of the abstract domain at some point in time.
       For purely functional abstract domains, it will be equal to `t`. *)
   type snapshot

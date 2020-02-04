@@ -32,6 +32,7 @@ sig
   val map_interpretation: t -> (I.t -> I.t) -> t
   val interpret: t -> approx_kind -> Tast.tqformula -> (t * I.rconstraint list)
   val project: t -> I.var_id -> (B.t * B.t)
+  val embed: t -> I.var_id -> (B.t * B.t) -> t
   type snapshot
   val lazy_copy: t -> int -> snapshot list
   val restore: t -> snapshot -> t

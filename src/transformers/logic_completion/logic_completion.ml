@@ -195,6 +195,7 @@ struct
     else Unknown
 
   let project _ _ = no_variable_exn "Logic_completion.project"
+  let embed _ _ _ = no_variable_exn "Logic_completion.embed"
 
   (* This abstract domain is totally functional. *)
   type snapshot = t

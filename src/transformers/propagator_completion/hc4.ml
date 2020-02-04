@@ -10,9 +10,9 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Bounds.Converter
 open Lang.Ast
 open Core.Bot
-open Typing.Tast
 open Lang.Rewritting
 open Pc_interpretation
 
@@ -28,6 +28,9 @@ struct
   module I = I
   module A = I.A
   module V = I.V
+
+  module FromA = Converter(A.B)(I.V.B)
+  module ToA = Converter(I.V.B)(A.B)
 
   let expr_val expr = I.(expr.value)
   let exprs_val exprs = List.map expr_val exprs
@@ -47,7 +50,7 @@ struct
     match expr.node with
     | BVar (vid, _) ->
         let (l,u) = A.project abs vid in
-        expr.value <- V.of_rats (A.B.to_rat l) (A.B.to_rat u)
+        expr.value <- V.of_bounds' (FromA.convert_down l, FromA.convert_up u)
     | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
       begin
@@ -126,10 +129,9 @@ struct
     | BFuncall(name,args) ->
        let res = V.filter_fun name (List.map (fun e -> I.(e.value)) args) root in
        List.fold_left2 (fun acc res e -> refine acc res e.node) abs (debot res) args
-    | BVar (_, tv) ->
-        let tf = TQFFormula (V.to_formula root tv) in
-        let abs, cs = A.interpret abs OverApprox tf in
-        List.fold_left A.weak_incremental_closure abs cs
+    | BVar (vid, _) ->
+        let (l,u) = V.to_range root in
+        A.embed abs vid (ToA.convert_down l, ToA.convert_up u)
     | BCst (i,_) -> ignore (debot (V.meet root i)); abs
     | BUnary (op,e) ->
        let j = match op with

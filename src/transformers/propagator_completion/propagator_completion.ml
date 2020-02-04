@@ -93,6 +93,7 @@ struct
         { pc with repr }, cs
 
   let project _ _ = no_variable_exn "Propagator_completion.project"
+  let embed _ _ _ = no_variable_exn "Propagator_completion.embed"
 
   (* This abstract domain is totally functional. *)
   type snapshot = t

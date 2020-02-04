@@ -22,6 +22,7 @@ open Typing.Ad_type
 open Typing.Tast
 open Core
 open Bounds
+open Bounds.Converter
 
 type gvar = ad_uid * int
 type gconstraint = ad_uid * int
@@ -49,6 +50,7 @@ sig
   val empty': ad_uid -> t
   val type_of: t -> ad_ty list
   val project: t -> gvar -> (Bound_rat.t * Bound_rat.t)
+  val embed: t -> gvar -> (Bound_rat.t * Bound_rat.t) -> t
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list
@@ -209,6 +211,14 @@ struct
       let (lb, ub) = A.project !(pa.a) (List.nth pa.var_map v_id) in
       A.B.to_rat lb, A.B.to_rat ub
 
+  module ToA = Converter(Bound_rat)(A.B)
+  let embed pa (uid', v_id) (l,u) =
+    if uid pa != uid' then raise Not_found
+    else
+      let l,u = ToA.convert_down l, ToA.convert_up u in
+      let a = A.embed !(pa.a) (List.nth pa.var_map v_id) (l,u) in
+      wrap pa a
+
   let weak_incremental_closure pa (uid', c_id) =
     if uid pa != uid' then raise (Wrong_modelling "`Direct_product.weak_incremental_closure`: this constraint does not belong to this direct product.")
     else
@@ -364,6 +374,10 @@ struct
     if (Atom.uid a) != (fst v_id) then B.project b v_id
     else Atom.project a v_id
 
+  let embed (a,b) v_id (l,u) =
+    if (Atom.uid a) != (fst v_id) then a, B.embed b v_id (l,u)
+    else Atom.embed a v_id (l,u), b
+
   let weak_incremental_closure (a,b) c =
     if (Atom.uid a) != (fst c) then (a, B.weak_incremental_closure b c)
     else (Atom.weak_incremental_closure a c, b)
@@ -464,6 +478,7 @@ struct
   let lazy_copy (p:t) n = P.lazy_copy p.prod n
 
   let project (p:t) v_id = P.project p.prod v_id
+  let embed (p:t) v_id (l,u) = I.wrap p (P.embed p.prod v_id (l,u))
   let weak_incremental_closure p c = I.wrap p (P.weak_incremental_closure p.prod c)
   let entailment (p:t) c = P.entailment p.prod c
   let split (p:t) = P.split p.prod
