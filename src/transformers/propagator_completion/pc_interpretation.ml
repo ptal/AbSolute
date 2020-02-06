@@ -38,7 +38,7 @@ sig
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
-    | BVar     of A.I.var_id * tvariable
+    | BVar     of A.I.var_id list * tvariable
     | BCst     of V.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
@@ -48,6 +48,7 @@ sig
   val empty: ad_uid -> t
   val to_logic_var: t -> var_id -> tvariable
   val to_abstract_var: t -> vname -> (var_id * tvariable)
+  val local_vars: t -> vname -> var_id list
   val interpret: t -> approx_kind -> tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> tqformula
 
@@ -80,7 +81,7 @@ struct
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
-    | BVar     of A.I.var_id * tvariable
+    | BVar     of A.I.var_id list * tvariable
     | BCst     of V.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
@@ -92,6 +93,7 @@ struct
   let empty _ = raise (Wrong_modelling "`PC_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Propagator_completion`.")
   let to_logic_var _ _ = no_variable_exn "Logic_completion_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_completion_interpretation.to_abstract_var"
+  let local_vars _ _ = no_variable_exn "Logic_completion_interpretation.local_vars"
 
   let make_expr e = { node=e; value=fst (V.top ()) }
 
@@ -101,7 +103,6 @@ struct
     with Not_found ->
       raise (Wrong_modelling ("Propagation_completion: Could not find the variable `" ^ x ^ "`."))
 
-
   let interpret_expr repr e : rexpr =
     let rec aux e : rexpr =
       let e = match e with
@@ -109,8 +110,9 @@ struct
         | Unary(NEG, e) -> BUnary(NEG, aux e)
         | Binary(e1, op, e2) -> BBinary (aux e1, op, aux e2)
         | Var(x) ->
-            let (vid, tv) = to_abstract_var_wm repr x in
-            BVar(vid, tv)
+            let (_, tv) = to_abstract_var_wm repr x in
+            let vids = A.I.local_vars (A.interpretation !(repr.a)) x in
+            BVar(vids, tv)
         | Cst(v, cty) ->
             let l, u = ((V.B.of_rat_down v),(V.B.of_rat_up v)) in
             let v, aty = V.of_bounds ~ty:(Types.Concrete cty) (l,u) in

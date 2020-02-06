@@ -40,6 +40,7 @@ sig
   val empty: ad_uid -> t
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
+  val local_vars: t -> vname -> var_id list
 
   (** The formula is not rewritten and is represented as such. *)
   val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list

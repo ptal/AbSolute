@@ -34,7 +34,8 @@ sig
   val exact_interpretation: bool
   val empty: ad_uid -> t
   val to_logic_var: t -> var_id -> Tast.tvariable
-  val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
+  val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
+  val local_vars: t -> vname -> var_id list
   val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
@@ -80,6 +81,7 @@ struct
   let empty _ = raise (Wrong_modelling "`Logic_completion_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Logic_completion`.")
   let to_logic_var _ _ = no_variable_exn "Logic_completion_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Logic_completion_interpretation.to_abstract_var"
+  let local_vars _ _ = no_variable_exn "Logic_completion_interpretation.local_vars"
 
   let wrap r a = r.a := a; r
 

@@ -41,6 +41,7 @@ sig
   val empty: unit -> t
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
+  val local_vars: t -> vname -> var_id list
   val to_qformula: t -> gconstraint list -> tqformula list
   val interpret_all: t -> approx_kind -> tformula -> t * gconstraint list
   val interpret_one: t -> approx_kind -> tformula -> t * gconstraint list
@@ -176,6 +177,10 @@ struct
     with Not_found -> failwith (
       "[Direct_product.Prod_atom] The variable " ^ var ^
       " is registered in the underlying abstract domain but the mapping does not exist in Prod_atom.")
+
+  let local_vars pa var =
+    try [fst (to_abstract_var pa var)]
+    with Not_found -> []
 
   let to_abstract_constraint pa c = List.nth pa.constraint_map (snd c)
   let to_generic_constraint pa c =
@@ -317,6 +322,9 @@ struct
     with Not_found ->
       B.to_abstract_var b var
 
+  let local_vars (a,b) var =
+    (Atom.local_vars a var)@(B.local_vars b var)
+
   (* Whenever the list of constraints is empty means that it is a tautology, so we do not explicitly represent it.  *)
   let to_qformula (a,b) constraints =
     let a_constraints, b_constraints = Atom.to_qformula' a constraints in
@@ -435,6 +443,10 @@ struct
     let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}
     let to_logic_var p vid = P.to_logic_var p.prod vid
     let to_abstract_var p vname = P.to_abstract_var p.prod vname
+    let local_vars p vname =
+      match P.local_vars p.prod vname with
+      | [] -> raise Not_found
+      | l -> l
 
     let to_qformula p cs =
       let cs = P.to_qformula p.prod cs in

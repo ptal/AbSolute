@@ -154,13 +154,19 @@ struct
     let rec aux expr =
       match I.(expr.node) with
       | BCst _ -> []
-      | BVar (vid, _) -> A.events_of_var (unwrap pc) vid
+      | BVar (vids, _) ->
+          List.flatten (List.map (A.events_of_var (unwrap pc)) vids)
       | BUnary (_, e) -> aux e
       | BBinary (e1, _, e2) -> (aux e1)@(aux e2)
       | BFuncall (_,args) -> List.concat (List.map aux args)
     in aux expr
 
-  let events_of pc (e1,_,e2) = (events_of_expr pc e1)@(events_of_expr pc e2)
+  let events_of pc (e1,_,e2) =
+    List.sort_uniq (fun (x,y) (x',y') ->
+      let r = compare x x' in
+      if r = 0 then compare y y' else r)
+      ((events_of_expr pc e1)@(events_of_expr pc e2))
+
   let events_of_var _ _ = []
 
   let drain_tasks pc =

@@ -21,5 +21,6 @@ let exact_interpretation = true
 let empty _ = ()
 let to_logic_var _ _ = raise Not_found
 let to_abstract_var _ _ = raise Not_found
+let local_vars _ _ = raise Not_found
 let interpret _ _ _ = raise (Wrong_modelling "`Unit_representation` does not support interpreting constraints.")
 let to_qformula _ _ = Tast.ttrue

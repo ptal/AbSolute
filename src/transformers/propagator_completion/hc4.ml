@@ -48,9 +48,15 @@ struct
   let rec eval abs expr =
     let open I in
     match expr.node with
-    | BVar (vid, _) ->
-        let (l,u) = A.project abs vid in
-        expr.value <- V.of_bounds' (FromA.convert_down l, FromA.convert_up u)
+    | BVar (vids, _) ->
+        let make vid =
+          let (l,u) = A.project abs vid in
+          V.of_bounds' (FromA.convert_down l, FromA.convert_up u)
+        in
+        let first = make (List.hd vids) in
+        let v = List.fold_left
+          (fun v vid -> debot (V.meet v (make vid))) first (List.tl vids) in
+        expr.value <- v
     | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
       begin
@@ -129,9 +135,12 @@ struct
     | BFuncall(name,args) ->
        let res = V.filter_fun name (List.map (fun e -> I.(e.value)) args) root in
        List.fold_left2 (fun acc res e -> refine acc res e.node) abs (debot res) args
-    | BVar (vid, _) ->
+    | BVar (vids, _) ->
         let (l,u) = V.to_range root in
-        A.embed abs vid (ToA.convert_down l, ToA.convert_up u)
+        let (l,u) = ToA.convert_down l, ToA.convert_up u in
+        List.fold_left
+          (fun abs vid -> A.embed abs vid (l,u))
+          abs vids
     | BCst (i,_) -> ignore (debot (V.meet root i)); abs
     | BUnary (op,e) ->
        let j = match op with

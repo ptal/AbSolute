@@ -55,10 +55,18 @@ module type Interpretation_sig = sig
   (** An empty interpretation. *)
   val empty: ad_uid -> t
 
-  (** Conversions utilities between logical variables and their
-     representations. *)
+  (** Conversion between abstract variables and their logical representations. *)
   val to_logic_var: t -> var_id -> Tast.tvariable
+
+  (** Conversion between a logical variables and its abstract representation.
+      Raises `Not_found` if the variable is not in `repr`.  *)
   val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
+
+  (** [local_vars repr v] gives the set of local variables representing `v` in the abstract element `repr`.
+      Same behavior than `to_abstract_var` if the variable has none or a single local variable.
+      In case of multiple variables, these variables must be duplicate, in the sense that they represent the same initial variable (possibly with different level of approximation).
+      For instance, a variable `v` typed in a direct product "A1 X A2" has two versions: one in A1, one in A2. *)
+  val local_vars: t -> Ast.vname -> var_id list
 
   (** Interpret a logic formula into a list of abstract constraints.
       It approximates the representation of the formula if needed according to `approx`.
@@ -101,6 +109,9 @@ sig
   (** Conveniency version of `to_logic_var` without the type of the variable. *)
   val to_logic_var': t -> var_id -> Ast.vname
   val to_abstract_var': t -> Ast.vname -> var_id
+
+  (** Same as `to_abstract_var'`. *)
+  val local_vars: t -> Ast.vname -> var_id list
 
   (** Conveniency version of `to_abstrct_var` raising `Wrong_modelling` with a message indicating that the variable does not belong to the abstract element. *)
   val to_abstract_var_wm: t -> Ast.vname -> (var_id * Tast.tvariable)

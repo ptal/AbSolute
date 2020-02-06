@@ -10,7 +10,10 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
-(** This is a direct product combining N abstract domains A1...An. *)
+(** This is a direct product combining N abstract domains A1...An.
+    Whenever a variable or a constraint is typed with the UID of this product, it is added in ALL sub-domains.
+    However, for functions operating on a single variable such as `to_abstract_var`, `project` or `embed`, only the first sub-domain is considered.
+    To operate over a particular sub-domain, retrieve the variable ID with `local_vars`. *)
 
 open Domains.Abstract_domain
 open Domains.Interpretation
@@ -39,6 +42,7 @@ sig
   val empty: unit -> t
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
+  val local_vars: t -> vname -> var_id list
   val to_qformula: t -> gconstraint list -> tqformula list
 
   (** Interpret a constraint in the product.

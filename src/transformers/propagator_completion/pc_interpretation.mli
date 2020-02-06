@@ -42,7 +42,7 @@ sig
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
-    | BVar     of A.I.var_id * tvariable
+    | BVar     of A.I.var_id list * tvariable
     | BCst     of V.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
@@ -52,6 +52,7 @@ sig
   val empty: ad_uid -> t
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> vname -> (var_id * Tast.tvariable)
+  val local_vars: t -> vname -> var_id list
 
   (** Over-approximation is always supported.
       No special effort is currently made for supporting under-approximations, it is considered equivalent to Exact representation.

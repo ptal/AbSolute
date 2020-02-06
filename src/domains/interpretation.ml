@@ -43,6 +43,7 @@ module type Interpretation_sig = sig
   val empty: ad_uid -> t
   val to_logic_var: t -> var_id -> Tast.tvariable
   val to_abstract_var: t -> Ast.vname -> (var_id * Tast.tvariable)
+  val local_vars: t -> Ast.vname -> var_id list
   val interpret: t -> approx_kind -> Tast.tformula -> t * rconstraint list
   val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
@@ -80,6 +81,7 @@ struct
 
   let to_logic_var' repr id = (to_logic_var repr id).name
   let to_abstract_var' repr vname = fst (to_abstract_var repr vname)
+  let local_vars repr vname = [to_abstract_var' repr vname]
 
   let to_abstract_var_wm repr vname =
     try
