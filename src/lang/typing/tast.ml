@@ -10,6 +10,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Bounds
 open Core
 open Lang
 open Lang.Ast
@@ -53,8 +54,11 @@ let rec tqformula_to_qformula = function
   | TExists(tv, qf) -> Exists (tv.name, tv.ty, tqformula_to_qformula qf)
 
 let ctrue = TCmp (zero, LEQ, zero)
-let ttrue = TQFFormula (0, ctrue)
-let tfalse = TQFFormula (0, TCmp (one, LEQ, zero))
+let cfalse = TCmp (zero, LEQ, zero)
+let ctrue' = (0, ctrue)
+let cfalse' = (0, cfalse)
+let ttrue = TQFFormula ctrue'
+let tfalse = TQFFormula cfalse'
 
 let vars_of_tformula tf =
   let rec aux (_,f) =
@@ -146,3 +150,31 @@ let replace_uid uid tf =
     | TOr (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
     | TNot tf -> uid, TNot (aux tf)
   in aux tf
+
+let instantiate_vars vars tf =
+  let instantiate_vars_expr e =
+    Rewritting.replace_var_in_expr (fun v ->
+      try
+        let tvar, value = List.assoc v vars in
+        Cst (value, Types.to_concrete_ty tvar.ty)
+      with Not_found -> Var v
+    ) e in
+  let rec aux (uid,f) =
+    match f with
+    | TCmp (e1,op,e2) ->
+        uid, TCmp(instantiate_vars_expr e1, op, instantiate_vars_expr e2)
+    | TFVar v ->
+      begin
+        try
+          let _, value = List.assoc v vars in
+          if Bound_rat.equal value Bound_rat.zero then
+            cfalse'
+          else ctrue'
+        with Not_found -> uid, TFVar v
+      end
+    | TEquiv (tf1,tf2) -> uid, TEquiv (aux tf1, aux tf2)
+    | TImply (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TAnd (tf1,tf2) -> uid, TOr (aux tf1, aux tf2)
+    | TOr (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TNot tf -> uid, TNot (aux tf) in
+  aux tf

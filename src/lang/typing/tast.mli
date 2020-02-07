@@ -15,6 +15,7 @@
     In our context, the type of a formula is an index of an abstract element.
     We also have types for variables (see `Types.var_ty`) but they work at the value level rather than the level of abstract domains. *)
 
+open Bounds
 open Core
 open Lang.Ast
 open Ad_type
@@ -91,3 +92,5 @@ val neg_formula: ad_uid -> tformula -> tformula
 
 (** [replace_uid uid tf] replaces all the UIDs that are equal to `fst tf` by `uid` in `tf`. *)
 val replace_uid: ad_uid -> tformula -> tformula
+
+val instantiate_vars: (vname * (tvariable * Bound_rat.t)) list -> tformula -> tformula
