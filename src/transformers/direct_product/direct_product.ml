@@ -57,7 +57,7 @@ sig
   val lazy_copy: t -> int -> snapshot list
   val closure: t -> (t * bool)
   val weak_incremental_closure: t -> gconstraint -> t
-  val entailment: t -> gconstraint -> bool
+  val entailment: t -> gconstraint -> t * gconstraint * bool
   val split: t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
@@ -81,7 +81,7 @@ struct
     a: A.t ref;
     owned: bool;
     var_map: A.I.var_id list;
-    constraint_map: A.I.rconstraint list;
+    constraint_map: A.I.rconstraint Parray.t;
   }
   type var_id = gvar
   type rconstraint = gconstraint
@@ -95,7 +95,7 @@ struct
   type snapshot = {
     a_bt: a_snapshot;
     var_map_bt: A.I.var_id list;
-    constraint_map_bt: A.I.rconstraint list;
+    constraint_map_bt: A.I.rconstraint Parray.t;
   }
   let exact_interpretation = A.I.exact_interpretation
   let count = 1
@@ -146,7 +146,7 @@ struct
       match a with
       | Owned a -> (a, true)
       | Shared a -> (a, false) in
-    { a; owned; var_map=[]; constraint_map=[] }
+    { a; owned; var_map=[]; constraint_map=(Tools.empty_parray ()) }
 
   let empty' uid = init (Owned (ref (A.empty uid)))
 
@@ -160,7 +160,11 @@ struct
     if uid pa != uid' then raise
       (Wrong_modelling "This constraint does not belong to this direct product.")
     else
-      List.nth pa.constraint_map c_id
+      Parray.get pa.constraint_map c_id
+
+  let set_constraint pa (_, c_id) ac =
+    let constraint_map = Parray.set pa.constraint_map c_id ac in
+    {pa with constraint_map}
 
   let to_logic_var' pa var_id =
     A.I.to_logic_var (interpretation pa) (List.nth pa.var_map var_id)
@@ -182,10 +186,10 @@ struct
     try [fst (to_abstract_var pa var)]
     with Not_found -> []
 
-  let to_abstract_constraint pa c = List.nth pa.constraint_map (snd c)
+  let to_abstract_constraint pa c = Parray.get pa.constraint_map (snd c)
   let to_generic_constraint pa c =
-    let num_cons = List.length pa.constraint_map in
-    let constraint_map = pa.constraint_map@[c] in
+    let num_cons = Parray.length pa.constraint_map in
+    let constraint_map = Tools.extend_parray pa.constraint_map c in
     {pa with constraint_map}, (uid pa, num_cons)
 
   let to_generic_constraints pa cs =
@@ -227,12 +231,16 @@ struct
   let weak_incremental_closure pa (uid', c_id) =
     if uid pa != uid' then raise (Wrong_modelling "`Direct_product.weak_incremental_closure`: this constraint does not belong to this direct product.")
     else
-      let c_a = List.nth pa.constraint_map c_id in
+      let c_a = Parray.get pa.constraint_map c_id in
       let a = A.weak_incremental_closure !(pa.a) c_a in
       wrap pa a
 
   let state pa = A.state !(pa.a)
-  let entailment pa c = A.entailment !(pa.a) (get_constraint pa c)
+
+  let entailment pa c =
+    let (a, ac, b) = A.entailment !(pa.a) (get_constraint pa c) in
+    set_constraint (wrap pa a) c ac, c, b
+
   let split pa = make_snapshots pa 0 A.split
   let volume pa = if pa.owned then A.volume !(pa.a) else 1.
   let print fmt pa = if pa.owned then Format.fprintf fmt "%a" A.print !(pa.a) else ()
@@ -243,8 +251,9 @@ struct
     begin
       safe_wrap pa (fun pa ->
         try
-          let (i, constraints) = A.I.interpret (interpretation pa) approx tf in
-          let pa = wrap pa (A.map_interpretation !(pa.a) (fun _ -> i)) in
+          let (a, constraints) = A.map_interpretation !(pa.a)
+            (fun i -> A.I.interpret i approx tf) in
+          let pa = wrap pa a in
           let pa, gconstraints = to_generic_constraints pa constraints in
           pa, gconstraints
         with Wrong_modelling msg ->
@@ -252,7 +261,7 @@ struct
     end
 
   let interpret_all pa approx tf =
-    let tf = Tast.map_uid (A.uid (unwrap pa)) tf in
+    let tf = Tast.replace_uid (A.uid (unwrap pa)) tf in
     interpret pa approx tf
 
   let interpret_one = interpret
@@ -394,8 +403,12 @@ struct
     Kleene.and_kleene (Atom.state a) (B.state b)
 
   let entailment (a,b) c =
-    if (Atom.uid a) != (fst c) then B.entailment b c
-    else Atom.entailment a c
+    if (Atom.uid a) != (fst c) then
+      let (b, c, is_entailed) = B.entailment b c in
+      (a,b), c, is_entailed
+    else
+      let (a, c, is_entailed) = Atom.entailment a c in
+      (a,b), c, is_entailed
 
   let split (a,b) =
     match Atom.split a with
@@ -492,7 +505,9 @@ struct
   let project (p:t) v_id = P.project p.prod v_id
   let embed (p:t) v_id (l,u) = I.wrap p (P.embed p.prod v_id (l,u))
   let weak_incremental_closure p c = I.wrap p (P.weak_incremental_closure p.prod c)
-  let entailment (p:t) c = P.entailment p.prod c
+  let entailment (p:t) c =
+    let (p', c, b) = P.entailment p.prod c in
+    (I.wrap p p', c, b)
   let split (p:t) = P.split p.prod
   let volume (p:t) = P.volume p.prod
   let print fmt (p:t) = P.print fmt p.prod

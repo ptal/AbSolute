@@ -240,6 +240,7 @@ struct
     | (uid, Box vardom_ty) when interval_can_represent_var vardom_ty ty -> [uid]
     | (uid, Octagon vty) when compatible_ty ty vty -> [uid]
     | (uid, SAT) when is_boolean ty -> [uid]
+    | (_, Cascade_product _) -> failwith "Cascade_product type inference is not yet implemented."
     | (_, Direct_product adtys) -> List.flatten (List.map (infer_var ty) adtys)
     | (_, Logic_completion adty) -> infer_var ty adty
     | _ -> []
@@ -406,6 +407,7 @@ struct
     | Box vardom -> box_infer typer uid vardom tf
     | Octagon _ -> octagon_infer typer uid tf
     | SAT -> sat_infer typer uid tf
+    | Cascade_product _ -> failwith "Cascade_product type inference is not yet implemented."
     | Direct_product adtys -> direct_product_infer typer uid tf adtys
     | Logic_completion adty -> logic_completion_infer typer uid tf adty
     | Propagator_completion adty -> propagator_completion_infer typer uid tf adty

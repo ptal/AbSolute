@@ -89,4 +89,5 @@ val q_disjunction: ad_uid -> tqformula list -> tqformula
     The UID is the UID of a domain that support arbitrary logical formula. *)
 val neg_formula: ad_uid -> tformula -> tformula
 
-val map_uid: ad_uid -> tformula -> tformula
+(** [replace_uid uid tf] replaces all the UIDs that are equal to `fst tf` by `uid` in `tf`. *)
+val replace_uid: ad_uid -> tformula -> tformula

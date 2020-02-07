@@ -63,10 +63,12 @@ struct
   let unwrap pc = !(pc.repr.a)
 
   let interpretation pc = pc.repr
-  let map_interpretation pc f = {pc with repr=(f pc.repr)}
+  let map_interpretation pc f =
+    let (repr, a) = f pc.repr in
+    {pc with repr}, a
 
-  (* Reexported functions from the parametrized modules. *)
-  let entailment pc = Closure.entailment (unwrap pc)
+  (* NOTE: The entailment could be improved if we rewrite `c`. *)
+  let entailment pc c = pc, c, Closure.entailment (unwrap pc) c
 
   let empty _ = raise (Wrong_modelling ("Propagator_completion must be initialized with `init`."))
   let init repr = {

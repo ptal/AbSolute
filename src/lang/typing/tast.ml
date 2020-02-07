@@ -134,8 +134,9 @@ let neg_formula luid tf =
     | _, TNot tf -> tf
   in aux tf
 
-let map_uid uid tf =
-  let rec aux (_, f) =
+let replace_uid uid tf =
+  let rec aux (u, f) =
+    let uid = if u = fst tf then uid else u in
     match f with
     | TCmp c -> uid, TCmp c
     | TFVar v -> uid, TFVar v

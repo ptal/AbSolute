@@ -92,8 +92,7 @@ struct
       (* NOTE: It is important to check `r.uid <> uid` instead of `uid = A.uid !(r.a)`,
          because `a` might contain other sub-domains in which `f` is typed. *)
       if r.uid <> uid then
-        let i, fs = A.I.interpret (A.interpretation !(r.a)) approx (uid, f) in
-        let a = A.map_interpretation !(r.a) (fun _ -> i) in
+        let a, fs = A.map_interpretation !(r.a) (fun i -> A.I.interpret i approx (uid, f)) in
         wrap r a, map_atom (Atom fs)
       else
         or_f ()
@@ -204,23 +203,26 @@ struct
   let lazy_copy lc n = List.init n (fun _ -> lc)
   let restore _ s = s
 
-  let rec entailment lc = function
-    | Atom cs -> List.for_all (A.entailment (unwrap lc)) cs
-    | PNot f1 -> entailment lc f1.negative.ask
-    | PAnd(f1, f2) when entailment lc f1.positive.ask ->
-        entailment lc f2.positive.ask
-    | PAnd(f1, f2) when entailment lc f2.positive.ask ->
-        entailment lc f1.positive.ask
-    | POr(f1, _) when entailment lc f1.positive.ask -> true
-    | POr(_, f2) when entailment lc f2.positive.ask -> true
-    | PImply(f1, f2) when entailment lc f1.positive.ask ->
-        entailment lc f2.positive.ask
-    | PImply(f1, _) when entailment lc f1.negative.ask -> true
-    | PEquiv(f1, f2) when entailment lc f1.positive.ask ->
-        entailment lc f2.positive.ask
-    | PEquiv(f1, f2) when entailment lc f1.negative.ask ->
-        entailment lc f2.negative.ask
+  let rec entailment' lc = function
+    | Atom cs -> List.for_all (fun c -> let (_,_,b) = A.entailment (unwrap lc) c in b) cs
+    | PNot f1 -> entailment' lc f1.negative.ask
+    | PAnd(f1, f2) when entailment' lc f1.positive.ask ->
+        entailment' lc f2.positive.ask
+    | PAnd(f1, f2) when entailment' lc f2.positive.ask ->
+        entailment' lc f1.positive.ask
+    | POr(f1, _) when entailment' lc f1.positive.ask -> true
+    | POr(_, f2) when entailment' lc f2.positive.ask -> true
+    | PImply(f1, f2) when entailment' lc f1.positive.ask ->
+        entailment' lc f2.positive.ask
+    | PImply(f1, _) when entailment' lc f1.negative.ask -> true
+    | PEquiv(f1, f2) when entailment' lc f1.positive.ask ->
+        entailment' lc f2.positive.ask
+    | PEquiv(f1, f2) when entailment' lc f1.negative.ask ->
+        entailment' lc f2.negative.ask
     | _ -> false
+
+  (* NOTE: We could improve the entailment by rewritting the unknown part of the constraint. *)
+  let entailment lc c = lc, c, entailment' lc c
 
   type entailment_cases =
     | F1_entailed | F2_entailed
@@ -228,10 +230,10 @@ struct
     | Unknown_entailment
 
   let binary_entailment lc f1 f2 =
-    if entailment lc f1.positive.ask then F1_entailed
-    else if entailment lc f2.positive.ask then F2_entailed
-    else if entailment lc f1.negative.ask then F1_disentailed
-    else if entailment lc f2.negative.ask then F2_disentailed
+    if entailment' lc f1.positive.ask then F1_entailed
+    else if entailment' lc f2.positive.ask then F2_entailed
+    else if entailment' lc f1.negative.ask then F1_disentailed
+    else if entailment' lc f2.negative.ask then F2_disentailed
     else Unknown_entailment
 
   (* `None` if the constraint `f` is entailed.
@@ -260,9 +262,9 @@ struct
         | F2_disentailed -> incremental_closure lc f1.positive.tell
         | Unknown_entailment -> lc, Some f
         end
-    | PImply(f1, f2) when entailment lc f1.positive.ask ->
+    | PImply(f1, f2) when entailment' lc f1.positive.ask ->
         incremental_closure lc f2.positive.tell
-    | PImply(f1, _) when entailment lc f1.negative.ask -> lc, None
+    | PImply(f1, _) when entailment' lc f1.negative.ask -> lc, None
     | PImply _ -> lc, Some f
     | PEquiv(f1, f2) ->
         begin match binary_entailment lc f1 f2 with
@@ -346,7 +348,9 @@ struct
     ({ lc with new_tasks=[] }, tasks_events)
 
   let interpretation lc = lc.repr
-  let map_interpretation lc f = { lc with repr=(f lc.repr) }
+  let map_interpretation lc f =
+    let (repr, a) = f lc.repr in
+    { lc with repr }, a
 
   let interpret lc approx = function
   | TExists (_, _) -> no_variable_exn "Logic_completion.interpret"

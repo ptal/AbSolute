@@ -29,7 +29,7 @@ sig
   val name: string
   val type_of: t -> ad_ty option
   val interpretation: t -> I.t
-  val map_interpretation: t -> (I.t -> I.t) -> t
+  val map_interpretation: t -> (I.t -> I.t * 'a) -> t * 'a
   val interpret: t -> approx_kind -> Tast.tqformula -> (t * I.rconstraint list)
   val project: t -> I.var_id -> (B.t * B.t)
   val embed: t -> I.var_id -> (B.t * B.t) -> t
@@ -38,7 +38,7 @@ sig
   val restore: t -> snapshot -> t
   val closure: t -> (t * bool)
   val weak_incremental_closure: t -> I.rconstraint -> t
-  val entailment: t -> I.rconstraint -> bool
+  val entailment: t -> I.rconstraint -> t * I.rconstraint * bool
   val split: t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t

@@ -69,7 +69,7 @@ sig
 
   (** Allow to modify the interpretation.
       Be careful using this function as it delegates to you the work to keep the interpretation and abstract domain consistent. *)
-  val map_interpretation: t -> (I.t -> I.t) -> t
+  val map_interpretation: t -> (I.t -> I.t * 'a) -> t * 'a
 
   (** Interpret an existentially quantified logical formula into an abstract element.
         1. Existentially quantified variables are added into the abstract element if not already present.
@@ -126,13 +126,16 @@ sig
       Precondition: The variables in the constraint must all belong to the abstract element. *)
   val weak_incremental_closure: t -> I.rconstraint -> t
 
-  (** [entailment a c] returns is `true` if the constraint `c` is entailed by the abstract element `a`.
+  (** [(a',c',b) = entailment a c] has `b` equal to `true` if the constraint `c` is entailed by the abstract element `a`.
+      `a'` and `c'` must be semantically equivalent to `a` and `c`, but `c` might be simplified for better efficiency of subsequent entailment requests.
+      Note that `let entailment a c = (a,c, <compute_entailment>)` is a totally valid implementation.
+
       Being entailed means that the constraint is redundant in comparison to the information already in `a`.
       To test for disentailment, you must call `entailment` on the negation of the constraint.
       It is not possible to return a `Kleene` value due to over-approximation of constraint.
       Indeed, `c` might be an over-approximation of its logical constraint `l`, and therefore the disentailment of `c` does not imply the disentailment of `l`.
       This is explained more formally in the paper "Combining Constraint Languages via Abstract Interpretation" (Talbot and al., 2019). *)
-  val entailment: t -> I.rconstraint -> bool
+  val entailment: t -> I.rconstraint -> t * I.rconstraint * bool
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split a` should be equal to `a`.

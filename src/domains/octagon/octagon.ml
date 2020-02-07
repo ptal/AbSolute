@@ -57,7 +57,9 @@ struct
   }
 
   let interpretation octagon = octagon.r
-  let map_interpretation octagon f = {octagon with r=(f octagon.r)}
+  let map_interpretation octagon f =
+    let (r, a) = f octagon.r in
+    {octagon with r}, a
 
   let empty uid = {
     r=I.empty uid;
@@ -92,9 +94,11 @@ struct
 
   let restore _ snapshot = snapshot
 
-  let entailment octagon oc =
+  let entailment' octagon oc =
     let current = DBM.get octagon.dbm oc.v in
     B.geq oc.d current
+
+  let entailment octagon oc = octagon, oc, entailment' octagon oc
 
   (** Perform the closure of the DBM taking into account all the constraints added through [weak_incremental_closure]. *)
   let closure octagon =
@@ -115,7 +119,7 @@ struct
   (** Add the octagonal constraint in the octagon, if it is not entailed and without closing the DBM. *)
   let weak_incremental_closure octagon oc =
     (* print_oc "inc" octagon [oc]; *)
-    if entailment octagon oc then octagon
+    if entailment' octagon oc then octagon
     else { octagon with constraints=oc::octagon.constraints }
 
   let incremental_closure octagon oc =

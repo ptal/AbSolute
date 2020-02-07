@@ -55,13 +55,15 @@ struct
   }
 
   let interpretation box = box.r
-  let map_interpretation box f = {box with r=(f box.r)}
+  let map_interpretation box f =
+    let (r, a) = f box.r in
+    {box with r}, a
 
-  let entailment box (vid,v) =
+  let entailment box ((vid,v) as c) =
     try
       let store = Store.set box.store vid v in
-      box.store == store
-    with Bot.Bot_found -> false
+      box, c, box.store == store
+    with Bot.Bot_found -> box, c, false
 
   let empty uid = {
     r = I.empty uid;

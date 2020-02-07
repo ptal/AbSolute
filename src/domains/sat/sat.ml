@@ -51,7 +51,9 @@ struct
   let type_of sat = Some (uid sat, SAT)
 
   let interpretation sat = sat.r
-  let map_interpretation sat f = {sat with r=(f sat.r)}
+  let map_interpretation sat f =
+    let (r, a) = f sat.r in
+    {sat with r}, a
 
   let empty uid =
     resetEnv ();
@@ -162,14 +164,14 @@ struct
        raise Bot.Bot_found)
 
   exception Satisfiable
-  let entailment _ c =
+  let entailment sat c =
     try
       Vec.iter (fun l ->
         if value l = Types.Lbool.LTrue then
           raise Satisfiable
       ) c;
-      false
-    with Satisfiable -> true
+      sat, c, false
+    with Satisfiable -> sat, c, true
 
   let split b =
     (* New variable decision: *)

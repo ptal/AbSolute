@@ -115,7 +115,8 @@ struct
   let split _ = []
   let volume _ = 1.
   let interpretation _ = Unit_interpretation.empty 0
-  let map_interpretation x f = ignore(f (Unit_interpretation.empty 0)); x
+  let map_interpretation x f =
+    x, snd (f (Unit_interpretation.empty 0))
   let print _ _ = ()
 
   (* This abstract domain is totally functional. *)

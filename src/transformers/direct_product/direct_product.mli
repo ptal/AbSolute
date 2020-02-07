@@ -62,7 +62,7 @@ sig
   val lazy_copy: t -> int -> snapshot list
   val closure: t -> (t * bool)
   val weak_incremental_closure: t -> gconstraint -> t
-  val entailment: t -> gconstraint -> bool
+  val entailment: t -> gconstraint -> t * gconstraint * bool
   val split: t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
