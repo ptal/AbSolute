@@ -16,6 +16,7 @@ open Typing.Ad_type
 open Typing.Tast
 open Octagon_interpretation
 open Domains.Abstract_domain
+open Domains.Interpretation
 
 module Octagon_interpretation = Octagon_interpretation
 module Dbm = Dbm
@@ -77,9 +78,10 @@ struct
           let r, cs = I.interpret octagon.r approx tf in
           {octagon with r}, cs
       | TExists(tv, tqf) ->
-          let (dbm, idx, aty) = DBM.extend ~ty:(tv.ty) octagon.dbm in
-          let r = I.extend octagon.r (idx, {tv with ty = Abstract aty}) in
-          aux {octagon with r; dbm} tqf
+          guarded_extend octagon (uid octagon) name tv (fun octagon tv ->
+            let (dbm, idx, aty) = DBM.extend ~ty:(tv.ty) octagon.dbm in
+            let r = I.extend octagon.r (idx, {tv with ty = Abstract aty}) in
+            aux {octagon with r; dbm} tqf)
     in aux octagon tqf
 
   let project' octagon itv =

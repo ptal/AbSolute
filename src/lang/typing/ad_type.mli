@@ -59,6 +59,13 @@ val is_more_specialized: ad_ty -> ad_ty -> Kleene.t
 
 module UID2Adty: Map.S with type key=ad_uid
 
+(** Find and format the name of an abstract domain.
+    It is used in the header of the error messages. *)
+val ad_name: ad_ty UID2Adty.t -> ad_uid -> string
+
+val string_of_type: ad_ty UID2Adty.t -> ad_uid -> string
+val string_of_adty_env: ad_ty UID2Adty.t -> string
+
 val build_adenv: ad_ty -> ad_ty UID2Adty.t
 
 (** Filter the abstract domains in the list which subsume all the others.

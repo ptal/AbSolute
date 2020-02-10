@@ -121,7 +121,7 @@ struct
   (** We propagate the constraint immediately.
       If the constraint is not entailed, it is added into the pc. *)
   let weak_incremental_closure pc c =
-    (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
+    (* let _ = Format.printf "inc(PC): %a\n" print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
     (* Format.fprintf Format.std_formatter "%a\n" print_store (pc.repr,pc.store); *)
     let a, entailed = Closure.incremental_closure (unwrap pc) c in
     let pc = wrap pc a in
@@ -142,7 +142,7 @@ struct
 
   let exec_task pc (_,c_idx) =
     let c = Parray.get pc.constraints c_idx in
-    (* let _ = Format.printf "%d: %a" c_idx print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
+    (* let _ = Format.printf "%d: %a\n" c_idx print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
     let a, entailed = Closure.incremental_closure (unwrap pc)
       c in
     let num_active_tasks = pc.num_active_tasks - (if entailed then 1 else 0) in

@@ -127,12 +127,10 @@ struct
 
   (* Inference errors. *)
 
-  let ad_name typer uid = string_of_adty (UID2Adty.find uid typer.ad_env)
-
   let gen_err typer uid f =
     CannotType
       (if typer.trace then
-        "[" ^ (ad_name typer uid) ^ "@" ^ (string_of_int uid) ^ "] " ^ f ()
+        "[" ^ (string_of_type typer.ad_env uid) ^ "] " ^ f ()
       else
         "")
 
@@ -141,7 +139,7 @@ struct
 
   let variable_not_in_subdom_err typer uid sub_uid v =
    gen_err typer uid (fun () -> "Variable `" ^ v ^ "` does not belong to the sub-domain `"
-    ^ (ad_name typer sub_uid) ^ "`.\n"
+    ^ (ad_name typer.ad_env sub_uid) ^ "`.\n"
     ^ "Note that this domain do not represent variables by itself but relies on the sub-domain.")
 
   let not_a_constraint_err typer uid ad_name_adj ad_name =

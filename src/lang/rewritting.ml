@@ -280,6 +280,10 @@ let rec mapfold_conjunction f = function
   | Or _ -> raise (Wrong_modelling "unsupported disjunction")
   | Not _ -> raise (Wrong_modelling "unsupported negation")
 
+let rec flatten_conjunction = function
+  | And (f1, f2) -> (flatten_conjunction f1)@(flatten_conjunction f2)
+  | f -> [f]
+
 let rec conjunction = function
   | c1::[] -> c1
   | c1::l -> And (c1, conjunction l)

@@ -149,7 +149,7 @@ let test_octagon_entailment_inf_Z () =
   let octagon = octagon_empty2D in
   let constraints = octagon_2D in
   List.iter (fun c ->
-    let obtained = OctagonZ.entailment octagon c in
+    let (_,_,obtained) = OctagonZ.entailment octagon c in
     let expected = if c.d = Z.inf then true else false in
     Printf.printf "Entailment of %s\n" (string_of_constraint c Z.to_string);
     Alcotest.(check bool) "entailment_inf(Z)" true (obtained = expected)) constraints
@@ -168,7 +168,7 @@ let test_octagon_entailment_Z () =
   ] in
   let entailment_result = [true; true; false; false; false] in
   List.iter2 (fun c expected ->
-    let obtained = OctagonZ.entailment octagon c in
+    let (_,_,obtained) = OctagonZ.entailment octagon c in
     Printf.printf "Entailment of %s (obtained %s/expect %s)\n" (string_of_constraint c Z.to_string) (string_of_bool obtained) (string_of_bool expected);
     Alcotest.(check bool) "entailment(Z)" true (obtained = expected)) entailment_constraints entailment_result
 

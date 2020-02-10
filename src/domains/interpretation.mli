@@ -117,6 +117,11 @@ sig
   val to_abstract_var_wm: t -> Ast.vname -> (var_id * Tast.tvariable)
 end
 
+(** [guarded_extend a uid ad_name tv next] is a helper function to extend domain with a variable.
+    It checks that the formula's UID matches the one of the domain, and that the formula is not a tautology. *)
+val guarded_extend: 'a -> ad_uid -> string -> Tast.tvariable
+  -> ('a -> Tast.tvariable -> 'a * 'b list) -> 'a * 'b list
+
 (** [guarded_interpret a uid ad_name tf next] is a helper function to interpret a formula.
     It checks that the formula's UID matches the one of the domain, and that the formula is not a tautology. *)
 val guarded_interpret: 'a -> ad_uid -> string -> Tast.tformula

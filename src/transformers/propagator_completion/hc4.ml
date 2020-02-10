@@ -35,6 +35,15 @@ struct
   let expr_val expr = I.(expr.value)
   let exprs_val exprs = List.map expr_val exprs
 
+  let vardom_of abs vid =
+    let (l,u) = A.project abs vid in
+    V.of_bounds' (FromA.convert_down l, FromA.convert_up u)
+
+  let merge_view abs root vids =
+    List.fold_left
+      (fun v vid -> debot (V.meet v (vardom_of abs vid)))
+      root vids
+
   (* I. Evaluation part
 
      First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
@@ -49,13 +58,7 @@ struct
     let open I in
     match expr.node with
     | BVar (vids, _) ->
-        let make vid =
-          let (l,u) = A.project abs vid in
-          V.of_bounds' (FromA.convert_down l, FromA.convert_up u)
-        in
-        let first = make (List.hd vids) in
-        let v = List.fold_left
-          (fun v vid -> debot (V.meet v (make vid))) first (List.tl vids) in
+        let v = merge_view abs (vardom_of abs (List.hd vids)) (List.tl vids) in
         expr.value <- v
     | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
@@ -129,40 +132,46 @@ struct
   let refine_div u v r =
     refine_bop V.filter_div_f (V.filter_binop_f MUL) u v r false
 
-  let rec refine abs root expr =
-    let open I in
-    match expr with
-    | BFuncall(name,args) ->
-       let res = V.filter_fun name (List.map (fun e -> I.(e.value)) args) root in
-       List.fold_left2 (fun acc res e -> refine acc res e.node) abs (debot res) args
-    | BVar (vids, _) ->
-        let (l,u) = V.to_range root in
-        let (l,u) = ToA.convert_down l, ToA.convert_up u in
-        List.fold_left
-          (fun abs vid -> A.embed abs vid (l,u))
-          abs vids
-    | BCst (i,_) -> ignore (debot (V.meet root i)); abs
-    | BUnary (op,e) ->
-       let j = match op with
-         | NEG -> V.filter_unop NEG e.value root
-       in refine abs (debot j) e.node
-    | BBinary (e1,o,e2) ->
-       let j = match o with
-         | ADD -> refine_add e1 e2 root
-         | SUB -> refine_sub e1 e2 root
-         | MUL -> refine_mul e1 e2 root
-         | DIV -> refine_div e1 e2 root
-         | POW -> V.filter_binop POW e1.value e2.value root
-       in
-       let j1,j2 = debot j in
-       refine (refine abs j1 e1.node) j2 e2.node
+  let refine readonly abs root expr =
+    let rec aux abs root expr =
+      let open I in
+      match expr with
+      | BFuncall(name,args) ->
+         let res = V.filter_fun name (List.map (fun e -> I.(e.value)) args) root in
+         List.fold_left2 (fun acc res e -> aux acc res e.node) abs (debot res) args
+      | BVar (vids, _) ->
+          if readonly then
+            let _ = ignore(merge_view abs root vids) in
+            abs
+          else
+            let (l,u) = V.to_range root in
+            let (l,u) = ToA.convert_down l, ToA.convert_up u in
+            List.fold_left
+              (fun abs vid -> A.embed abs vid (l,u))
+              abs vids
+      | BCst (i,_) -> ignore (debot (V.meet root i)); abs
+      | BUnary (op,e) ->
+         let j = match op with
+           | NEG -> V.filter_unop NEG e.value root
+         in aux abs (debot j) e.node
+      | BBinary (e1,o,e2) ->
+         let j = match o with
+           | ADD -> refine_add e1 e2 root
+           | SUB -> refine_sub e1 e2 root
+           | MUL -> refine_mul e1 e2 root
+           | DIV -> refine_div e1 e2 root
+           | POW -> V.filter_binop POW e1.value e2.value root
+         in
+         let j1,j2 = debot j in
+         aux (aux abs j1 e1.node) j2 e2.node in
+    aux abs root expr
 
   (* III. HC4-revise algorithm (combining eval and refine).
 
      Apply the evaluation followed by the refine step of the HC4-revise algorithm.
      It prunes the domain of the variables in `abs` according to the constraint `e1 o e2`.
   *)
-  let hc4_revise abs (e1,op,e2) =
+  let hc4_revise readonly abs (e1,op,e2) =
     let i1,i2 = expr_val e1, expr_val e2 in
     let j1,j2 = match op with
       | LT  -> debot (V.filter_lt i1 i2)
@@ -173,22 +182,18 @@ struct
       | NEQ -> debot (V.filter_neq i1 i2)
       | EQ  -> debot (V.filter_eq i1 i2)
     in
-    let refined_store = if V.equal j1 i1 then abs else refine abs j1 I.(e1.node) in
-    if j2 = i2 then refined_store else refine refined_store j2 I.(e2.node)
+    let refined_store = if V.equal j1 i1 then abs else refine readonly abs j1 I.(e1.node) in
+    if j2 = i2 then refined_store else refine readonly refined_store j2 I.(e2.node)
 
   let hc4_eval_revise abs (e1,op,e2) =
   begin
     eval abs e1;
     eval abs e2;
-    let abs = hc4_revise abs (e1,op,e2) in
+    let abs = hc4_revise false abs (e1,op,e2) in
     try
-      (* This revision step must be effect-less on `abs`. *)
-      ignore(hc4_revise abs (e1,neg op,e2));
+      ignore(hc4_revise true abs (e1,neg op,e2));
       abs, false
     with Bot_found -> abs, true
-
-    (* let _ = Format.printf "%a\n" print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
-
   end
 
   let incremental_closure abs c = hc4_eval_revise abs c
@@ -197,8 +202,7 @@ struct
     try
       eval abs e1;
       eval abs e2;
-      ignore(hc4_revise abs (e1,neg op,e2));
+      ignore(hc4_revise true abs (e1,neg op,e2));
       false
-    with
-    | Bot_found -> true
+    with Bot_found -> true
 end

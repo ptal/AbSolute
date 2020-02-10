@@ -53,6 +53,41 @@ let rec tqformula_to_qformula = function
   | TQFFormula f -> QFFormula (tformula_to_formula f)
   | TExists(tv, qf) -> Exists (tv.name, tv.ty, tqformula_to_qformula qf)
 
+let string_of_tformula' env tf =
+  let wrap uid parenthesis s =
+    if parenthesis then  "(" ^ s ^ ")" ^ ":" ^ (string_of_int uid)
+    else s ^ ":" ^ (string_of_int uid) in
+  let rec aux (uid, f) =
+    match f with
+    | TFVar v -> wrap uid false v
+    | TCmp c -> wrap uid false (Pretty_print.string_of_constraint c)
+    | TAnd(tf1,tf2) -> binary_aux uid tf1 tf2 "/\\"
+    | TEquiv(tf1,tf2) -> binary_aux uid tf1 tf2 "<=>"
+    | TImply(tf1,tf2) -> binary_aux uid tf1 tf2 "=>"
+    | TOr(tf1,tf2) -> binary_aux uid tf1 tf2 "\\/"
+    | TNot tf1 -> wrap uid true ("not " ^ (aux tf1))
+  and binary_aux uid tf1 tf2 op =
+    wrap uid true ((aux tf1) ^ " " ^ op ^ " " ^ (aux tf2)) in
+  let rec top_aux (uid, f) =
+    match f with
+    | TAnd(tf1, tf2) -> (top_aux tf1) ^ (top_aux tf2)
+    | _ -> "constraint:" ^ (string_of_type env uid) ^ " " ^ (aux (uid,f)) ^ "\n" in
+  top_aux tf
+
+let string_of_tformula adty tf =
+  let env = build_adenv adty in
+  (string_of_adty_env env) ^ (string_of_tformula' env tf)
+
+let string_of_tqformula adty tqf =
+  let env = build_adenv adty in
+  let rec aux = function
+    | TExists(tv, tqf) ->
+        "var:" ^ (string_of_type env tv.uid) ^ ":" ^ (Types.string_of_ty tv.ty) ^ " " ^ tv.name ^ "\n" ^
+        aux tqf
+    | TQFFormula tf -> "\n" ^ (string_of_tformula' env tf)
+  in
+  (string_of_adty_env env) ^ "\n" ^ (aux tqf)
+
 let ctrue = TCmp (zero, LEQ, zero)
 let cfalse = TCmp (zero, LEQ, zero)
 let ctrue' = (0, ctrue)

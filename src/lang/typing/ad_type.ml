@@ -125,6 +125,13 @@ let build_adenv adty =
         UID2Adty.add uid adty (List.fold_left aux env adtys)
   in aux UID2Adty.empty adty
 
+let ad_name env uid = string_of_adty (UID2Adty.find uid env)
+let string_of_type env uid = (ad_name env uid) ^ "@" ^ (string_of_int uid)
+let string_of_adty_env env =
+  UID2Adty.fold (fun uid _ s ->
+    s ^ "type " ^ (string_of_type env uid) ^ "\n"
+  ) env  ""
+
 let uids_of adty =
   let rec aux (uid, ty) =
     match ty with

@@ -52,8 +52,14 @@ type tqformula =
 val tformula_to_formula: tformula -> formula
 val tqformula_to_qformula: tqformula -> qformula
 
+val string_of_tformula: ad_ty -> tformula -> string
+val string_of_tqformula: ad_ty -> tqformula -> string
+
 (** Encoding of true and false as formula. *)
 val ctrue: tformula_
+val cfalse: tformula_
+val ctrue': tformula
+val cfalse': tformula
 val ttrue: tqformula
 val tfalse: tqformula
 

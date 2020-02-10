@@ -17,6 +17,7 @@ module Var_store = Var_store
 open Core
 open Core.Kleene
 open Domains.Abstract_domain
+open Domains.Interpretation
 open Typing.Ad_type
 open Typing.Tast
 open Bounds
@@ -82,14 +83,16 @@ struct
           let r, cs = I.interpret box.r approx tf in
           {box with r}, cs
       | TExists(tv, tqf) ->
-          let (store, idx, aty) = Store.extend ~ty:(tv.ty) box.store in
-          let r = I.extend box.r (idx, {tv with ty = Abstract aty}) in
-          aux {r; store} tqf
+          guarded_extend box (uid box) name tv (fun box tv ->
+            let (store, idx, aty) = Store.extend ~ty:(tv.ty) box.store in
+            let r = I.extend box.r (idx, {tv with ty = Abstract aty}) in
+            aux {r; store} tqf
+          )
     in aux box tqf
 
   let print_var fmt box idx vardom =
     let vname = I.to_logic_var' box.r idx in
-    if vname.[0] = 's' then
+    (* if vname.[0] = 's' then *)
     Format.fprintf fmt "%s=%a " vname V.print vardom
 
   let print fmt box =
@@ -122,9 +125,8 @@ struct
   let closure box = box, false
 
   let weak_incremental_closure box (vid, v) =
-    (* Printf.printf "inc: "; *)
     let store = Store.set box.store vid v in
-    (* if not (box.store == store) then print_var Format.std_formatter box vid v; *)
+    (* if box.store != store then (Printf.printf "inc(Box): "; print_var Format.std_formatter box vid v; Printf.printf "\n"); *)
     { box with store }
 
   let embed box v (l,u) =

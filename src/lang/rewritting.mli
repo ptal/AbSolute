@@ -70,5 +70,6 @@ val replace_var_in_expr: (vname -> expr) -> expr -> expr
 val mapfold_conjunction: (bconstraint -> 'a list) -> formula -> 'a list
 
 val conjunction: formula list -> formula
+val flatten_conjunction: formula -> formula list
 val disjunction: formula list -> formula
 val map_formula: (formula -> formula) -> qformula -> qformula

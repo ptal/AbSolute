@@ -178,9 +178,10 @@ struct
     try
       let idx = Tools.find_index var_a pa.var_map in
       ((uid pa, idx), tv)
-    with Not_found -> failwith (
-      "[Direct_product.Prod_atom] The variable " ^ var ^
-      " is registered in the underlying abstract domain but the mapping does not exist in Prod_atom.")
+    with Not_found ->
+      raise (Wrong_modelling (
+        "[Direct_product.Prod_atom] The variable `" ^ var ^
+        "` is registered in the underlying abstract domain but the mapping does not exist in Prod_atom(" ^ A.name ^ ")."))
 
   let local_vars pa var =
     try [fst (to_abstract_var pa var)]
@@ -268,14 +269,16 @@ struct
 
   let extend_var pa approx tv =
     safe_wrap pa (fun pa ->
-      let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,TQFFormula(tv.uid, ctrue))) in
+      let (a, cs) = A.interpret !(pa.a) approx (TExists(tv,ttrue)) in
       let pa = wrap pa a in
       let (atom_id, _) = A.I.to_abstract_var (interpretation pa) tv.name in
-      let pa = {pa with var_map=(atom_id::pa.var_map) } in
+      let pa = {pa with var_map=(pa.var_map@[atom_id]) } in
       let pa, gcons = to_generic_constraints pa cs in
-      wrap pa a, gcons)
+      pa, gcons)
 
-  let extend_var_all pa approx tv = extend_var pa approx {tv with uid=(uid pa)}
+  let extend_var_all pa approx tv =
+    extend_var pa approx {tv with uid=(uid pa)}
+
   let extend_var_one = extend_var
 
   let drain_events pa =
@@ -369,8 +372,8 @@ struct
         (a,b), cs)
 
   let interpret_all (a,b) approx tf =
-    let a, cs1 = Atom.interpret_one a approx tf in
-    let b, cs2 = B.interpret_one b approx tf in
+    let a, cs1 = Atom.interpret_all a approx tf in
+    let b, cs2 = B.interpret_all b approx tf in
     (a,b), cs1@cs2
 
   let extend_var_one (a,b) approx tv =

@@ -281,15 +281,16 @@ struct
   (* We propagate the constraint immediately.
      If the constraint is not entailed, it is added into the abstract element. *)
   let weak_incremental_closure lc c =
+    (* Printf.printf "inc(LC): %s" (Pretty_print.string_of_formula (Tast.tformula_to_formula (Tast.quantifier_free_of (I.to_qformula lc.repr [c])))); *)
     let lc, c' = incremental_closure lc c in
     match c' with
     | None -> lc
     | Some c ->
-      let c_idx = Parray.length lc.constraints in
-      let constraints = Tools.extend_parray lc.constraints c in
-      { lc with constraints;
-          new_tasks=c_idx::lc.new_tasks;
-          num_active_tasks=lc.num_active_tasks+1 }
+        let c_idx = Parray.length lc.constraints in
+        let constraints = Tools.extend_parray lc.constraints c in
+        { lc with constraints;
+            new_tasks=c_idx::lc.new_tasks;
+            num_active_tasks=lc.num_active_tasks+1 }
 
   (* We could provide a split over the formula directly instead of the variables.
      For now, we rely on the split of the subdomains. *)
@@ -309,8 +310,8 @@ struct
   let exec_task lc (_,c_idx) =
     (* let _ = Printf.printf "exec_task %d remaining\n" lc.num_active_tasks; flush_all () in *)
     let f = Parray.get lc.constraints c_idx in
-    (* if lc.num_active_tasks = 1 then
-      (Pretty_print.print_qformula Format.std_formatter (I.to_qformula lc.prod [f]); flush_all ()); *)
+    (* if lc.num_active_tasks = 1 then *)
+    (* Printf.printf "%s" (Tast.string_of_tqformula (Tools.unwrap (type_of lc)) (I.to_qformula lc.repr [f])); flush_all (); *)
     let lc, f' = incremental_closure lc f in
     let constraints, entailed =
       match f' with

@@ -57,10 +57,6 @@ sig
   (** Boolean is the `trace` which indicates if the inference should create the error message or not (it might take longer if yes). *)
   val init: ad_ty -> bool -> t
 
-  (** Find and format the name of an abstract domain.
-      It is used in the header of the error messages. *)
-  val ad_name: t -> ad_uid -> string
-
   (** Create `CannotType` with the given message if the trace is activated, and an empty message otherwise. *)
   val gen_err: t -> ad_uid -> (unit -> string) -> inferred_type
 

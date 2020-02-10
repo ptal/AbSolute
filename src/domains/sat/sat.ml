@@ -15,6 +15,7 @@ open Core.Kleene
 open Core.Types
 open Bounds
 open Domains.Abstract_domain
+open Domains.Interpretation
 open Sat_interpretation
 open Lang.Ast
 open Typing.Ad_type
@@ -89,13 +90,14 @@ struct
           let r, cs = I.interpret sat.r approx tf in
           {sat with r}, cs
       | TExists(tv, tqf) ->
-          match tv.ty with
-          | Abstract Bool ->
-              let v = newVar () in
-              let r = I.extend sat.r (v, tv) in
-              let _ = Printf.printf "Extend %d\n" v; flush_all () in
-              aux {sat with r} tqf
-          | ty -> raise (Wrong_modelling ("SAT abstract domain does not support variables of type " ^ (string_of_ty ty) ^ "."))
+          guarded_extend sat (uid sat) name tv (fun sat tv ->
+            match tv.ty with
+            | Abstract Bool ->
+                let v = newVar () in
+                let r = I.extend sat.r (v, tv) in
+                (* let _ = Printf.printf "Extend %d\n" v; flush_all () in *)
+                aux {sat with r} tqf
+            | ty -> raise (Wrong_modelling ("SAT abstract domain does not support variables of type " ^ (string_of_ty ty) ^ ".")))
     in aux sat tqf
 
   let project _ v =

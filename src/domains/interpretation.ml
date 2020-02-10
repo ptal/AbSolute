@@ -91,17 +91,27 @@ struct
         ("Variable `" ^ vname ^ "` does not belong to the current abstract element."))
 end
 
+let guarded_uid a ad_uid ad_name uid make_msg data next =
+  begin
+    if uid <> ad_uid then
+      raise (Ast.Wrong_modelling (ad_name ^ ".interpret: The formula has the UID "
+        ^ (string_of_int uid) ^ " but the " ^ ad_name ^ " element has the UID "
+        ^ (string_of_int ad_uid) ^ ".\n"
+        ^ make_msg ()));
+    next a data
+  end
+
+let guarded_extend a ad_uid ad_name tv next =
+  guarded_uid a ad_uid ad_name tv.uid
+    (fun () -> "Variable: " ^ tv.name) tv next
+
 let guarded_interpret a ad_uid ad_name tf next =
-  let open Ast in
   if snd tf = ctrue then a, []
   else
   begin
-    if (fst tf) <> ad_uid then
-      raise (Wrong_modelling (ad_name ^ ".interpret: The formula has the UID "
-        ^ (string_of_int (fst tf)) ^ " but the " ^ ad_name ^ " element has the UID "
-        ^ (string_of_int ad_uid) ^ ".\n"
-        ^ "Formula: " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula tf))));
-    next a tf
+    guarded_uid a ad_uid ad_name (fst tf)
+      (fun () -> "Formula: " ^ (Lang.Pretty_print.string_of_formula (tformula_to_formula tf)))
+      tf next
   end
 
 let ground_interpret a ad_uid ad_name tf interpret_bconstraint =
