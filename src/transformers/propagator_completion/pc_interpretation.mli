@@ -29,7 +29,8 @@ sig
     uid: ad_uid;
   }
 
-  type var_id = unit
+  (* Index of a variable in `vars_info`. *)
+  type var_id = A.I.var_id list
 
   (** We annotate each node of this expression with its interval evaluation.
     This is useful for the HC4 algorithm.
@@ -42,7 +43,7 @@ sig
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
-    | BVar     of A.I.var_id list * tvariable
+    | BVar     of var_id * tvariable
     | BCst     of V.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr

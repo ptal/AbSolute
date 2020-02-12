@@ -175,13 +175,8 @@ struct
 
   let to_abstract_var pa var =
     let (var_a, tv) = A.I.to_abstract_var (interpretation pa) var in
-    try
-      let idx = Tools.find_index var_a pa.var_map in
-      ((uid pa, idx), tv)
-    with Not_found ->
-      raise (Wrong_modelling (
-        "[Direct_product.Prod_atom] The variable `" ^ var ^
-        "` is registered in the underlying abstract domain but the mapping does not exist in Prod_atom(" ^ A.name ^ ")."))
+    let idx = Tools.find_index var_a pa.var_map in
+    ((uid pa, idx), tv)
 
   let local_vars pa var =
     try [fst (to_abstract_var pa var)]

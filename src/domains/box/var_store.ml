@@ -21,6 +21,7 @@ sig
   type key=int
 
   val empty: t
+  val length: t -> int
   val extend: ?ty:Types.var_ty -> t -> (t * key * Types.var_abstract_ty)
   val set: t -> key -> cell -> t
   val get: t -> key -> cell
@@ -47,6 +48,8 @@ struct
   let empty = {
     store=Store.make 0 (fst (V.top ()));
     delta=[] }
+
+  let length data = Parray.length data.store
 
   let extend ?ty data =
     let n = Store.length data.store in

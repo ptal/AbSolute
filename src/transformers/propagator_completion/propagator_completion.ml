@@ -15,7 +15,6 @@ module Hc4 = Hc4
 
 open Core
 open Core.Kleene
-open Domains.Interpretation
 open Domains.Abstract_domain
 open Lang
 open Lang.Ast
@@ -38,8 +37,6 @@ sig
   val init: I.t -> t
 end
 
-let no_variable_exn msg = no_variable_exn msg; failwith "unreachable"
-
 module Propagator_completion
   (V: Vardom_sig.S)
   (A: Abstract_domain) =
@@ -54,6 +51,7 @@ struct
   type t = {
     repr: I.t;
     constraints: I.rconstraint Parray.t;
+    vars_equalities: I.rconstraint list;
     (* Store the new constraint's indices since last call to `drain_tasks`. *)
     new_tasks: int list;
     num_active_tasks: int;
@@ -74,6 +72,7 @@ struct
   let init repr = {
     repr;
     constraints = Tools.empty_parray ();
+    vars_equalities = [];
     new_tasks = [];
     num_active_tasks = 0;
   }
@@ -88,14 +87,43 @@ struct
     | None -> raise (Wrong_modelling
         "The domain underlying propagator completion must not be a meta-domain (it must have a type).")
 
-  let interpret pc approx = function
-    | TExists (_, _) -> no_variable_exn "Propagator_completion.interpret"
+  let add_equalities pc tv =
+    let local_vars = A.I.local_vars (A.interpretation (unwrap pc)) tv.name in
+    let n = List.length local_vars in
+    let equalities = List.map (fun i ->
+      let v1 = List.nth local_vars i in
+      let v2 = List.nth local_vars (i + 1) in
+      I.(make_expr (BVar ([v1], tv)), EQ, make_expr (BVar ([v2], tv)))
+    ) (Tools.range 0 (n-2)) in
+    { pc with vars_equalities=(pc.vars_equalities@equalities) }
+
+  let check_empty_a_constraint = function
+    | [] -> ()
+    | _ -> raise (Wrong_modelling "Propagator_completion: Underlying domain cannot create constraints from variable.")
+
+  let rec interpret pc approx = function
+    (* If the variable has the UID of this PC element, then
+         1. We extract the local variables of the underlying domain on this variable.
+         2. Add the equalities among these variables in this element.
+       This covers the case where a single variable is shared among several domains, in which case they communicate through equalities. *)
+    | TExists (tv, tqf) when tv.uid = (uid pc) ->
+        let tv = { tv with uid=(A.uid (unwrap pc)) } in
+        let (a, cs) = A.interpret (unwrap pc) approx (TExists(tv,ttrue)) in
+        check_empty_a_constraint cs;
+        let pc = add_equalities (wrap pc a) tv in
+        let pc, cs' = interpret pc approx tqf in
+        pc, cs'
+    | TExists (tv, tqf) ->
+        let (a, cs) = A.interpret (unwrap pc) approx (TExists(tv,ttrue)) in
+        check_empty_a_constraint cs;
+        let pc, cs' = interpret (wrap pc a) approx tqf in
+        pc, cs'
     | TQFFormula tf ->
         let (repr, cs) = I.interpret pc.repr approx tf in
         { pc with repr }, cs
 
-  let project _ _ = no_variable_exn "Propagator_completion.project"
-  let embed _ _ _ = no_variable_exn "Propagator_completion.embed"
+  let project pc x = V.to_range (Closure.project (unwrap pc) x)
+  let embed pc x v = wrap pc (Closure.embed (unwrap pc) x v)
 
   (* This abstract domain is totally functional. *)
   type snapshot = t
@@ -115,8 +143,21 @@ struct
   let print fmt pc =
     Parray.iter (fun c -> print_box_cons fmt (I.to_qformula pc.repr [c])) pc.constraints
 
-  (** Closure is performed by `Event_loop` calling `exec_task`. *)
-  let closure pc = pc, false
+  (** Closure is performed by `Event_loop` calling `exec_task`, unless for the variables equalities.
+      Rational:
+        * A variable equality is automatically propagated (in exec_task) if a constraint has this variable in scope.
+        * If no constraint own this variable, then this domain will not change the value of this variable.
+        * Hence, it seems sufficient to propagate the equalities only one time per node (at the beginning). *)
+  let closure pc =
+    (* Printf.printf "PC.closure %d\n" (List.length pc.vars_equalities); *)
+    let a, cons =
+      List.fold_left (fun (a,cons) c ->
+        let a, entailed = Closure.incremental_closure a c in
+        (* let _ = Format.printf "PC.closure: %a %s\n" print_box_cons (I.to_qformula pc.repr [c]) (if entailed then "entailed" else "not yet entailed"); flush_all () in *)
+        if entailed then a, cons else a, c::cons
+      ) ((unwrap pc),[]) pc.vars_equalities in
+    let pc = wrap pc a in
+    { pc with vars_equalities=cons }, false (* Although some changes might have occur, it can be ignored. *)
 
   (** We propagate the constraint immediately.
       If the constraint is not entailed, it is added into the pc. *)
@@ -142,9 +183,8 @@ struct
 
   let exec_task pc (_,c_idx) =
     let c = Parray.get pc.constraints c_idx in
-    (* let _ = Format.printf "%d: %a\n" c_idx print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
-    let a, entailed = Closure.incremental_closure (unwrap pc)
-      c in
+    (* let _ = Format.printf "PC.exec_task %d: %a\n" c_idx print_box_cons (I.to_qformula pc.repr [c]); flush_all () in *)
+    let a, entailed = Closure.incremental_closure (unwrap pc) c in
     let num_active_tasks = pc.num_active_tasks - (if entailed then 1 else 0) in
     { (wrap pc a) with num_active_tasks }, entailed
 

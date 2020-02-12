@@ -42,7 +42,11 @@ let is_rotated v = (v.l / 2) <> (v.c / 2)
 (* Precondition: `v` is coherent, i.e. v.x/2 <= v.y/2 *)
 let matpos v = (check_coherence v; v.c + ((v.l+1)*(v.l+1))/2)
 
-let event_of_var = matpos
+(* An event can occur on both the lower or upper bound. *)
+let event_of_var v = [matpos v; matpos (inv v)]
+
+let make_canonical_var k = {l=k*2; c=k*2+1}
+let make_canonical_itv k = as_interval (make_canonical_var k)
 
 module type Fold_interval_sig =
 sig
@@ -62,9 +66,6 @@ struct
       ) accu (Tools.range 0 l)
     ) accu (Tools.range 0 (dimension-1))
 end
-
-let make_canonical_var k = {l=k*2; c=k*2+1}
-let make_canonical_itv k = as_interval (make_canonical_var k)
 
 module Fold_intervals_canonical =
 struct
@@ -249,5 +250,4 @@ module Make = MakeTrailing
       done;
       Format.fprintf fmt "\n"
     done
-end
-*)
+end *)

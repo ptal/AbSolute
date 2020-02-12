@@ -21,6 +21,8 @@ sig
   module I: PC_interpretation_sig
   val incremental_closure: I.A.t -> I.rconstraint -> I.A.t * bool
   val entailment: I.A.t -> I.rconstraint -> bool
+  val project: I.A.t -> I.var_id -> I.V.t
+  val embed: I.A.t -> I.var_id -> I.V.bound * I.V.bound -> I.A.t
 end with module I=I
 
 module Make(I: PC_interpretation_sig) =
@@ -44,6 +46,13 @@ struct
       (fun v vid -> debot (V.meet v (vardom_of abs vid)))
       root vids
 
+  let project abs vids =
+    merge_view abs (vardom_of abs (List.hd vids)) (List.tl vids)
+
+  let embed abs vids (l,u) =
+    let (l,u) = ToA.convert_down l, ToA.convert_up u in
+    List.fold_left (fun abs vid -> A.embed abs vid (l,u)) abs vids
+
   (* I. Evaluation part
 
      First step of the HC4-revise algorithm: it computes the intervals for each node of the expression.
@@ -57,9 +66,7 @@ struct
   let rec eval abs expr =
     let open I in
     match expr.node with
-    | BVar (vids, _) ->
-        let v = merge_view abs (vardom_of abs (List.hd vids)) (List.tl vids) in
-        expr.value <- v
+    | BVar (vids, _) -> expr.value <- project abs vids
     | BCst (v,_) -> expr.value <- v
     | BUnary (o,e1) ->
       begin
@@ -145,10 +152,8 @@ struct
             abs
           else
             let (l,u) = V.to_range root in
-            let (l,u) = ToA.convert_down l, ToA.convert_up u in
-            List.fold_left
-              (fun abs vid -> A.embed abs vid (l,u))
-              abs vids
+            (* Format.printf "Embed %a in %s for %d domains.\n" V.print root tv.name (List.length vids); *)
+            embed abs vids (l,u)
       | BCst (i,_) -> ignore (debot (V.meet root i)); abs
       | BUnary (op,e) ->
          let j = match op with

@@ -82,7 +82,7 @@ val as_interval: dbm_var -> dbm_interval
 val is_rotated: dbm_var -> bool
 
 (** Retrieve the event index of a variable. *)
-val event_of_var: dbm_var -> int
+val event_of_var: dbm_var -> int list
 
 module type Fold_interval_sig =
 sig

@@ -48,6 +48,9 @@ let empty () = {
 }
 
 let subscribe pengine task events =
+  (* Printf.printf "Register task (%d,%d) with events " (fst task) (snd task); *)
+  (* List.iter (fun (u,e) -> Printf.printf "(%d,%d) " u e) events; *)
+  (* Printf.printf "\n"; *)
   let concat_task = function
       None -> Some [task]
     | Some tasks -> Some (task::tasks) in
@@ -67,6 +70,7 @@ let get_inside_queue pengine i =
 
 (* Schedule a task if it is active and not already present in the scheduler. *)
 let schedule pengine task =
+  (* Printf.printf "Schedule task (%d,%d)\n" (fst task) (snd task); *)
   let inside = get_inside_queue pengine (fst task) in
   if Store2D.mem task pengine.actives &&
      not (CCBV.get inside (snd task)) then
@@ -84,6 +88,7 @@ let pop pengine =
 let react pengine events =
   let react_on_event pengine ev =
     try
+      (* Printf.printf "React on event (%d,%d)\n" (fst ev) (snd ev); *)
       List.iter (schedule pengine) (Store2D.find ev pengine.reactor)
     with Not_found -> ()
   in
@@ -104,6 +109,7 @@ let fixpoint pengine f acc =
     else
     begin
       let task = pop pengine in
+      (* Printf.printf "Execute task (%d, %d)\n" (fst task) (snd task); *)
       let acc, task_entailed, events = f acc task in
       let pengine =
         if task_entailed then

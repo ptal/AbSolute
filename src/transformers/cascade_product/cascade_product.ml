@@ -117,7 +117,7 @@ struct
   type t = {
     repr: I.t;
     constraints: I.rconstraint Parray.t;
-    (* Store the new constraint's indices since last call to `drain_tasks`. *)
+    (* Store the new constraint's indexes since last call to `drain_tasks`. *)
     new_tasks: int list;
     num_active_tasks: int;
   }
@@ -145,7 +145,7 @@ struct
     | _ -> raise (Wrong_modelling
         "The two domains underlying the cascade product must not be meta-domains (they must have a type).")
 
-  (* State is ultimetly decided by the sub-domains as this domain does not owned variables. *)
+  (* State is ultimately decided by the sub-domains as this domain does not owned variables. *)
   let state _ = True
   let split _ = []
   let volume _ = 1.

@@ -37,10 +37,10 @@ struct
   let name = A.name
 
   let consume_task a task =
-    let a', fixpoint = A.exec_task !a task in
+    let a', is_entailed = A.exec_task !a task in
     let a', events = A.drain_events a' in
     a := a';
-    a, fixpoint, events
+    a, is_entailed, events
 
   let produce_tasks a pengine =
     let a', tasks_events = A.drain_tasks !a in
@@ -64,23 +64,23 @@ struct
 
   let name = Atom.name ^ "," ^ B.name
 
-  let consume_task ((a, b) as this) ((uid, task_id) as task) =
+  let consume_task (a, b) ((uid, task_id) as task) =
     if A.uid !a = uid then
-      let _, entailed, events = Atom.consume_task a task in
-      this, entailed, events
+      let a, entailed, events = Atom.consume_task a task in
+      (a,b), entailed, events
     else
-      let _, entailed, events = B.consume_task b (uid, task_id) in
-      this, entailed, events
+      let b, entailed, events = B.consume_task b (uid, task_id) in
+      (a,b), entailed, events
 
-  let produce_tasks ((a, b) as this) pengine =
-    let _, pengine = Atom.produce_tasks a pengine in
-    let _, pengine = B.produce_tasks b pengine in
-    this, pengine
+  let produce_tasks (a, b) pengine =
+    let a, pengine = Atom.produce_tasks a pengine in
+    let b, pengine = B.produce_tasks b pengine in
+    (a,b), pengine
 
-  let produce_events ((a, b) as this) pengine =
-    let _, pengine = Atom.produce_events a pengine in
-    let _, pengine = B.produce_events b pengine in
-    this, pengine
+  let produce_events (a, b) pengine =
+    let a, pengine = Atom.produce_events a pengine in
+    let b, pengine = B.produce_events b pengine in
+    (a,b), pengine
 end
 
 module Event_loop(L: Event_combinator) =
@@ -108,7 +108,9 @@ struct
   let closure p =
     let l, pengine = L.produce_tasks p.l p.pengine in
     let l, pengine = L.produce_events l pengine in
+    (* Printf.printf "E.closure: num active tasks %d\n" (Pengine2D.num_active_tasks pengine); *)
     let pengine, l, has_changed = Pengine2D.fixpoint pengine L.consume_task l in
+    (* if has_changed then Printf.printf "E.closure: has_changed\n" else Printf.printf "E.closure: NOT has_changed\n"; *)
     {p with l; pengine}, has_changed
 
   let state _ = Kleene.True

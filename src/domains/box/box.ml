@@ -126,18 +126,20 @@ struct
 
   let weak_incremental_closure box (vid, v) =
     let store = Store.set box.store vid v in
-    (* if box.store != store then (Printf.printf "inc(Box): "; print_var Format.std_formatter box vid v; Printf.printf "\n"); *)
+    (* Printf.printf "inc(Box): "; print_var Format.std_formatter box vid v; Printf.printf "\n"; *)
     { box with store }
 
   let embed box v (l,u) =
-    weak_incremental_closure box (v, (V.of_bounds' (l,u)))
+    let vardom = V.of_bounds' (l,u) in
+    (* Format.printf "Box.embed %a\n" V.print vardom; *)
+    weak_incremental_closure box (v, vardom)
 
   let state _ = True
 
   let split box =
     let branches = Split.split box.r box.store in
-    (* print Format.std_formatter box;
-    Printf.printf "Box.Split %d: " (List.length branches); flush_all (); *)
+    (* print Format.std_formatter box; *)
+    (* Printf.printf "Box.Split %d: " (List.length branches); flush_all (); *)
     let boxes = lazy_copy box (List.length branches) in
     let branches = List.flatten (List.map2 (fun box branch ->
       (* let _ = Format.printf "%a \\/ " Lang.Pretty_print.print_formula (tformula_to_formula (quantifier_free_of (I.to_qformula box.r [branch]))); flush_all () in *)
@@ -151,6 +153,7 @@ struct
 
   let drain_events box =
     let store, deltas = Store.delta box.store in
+    (* Printf.printf "Box %d events drained (%d variables).\n" (List.length deltas) (Store.length store); *)
     { box with store }, (make_events box deltas)
 
   let events_of box (vid,_) = make_events box [vid]

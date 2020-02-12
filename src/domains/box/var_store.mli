@@ -21,6 +21,7 @@ sig
   type key=int
 
   val empty: t
+  val length: t -> int
   val extend: ?ty:Types.var_ty -> t -> (t * key * Types.var_abstract_ty)
 
   (** `set store k v` is a monotonic `set`.

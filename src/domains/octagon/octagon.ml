@@ -120,7 +120,7 @@ struct
 
   (** Add the octagonal constraint in the octagon, if it is not entailed and without closing the DBM. *)
   let weak_incremental_closure octagon oc =
-    (* print_oc "inc" octagon [oc]; *)
+    (* print_oc "inc(oct)" octagon [oc]; *)
     if entailment' octagon oc then octagon
     else { octagon with constraints=oc::octagon.constraints }
 
@@ -133,12 +133,13 @@ struct
 
   let embed octagon v (l,u) =
     let itv = as_interval v in
+    (* Format.printf "Octagon.embed %a..%a\n" B.pp_print l B.pp_print u; *)
     let octagon = weak_incremental_closure octagon {v=itv.lb; d=(B.neg (B.mul_up l B.two))} in
     weak_incremental_closure octagon {v=itv.ub; d=(B.mul_up u B.two)}
 
   let split octagon =
     let branches = Split.split octagon.dbm in
-    (* print_oc "branch" octagon branches; *)
+    (* print_oc ("branch(" ^ (string_of_int (List.length branches)) ^ ")") octagon branches; *)
     let octagons = lazy_copy octagon (List.length branches) in
     List.map2 weak_incremental_closure octagons branches
 
@@ -157,7 +158,18 @@ struct
     | [] -> True
     | _ -> Unknown
 
-  let print fmt octagon = DBM.print fmt octagon.dbm
+  (* let print fmt octagon = DBM.print fmt octagon.dbm *)
+  let print fmt octagon =
+    Printf.printf "Octagon canonical variables: ";
+    let vars = Fold_intervals_canonical.fold (fun acc i -> i::acc) [] (DBM.dimension octagon.dbm) in
+    let vars = List.mapi (fun i v -> (i,v)) (List.rev vars) in
+    List.iter (fun (k,v) ->
+      let (l,u) = project' octagon v in
+      let tv = I.to_logic_var octagon.r (make_canonical_var k) in
+      Format.fprintf fmt "%s(%d,%d)=[%a..%a] " tv.name (List.nth (event_of_var v.lb) 0) (List.nth (event_of_var v.lb) 1) B.pp_print l B.pp_print u
+    ) vars;
+    Printf.printf "\n"
+
   let unwrap octagon = octagon.dbm
 
   let make_events octagon vars : event list =
@@ -165,10 +177,11 @@ struct
 
   let drain_events octagon =
     let dbm, deltas = DBM.delta octagon.dbm in
+    (* Printf.printf "Octagon %d events drained.\n" (List.length deltas); *)
     { octagon with dbm }, (make_events octagon deltas)
 
-  let events_of octagon c = [(uid octagon, event_of_var c.v)]
-  let events_of_var octagon v = [(uid octagon, event_of_var v)]
+  let events_of_var octagon v = List.map (fun e -> (uid octagon, e)) (event_of_var v)
+  let events_of octagon c = events_of_var octagon c.v
 end
 
 module OctagonZ(SPLIT: Octagon_split.Octagon_split_sig) = Make(Closure.ClosureHoistZ)(SPLIT)

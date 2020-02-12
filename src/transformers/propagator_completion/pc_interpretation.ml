@@ -28,7 +28,7 @@ sig
     uid: ad_uid;
   }
 
-  type var_id = unit
+  type var_id = A.I.var_id list
 
   type rexpr = {
     node: node;
@@ -38,7 +38,7 @@ sig
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
-    | BVar     of A.I.var_id list * tvariable
+    | BVar     of var_id * tvariable
     | BCst     of V.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
@@ -59,8 +59,6 @@ module type PC_interpretation_functor =
   functor (V: Vardom_sig.S)(A: Abstract_domain) -> PC_interpretation_sig
     with module V = V and module A = A
 
-let no_variable_exn msg = no_variable_exn msg; failwith "unreachable"
-
 module PC_interpretation = functor (V: Vardom_sig.S)(A: Abstract_domain) ->
 struct
   module V = V
@@ -71,7 +69,7 @@ struct
     uid: ad_uid;
   }
 
-  type var_id = unit
+  type var_id = A.I.var_id list
 
   type rexpr = {
     node: node;
@@ -81,7 +79,7 @@ struct
     | BFuncall of string * rexpr list
     | BUnary   of unop * rexpr
     | BBinary  of rexpr * binop * rexpr
-    | BVar     of A.I.var_id list * tvariable
+    | BVar     of var_id * tvariable
     | BCst     of V.t * Types.var_abstract_ty
 
   type rconstraint = rexpr * cmpop * rexpr
@@ -91,15 +89,18 @@ struct
   let exact_interpretation = not (Types.is_continuous V.B.abstract_ty)
 
   let empty _ = raise (Wrong_modelling "`PC_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Propagator_completion`.")
-  let to_logic_var _ _ = no_variable_exn "Logic_completion_interpretation.to_logic_var"
-  let to_abstract_var _ _ = no_variable_exn "Logic_completion_interpretation.to_abstract_var"
-  let local_vars _ _ = no_variable_exn "Logic_completion_interpretation.local_vars"
+
+  let to_logic_var repr x = A.I.to_logic_var (A.interpretation !(repr.a)) (List.hd x)
+  let local_vars repr vname = [A.I.local_vars (A.interpretation !(repr.a)) vname]
+  let to_abstract_var repr vname =
+    let _, tv = A.I.to_abstract_var (A.interpretation !(repr.a)) vname in
+    List.hd (local_vars repr vname), tv
 
   let make_expr e = { node=e; value=fst (V.top ()) }
 
   let to_abstract_var_wm repr x =
     try
-      A.I.to_abstract_var (A.interpretation !(repr.a)) x
+      to_abstract_var repr x
     with Not_found ->
       raise (Wrong_modelling ("Propagation_completion: Could not find the variable `" ^ x ^ "`."))
 
@@ -110,8 +111,7 @@ struct
         | Unary(NEG, e) -> BUnary(NEG, aux e)
         | Binary(e1, op, e2) -> BBinary (aux e1, op, aux e2)
         | Var(x) ->
-            let (_, tv) = to_abstract_var_wm repr x in
-            let vids = A.I.local_vars (A.interpretation !(repr.a)) x in
+            let (vids, tv) = to_abstract_var_wm repr x in
             BVar(vids, tv)
         | Cst(v, cty) ->
             let l, u = ((V.B.of_rat_down v),(V.B.of_rat_up v)) in
