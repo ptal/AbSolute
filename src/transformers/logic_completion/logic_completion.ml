@@ -13,7 +13,6 @@
 open Core
 open Core.Kleene
 open Bounds
-open Lang
 open Lang.Ast
 open Typing
 open Typing.Tast
@@ -301,11 +300,11 @@ struct
     if lc.num_active_tasks = 0 then 1.
     else float_of_int lc.num_active_tasks
 
-  (* let print _ _ = () *)
-  let print fmt lc =
+  let print _ _ = ()
+  (* let print fmt lc =
     let tf = I.to_qformula lc.repr (Parray.to_list lc.constraints) in
     let f = Tast.tformula_to_formula (Tast.quantifier_free_of tf) in
-    Pretty_print.print_formula fmt f
+    Pretty_print.print_formula fmt f *)
 
   let exec_task lc (_,c_idx) =
     (* let _ = Printf.printf "exec_task %d remaining\n" lc.num_active_tasks; flush_all () in *)
@@ -358,4 +357,6 @@ struct
   | TQFFormula tf ->
       let (repr, fs) = I.interpret lc.repr approx tf in
       { lc with repr }, fs
+
+  let remove _ _ = failwith "LC.remove is not implemented."
 end

@@ -20,7 +20,7 @@ open Event_loop.Schedulable_abstract_domain
 
 module type Cascade_product_interpretation_sig =
 sig
-  module A: Abstract_domain
+  module A: Schedulable_abstract_domain
   module B: Abstract_domain
   type t = {
     uid: ad_uid;
@@ -40,9 +40,9 @@ sig
   val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
 
-module Cascade_product(A: Abstract_domain)(B: Abstract_domain):
+module Cascade_product(A: Schedulable_abstract_domain)(B: Abstract_domain):
 sig
   module I : Cascade_product_interpretation_sig
   include Schedulable_abstract_domain with module I := I
   val init: I.t -> t
-end with module B = Bound_unit and module I.A = A
+end with module B = Bound_unit and module I.A = A and module I.B = B

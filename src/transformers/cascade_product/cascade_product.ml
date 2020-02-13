@@ -20,10 +20,11 @@ open Typing.Tast
 open Typing.Ad_type
 open Domains.Interpretation
 open Domains.Abstract_domain
+open Event_loop.Schedulable_abstract_domain
 
 module type Cascade_product_interpretation_sig =
 sig
-  module A: Abstract_domain
+  module A: Schedulable_abstract_domain
   module B: Abstract_domain
   type t = {
     uid: ad_uid;
@@ -45,7 +46,7 @@ end
 
 let no_variable_exn msg = no_variable_exn msg; failwith "unreachable"
 
-module Cascade_product_interpretation(A: Abstract_domain)(B: Abstract_domain) =
+module Cascade_product_interpretation(A: Schedulable_abstract_domain)(B: Abstract_domain) =
 struct
   module A = A
   module B = B
@@ -78,17 +79,18 @@ struct
 
   (** Prepare as much as possible to interpret the constraint in `B` when instantiated enough. *)
   let lazy_interpret_in_b approx r ac =
-    let not_in_b r tv =
+    let not_in_b r name =
       try
-        ignore(B.I.to_abstract_var (B.interpretation !(r.b)) tv.name);
+        ignore(B.I.to_abstract_var (B.interpretation !(r.b)) name);
         false
       with Not_found -> true in
     let tqf = A.I.to_qformula (A.interpretation !(r.a)) [ac] in
-    let avars = quantifiers tqf in
+    let tf = quantifier_free_of tqf in
+    let avars = vars_of_tformula tf in
     let avars_only = List.filter (not_in_b r) avars in
     let avars_only = List.map (
-      fun tv -> A.I.to_abstract_var (A.interpretation !(r.a)) tv.name) avars_only in
-    { ac; tf=(quantifier_free_of tqf); approx; avars_only; bc=[]}
+      fun name -> A.I.to_abstract_var (A.interpretation !(r.a)) name) avars_only in
+    { ac; tf; approx; avars_only; bc=[]}
 
   let interpret_in_a approx r tf =
     let tf_a = replace_uid (A.uid !(r.a)) tf in
@@ -108,7 +110,7 @@ struct
     A.I.to_qformula (A.interpretation !(r.a)) (List.map (fun c -> c.ac) cs)
 end
 
-module Cascade_product(A: Abstract_domain)(B: Abstract_domain) =
+module Cascade_product(A: Schedulable_abstract_domain)(B: Abstract_domain) =
 struct
   module I = Cascade_product_interpretation(A)(B)
 
@@ -180,7 +182,9 @@ struct
   (* Given a constraint `c` and the set of instantiated variables, interpret the constraint `c` in `B`. *)
   let lazy_transfer_a_to_b cp c fixed =
     let c = { c with tf=(instantiate_vars fixed c.tf) } in
+    let c = { c with tf=(replace_uid (B.uid (unwrap_b cp)) c.tf) } in
     let b, bc = B.map_interpretation (unwrap_b cp) (fun i -> B.I.interpret i c.approx c.tf) in
+    (* Printf.printf "Successfully interpreted in octagon\n"; *)
     wrap_b cp b, { c with avars_only=[]; bc}
 
   (* Try to interpret `c` in `B` if all the variables in `A` only are instantiated. *)
@@ -217,22 +221,30 @@ struct
       entailment_a cp c
 
   (* Try to transfer `c` in `B`, and upon success commit the transfer in `B` using `weak_incremental_closure`. *)
-  let incremental_closure cp c =
+  let incremental_closure cp c new_constraint =
     let (cp, c), is_transferred = try_lazy_transfer cp c in
     if is_transferred then
+      let cp = if not new_constraint then
+        wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in
       let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
       wrap_b cp b, c, true
     else
       cp, c, false
 
+  (* let print_box_cons fmt f =
+    Format.fprintf fmt "%a\n" Pretty_print.print_formula
+      (Tast.tformula_to_formula f)
+ *)
   let weak_incremental_closure cp c =
-    let cp, c, is_transferred = incremental_closure cp c in
+    let cp, c, is_transferred = incremental_closure cp c true in
     if is_transferred then
+      (* let _ = Format.printf "Cascade.immediately transfered %a \n" print_box_cons c.tf; flush_all () in *)
       cp
     else
       let a = A.weak_incremental_closure (unwrap_a cp) c.ac in
       let cp = wrap_a cp a in
       let c_idx = Parray.length cp.constraints in
+      (* let _ = Format.printf "Cascade.weak_incremental_closure %d: %a \n" c_idx print_box_cons c.tf; flush_all () in *)
       let constraints = Tools.extend_parray cp.constraints c in
       { cp with constraints;
           new_tasks=c_idx::cp.new_tasks;
@@ -240,24 +252,35 @@ struct
 
   let drain_events cp = cp, []
 
-  let events_of cp c = List.flatten (
+  let events_of' cp c = List.flatten (
     List.map (fun (vid,_) -> A.events_of_var (unwrap_a cp) vid) c.avars_only)
+
+  let events_of cp c =
+    let b = unwrap_b cp in
+    let bi = B.interpretation b in
+    let var_in_b v = try ignore(B.I.to_abstract_var bi v); true with Not_found -> false in
+    let bvars = vars_of_tformula c.tf in
+    let bvars = List.filter var_in_b bvars in
+    let bvars = List.map (fun v -> fst (B.I.to_abstract_var bi v)) bvars in
+    (A.events_of (unwrap_a cp) c.ac)@(List.flatten (List.map (B.events_of_var b) bvars))
 
   let events_of_var _ _ = []
 
   let exec_task cp (_,c_idx) =
     let c = Parray.get cp.constraints c_idx in
-    let cp, c, entailed = incremental_closure cp c in
+    (* let _ = Format.printf "Cascade.exec_task %d: %a (%d -> " c_idx print_box_cons c.tf cp.num_active_tasks; flush_all () in *)
+    let cp, c, entailed = incremental_closure cp c false in
     let constraints =
       if entailed then cp.constraints
       else Parray.set cp.constraints c_idx c in
     let num_active_tasks = cp.num_active_tasks - (if entailed then 1 else 0) in
+    (* Printf.printf "%d)\n" num_active_tasks; *)
     { cp with constraints; num_active_tasks; }, entailed
 
   let drain_tasks cp =
     let drain_one acc c_idx =
       let c = Parray.get cp.constraints c_idx in
-      let events = events_of cp c in
+      let events = events_of' cp c in
       ((uid cp, c_idx), events)::acc in
     let tasks_events = List.fold_left drain_one [] cp.new_tasks in
     ({ cp with new_tasks=[] }, tasks_events)
@@ -267,6 +290,8 @@ struct
   | TQFFormula tf ->
       let (repr, cs) = I.interpret cp.repr approx tf in
       { cp with repr }, cs
+
+  let remove _ _ = failwith "CP.remove is not implemented yet."
 
   module B = Bound_unit
 end

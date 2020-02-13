@@ -48,6 +48,10 @@ struct
   module B = V.B
   type vardom = V.t
 
+  module ConstraintIdx = Map.Make(struct
+    type t = I.rconstraint
+    let compare = compare end)
+
   type t = {
     repr: I.t;
     constraints: I.rconstraint Parray.t;
@@ -55,6 +59,7 @@ struct
     (* Store the new constraint's indices since last call to `drain_tasks`. *)
     new_tasks: int list;
     num_active_tasks: int;
+    constraint_map: int ConstraintIdx.t;
   }
 
   let wrap pc a = pc.repr.a := a; pc
@@ -75,6 +80,7 @@ struct
     vars_equalities = [];
     new_tasks = [];
     num_active_tasks = 0;
+    constraint_map = ConstraintIdx.empty;
   }
 
   let uid pc = pc.repr.uid
@@ -170,9 +176,11 @@ struct
     else
       let c_idx = Parray.length pc.constraints in
       let constraints = Tools.extend_parray pc.constraints c in
+      let constraint_map = ConstraintIdx.add c c_idx pc.constraint_map in
       { pc with constraints;
           new_tasks=c_idx::pc.new_tasks;
-          num_active_tasks=pc.num_active_tasks+1 }
+          num_active_tasks=pc.num_active_tasks+1;
+          constraint_map }
 
   (* Entailed constraints are automatically deactivated by `Event_loop`. *)
   let state pc =
@@ -209,7 +217,7 @@ struct
       if r = 0 then compare y y' else r)
       ((events_of_expr pc e1)@(events_of_expr pc e2))
 
-  let events_of_var _ _ = []
+  let events_of_var pc vids = List.flatten (List.map (A.events_of_var (unwrap pc)) vids)
 
   let drain_tasks pc =
     let drain_one acc c_idx =
@@ -218,4 +226,9 @@ struct
       ((uid pc, c_idx), events)::acc in
     let tasks_events = List.fold_left drain_one [] pc.new_tasks in
     ({ pc with new_tasks=[] }, tasks_events)
+
+  let remove pc c =
+    let c_idx = ConstraintIdx.find c pc.constraint_map in
+    let constraints = Parray.set pc.constraints c_idx I.(make_expr (BCst(V.zero, Machine Z)), EQ, make_expr (BCst (V.zero, Machine Z))) in
+    { pc with constraints }
 end
