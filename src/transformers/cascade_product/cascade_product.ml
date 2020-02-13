@@ -66,6 +66,10 @@ struct
     avars_only: (A.I.var_id * tvariable) list;
     (** The variable names are the ones not in B.  *)
 
+    is_in_b: bool;
+
+    bc_over_approx: (expr * cmpop * vname) option;
+
     bc: B.I.rconstraint list;
   }
 
@@ -76,6 +80,19 @@ struct
   let to_logic_var _ _ = no_variable_exn "Cascade_product_interpretation.to_logic_var"
   let to_abstract_var _ _ = no_variable_exn "Cascade_product_interpretation.to_abstract_var"
   let local_vars _ _ = no_variable_exn "Cascade_product_interpretation.local_vars"
+
+  (* For constraints of the form `e <|>|>=|<= v` where all variables in `e` occurs in `B` and `v` only occurs in `A`,
+     we can send some constraints to `B` before `v` is instantiated by taking its lower or upper bounds. *)
+  let over_approx_in_b avars_only c =
+    let is_avar_only v = List.exists (fun av -> av = v) avars_only in
+    match c with
+    | (_, TCmp(e1, op, Var v)) when op <> EQ && op <> NEQ ->
+        if is_avar_only v &&
+           List.for_all (fun av -> not (is_avar_only av)) (Rewritting.get_vars_expr e1) then
+          Some (e1,op,v)
+        else
+          None
+    | _ -> None
 
   (** Prepare as much as possible to interpret the constraint in `B` when instantiated enough. *)
   let lazy_interpret_in_b approx r ac =
@@ -88,9 +105,10 @@ struct
     let tf = quantifier_free_of tqf in
     let avars = vars_of_tformula tf in
     let avars_only = List.filter (not_in_b r) avars in
+    let bc_over_approx = over_approx_in_b avars_only tf in
     let avars_only = List.map (
       fun name -> A.I.to_abstract_var (A.interpretation !(r.a)) name) avars_only in
-    { ac; tf; approx; avars_only; bc=[]}
+    { ac; tf; approx; avars_only; bc_over_approx; is_in_b=false; bc=[] }
 
   let interpret_in_a approx r tf =
     let tf_a = replace_uid (A.uid !(r.a)) tf in
@@ -176,7 +194,7 @@ struct
       if A.B.equal l u then
         (uninstantiated, (tv.name, (tv,A.B.to_rat l))::fixed)
       else
-        ((vid,tv)::uninstantiated, fixed) in
+        ((vid,tv,l,u)::uninstantiated, fixed) in
     List.fold_left aux ([],[]) c.avars_only
 
   (* Given a constraint `c` and the set of instantiated variables, interpret the constraint `c` in `B`. *)
@@ -185,19 +203,42 @@ struct
     let c = { c with tf=(replace_uid (B.uid (unwrap_b cp)) c.tf) } in
     let b, bc = B.map_interpretation (unwrap_b cp) (fun i -> B.I.interpret i c.approx c.tf) in
     (* Printf.printf "Successfully interpreted in octagon\n"; *)
-    wrap_b cp b, { c with avars_only=[]; bc}
+    wrap_b cp b, { c with avars_only=[]; is_in_b=true; bc}
 
-  (* Try to interpret `c` in `B` if all the variables in `A` only are instantiated. *)
-  let try_lazy_transfer cp c =
+  type constraint_place =
+    InA | OverApproxInB | InB
+
+  (* See `over_approx_in_b` and `try_lazy_transfer`. *)
+  let partial_transfer_in_b cp c is_ask e op (l,u) =
+    let bound =
+      match op with
+      | LT | LEQ -> if is_ask then l else u
+      | GT | GEQ -> if is_ask then u else l
+      | _ -> failwith "partial transfer only valid over <,<=,>=,> operators." in
+    let approx_c = (B.uid (unwrap_b cp), TCmp(e,op,Cst(A.B.to_rat bound,B.B.concrete_ty))) in
+    let b, bc = B.map_interpretation (unwrap_b cp) (fun i -> B.I.interpret i OverApprox approx_c) in
+    wrap_b cp b, { c with bc }
+
+  (* Try to interpret `c` in `B` if all the variables in `A` only are instantiated.
+     `is_ask` is a flag telling if the constraint is evaluated for entailment or consistency, it impacts the creation of the over-approximation of c in `B`. *)
+  let try_lazy_transfer is_ask cp c =
     (* If the constraint has not yet been transfered to `B`. *)
-    if List.length c.bc = 0 then
+    if not c.is_in_b then
       let uninstantiated, fixed = classify_a_var cp c in
-      if List.length uninstantiated = 0 then
-        lazy_transfer_a_to_b cp c fixed, true
-      else
-        (cp, { c with avars_only=uninstantiated }), false
+      match uninstantiated with
+      | [] -> lazy_transfer_a_to_b cp c fixed, InB
+      | _ ->
+        let cp, c, place =
+          match uninstantiated, c.bc_over_approx with
+          | [(_,tv,l,u)], Some (e,op,v') when tv.name = v' ->
+              let cp, c = partial_transfer_in_b cp c is_ask e op (l,u) in
+              cp, c, OverApproxInB
+          | _ -> cp, c, InA
+        in
+        let uninstantiated = List.map (fun (a,b,_,_) -> (a,b)) uninstantiated in
+        (cp, { c with avars_only=uninstantiated }), place
     else
-      (cp, c), true
+      (cp, c), InB
 
   let entailment_a cp c =
     let a = unwrap_a cp in
@@ -214,22 +255,24 @@ struct
     wrap_b cp b, { c with bc }, (List.length bc = 0)
 
   let entailment cp c =
-    let (cp, c), is_transferred = try_lazy_transfer cp c in
-    if is_transferred then
-      entailment_b cp c
-    else
-      entailment_a cp c
+    let (cp, c), place = try_lazy_transfer true cp c in
+    match place with
+    | InA -> entailment_a cp c
+    | OverApproxInB | InB -> entailment_b cp c
 
   (* Try to transfer `c` in `B`, and upon success commit the transfer in `B` using `weak_incremental_closure`. *)
   let incremental_closure cp c new_constraint =
-    let (cp, c), is_transferred = try_lazy_transfer cp c in
-    if is_transferred then
-      let cp = if not new_constraint then
-        wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in
-      let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
-      wrap_b cp b, c, true
-    else
-      cp, c, false
+    let (cp, c), place = try_lazy_transfer false cp c in
+    match place with
+    | InA -> cp, c, false
+    | OverApproxInB ->
+        let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
+        wrap_b cp b, c, false
+    | InB ->
+        let cp = if not new_constraint then
+          wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in
+        let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
+        wrap_b cp b, c, true
 
   (* let print_box_cons fmt f =
     Format.fprintf fmt "%a\n" Pretty_print.print_formula
