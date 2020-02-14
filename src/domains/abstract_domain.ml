@@ -13,12 +13,17 @@
 open Core
 open Bounds
 open Interpretation
+open Lang
 open Typing
 open Typing.Ad_type
 
 exception Conflict of int
 type task = ad_uid * int
 type event = ad_uid * int
+type search_strategy =
+  | Simple
+  | VarView of Ast.vname list
+  | Sequence of (ad_uid * search_strategy) list
 module type Abstract_domain =
 sig
   module I: Interpretation_sig
@@ -39,7 +44,7 @@ sig
   val closure: t -> (t * bool)
   val weak_incremental_closure: t -> I.rconstraint -> t
   val entailment: t -> I.rconstraint -> t * I.rconstraint * bool
-  val split: t -> snapshot list
+  val split: ?strategy:search_strategy -> t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit

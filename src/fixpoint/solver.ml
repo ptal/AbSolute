@@ -17,7 +17,7 @@ module Make(A: Abstract_domain) =
 struct
   module T=Transformer.Make(A)
 
-  let rec solve (gs,bs) =
+  let rec solve ?strategy:(strategy=Simple) (gs,bs) =
     try
       (* Restore the current abstract domain with the snapshot registered in BS. *)
       let gs = T.{gs with domain=(A.restore gs.domain bs.snapshot)} in
@@ -32,7 +32,7 @@ struct
       | Kleene.True -> T.on_solution (gs,bs)
       | Kleene.Unknown ->
           let (gs,bs) = T.on_unknown (gs,bs) in
-          let branches = A.split gs.domain in
+          let branches = A.split ~strategy gs.domain in
           (* In an `unknown` setting, an empty set of branches means that all the children nodes were detected inconsistent. *)
           if branches = [] then T.on_fail (gs,bs)
           else

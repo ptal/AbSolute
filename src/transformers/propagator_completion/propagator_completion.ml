@@ -187,7 +187,7 @@ struct
     if pc.num_active_tasks = 0 then True
     else Unknown
 
-  let split _ = []
+  let split ?strategy:_ _ = []
 
   let exec_task pc (_,c_idx) =
     let c = Parray.get pc.constraints c_idx in

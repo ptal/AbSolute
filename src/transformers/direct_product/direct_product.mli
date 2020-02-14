@@ -63,7 +63,7 @@ sig
   val closure: t -> (t * bool)
   val weak_incremental_closure: t -> gconstraint -> t
   val entailment: t -> gconstraint -> t * gconstraint * bool
-  val split: t -> snapshot list
+  val split: (ad_uid * search_strategy) -> t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
@@ -90,7 +90,7 @@ module Prod_cons(A: Abstract_domain)(B: Prod_combinator) :
     type t = Prod_atom(A).t * B.t and
     type init_t = Prod_atom(A).init_t * B.init_t
 
-module Direct_product(P: Prod_combinator) :
+module Direct_product(P: Prod_combinator):
 sig
   include Abstract_domain
   val init: ad_uid -> P.init_t -> t

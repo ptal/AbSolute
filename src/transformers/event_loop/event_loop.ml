@@ -114,7 +114,7 @@ struct
     {p with l; pengine}, has_changed
 
   let state _ = Kleene.True
-  let split _ = []
+  let split ?strategy:_ _ = []
   let volume _ = 1.
   let interpretation _ = Unit_interpretation.empty 0
   let map_interpretation x f =

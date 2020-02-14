@@ -291,9 +291,21 @@ struct
             new_tasks=c_idx::lc.new_tasks;
             num_active_tasks=lc.num_active_tasks+1 }
 
-  (* We could provide a split over the formula directly instead of the variables.
-     For now, we rely on the split of the subdomains. *)
-  let split _ = []
+  (* This search strategy split on the OR constraints in their occurrence order. *)
+  let split ?strategy:(strat=Simple) lc =
+    if strat <> Simple then
+      raise (Wrong_modelling
+        "Logical_completion.split: only the Simple search strategy is supported.");
+    let aux c_idx =
+      if c_idx >= Parray.length lc.constraints then []
+      else
+        match Parray.get lc.constraints c_idx with
+        | POr(f1, f2) ->
+            [{lc with constraints=(Parray.set lc.constraints c_idx f1)};
+             {lc with constraints=(Parray.set lc.constraints c_idx f2)}]
+        | _ -> aux (c_idx + 1)
+    in
+    aux 0
 
   (* This abstract domain has no variable, we symbolically attribute a volume corresponding to the number of active formulas. *)
   let volume lc =

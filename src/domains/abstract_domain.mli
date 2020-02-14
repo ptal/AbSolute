@@ -16,6 +16,7 @@
 open Core
 open Bounds
 open Interpretation
+open Lang
 open Typing
 open Typing.Ad_type
 
@@ -27,6 +28,16 @@ type task = ad_uid * int
 
 (** An event is usually a variable index of some sort. *)
 type event = ad_uid * int
+
+(* A search strategy where:
+    * `Simple` is the default strategy of the abstract domain; it usually splits over all the variables of the abstract element.
+    * `VarView` is similar to `Simple` but only split over a given list of variables.
+    * `Sequence` applies the given strategy in sequence, whenever `split` of the given element returns an empty list, we apply the rest of the list.
+  See also [Abstract_domain.split]. *)
+type search_strategy =
+  | Simple
+  | VarView of Ast.vname list
+  | Sequence of (ad_uid * search_strategy) list
 
 (** We require that abstract domains internalize their connection to the logical formula.
     In practice, it often consists in a pair `(A.t, A.I.t)` of the abstract element and its interpretation.
@@ -139,8 +150,16 @@ sig
 
   (** Divide the abstract element into sub-elements.
       For exhaustiveness, the union of `split a` should be equal to `a`.
-      The list is empty if the abstract element cannot be split (either because `state a != unknown` or because it does not provide a split operator). *)
-  val split: t -> snapshot list
+      The list is empty if the abstract element cannot be split either because:
+        * `state a != unknown`, or
+        * It delegates the split to other domains, or
+        * The provided search strategy is already fully evaluated.
+      Raise `Wrong_modelling` if the search strategy is not supported.
+
+      Note: A search strategy contains variable `vname` which are string.
+            For efficiency, it is better if the abstract domain evaluates these `vname` to `var_id` once.
+            It can be done by testing for physical equality the strategy argument and evaluating these vname only when it changes. *)
+  val split: ?strategy:search_strategy -> t -> snapshot list
 
   (** The volume is crucial to get information on the current state of
      the abstract element:

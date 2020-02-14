@@ -18,6 +18,7 @@ open Core
 open Core.Kleene
 open Domains.Abstract_domain
 open Domains.Interpretation
+open Lang.Ast
 open Typing.Ad_type
 open Typing.Tast
 open Bounds
@@ -52,6 +53,8 @@ struct
 
   type t = {
     r: I.t;
+    split_data: Split.t;
+    strategy: search_strategy;
     store: Store.t;
   }
 
@@ -69,6 +72,8 @@ struct
   let empty uid = {
     r = I.empty uid;
     store=Store.empty;
+    split_data=[];
+    strategy=Simple;
   }
 
   let uid box = I.uid box.r
@@ -86,7 +91,7 @@ struct
           guarded_extend box (uid box) name tv (fun box tv ->
             let (store, idx, aty) = Store.extend ~ty:(tv.ty) box.store in
             let r = I.extend box.r (idx, {tv with ty = Abstract aty}) in
-            aux {r; store} tqf
+            aux {box with r; store} tqf
           )
     in aux box tqf
 
@@ -136,11 +141,22 @@ struct
 
   let state _ = True
 
-  let split box =
-    let branches = Split.split box.r box.store in
+  let init_strategy box strategy =
+    if box.strategy == strategy then box
+    else
+      match strategy with
+      | Simple -> { box with strategy }
+      | VarView vars ->
+          let vids = List.map (fun v -> fst (I.to_abstract_var box.r v)) vars in
+          { box with split_data=vids; strategy }
+      | Sequence _ -> raise (Wrong_modelling "Box.split: The sequence strategy is not supported.")
+
+  let split ?strategy:(strat=Simple) box =
+    let box = init_strategy box strat in
+    let split_data, branches = Split.split box.split_data box.r box.store in
     (* print Format.std_formatter box; *)
     (* Printf.printf "Box.Split %d: " (List.length branches); flush_all (); *)
-    let boxes = lazy_copy box (List.length branches) in
+    let boxes = lazy_copy { box with split_data } (List.length branches) in
     let branches = List.flatten (List.map2 (fun box branch ->
       (* let _ = Format.printf "%a \\/ " Lang.Pretty_print.print_formula (tformula_to_formula (quantifier_free_of (I.to_qformula box.r [branch]))); flush_all () in *)
       try [weak_incremental_closure box branch]

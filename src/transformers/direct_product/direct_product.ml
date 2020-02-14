@@ -58,7 +58,7 @@ sig
   val closure: t -> (t * bool)
   val weak_incremental_closure: t -> gconstraint -> t
   val entailment: t -> gconstraint -> t * gconstraint * bool
-  val split: t -> snapshot list
+  val split: (ad_uid * search_strategy) -> t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
@@ -237,7 +237,12 @@ struct
     let (a, ac, b) = A.entailment !(pa.a) (get_constraint pa c) in
     set_constraint (wrap pa a) c ac, c, b
 
-  let split pa = make_snapshots pa 0 A.split
+  let split (u, strategy) pa =
+    if uid pa != u then
+      raise (Wrong_modelling "`Direct_product.split`: the strategy is defined on a domain not in this product.")
+    else
+      make_snapshots pa 0 (A.split ~strategy)
+
   let volume pa = if pa.owned then A.volume !(pa.a) else 1.
   let print fmt pa = if pa.owned then Format.fprintf fmt "%a" A.print !(pa.a) else ()
 
@@ -408,13 +413,13 @@ struct
       let (a, c, is_entailed) = Atom.entailment a c in
       (a,b), c, is_entailed
 
-  let split (a,b) =
-    match Atom.split a with
-    | [] ->
-        let branches = B.split b in
-        List.combine (Atom.lazy_copy a (List.length branches)) branches
-    | branches ->
-        List.combine branches (B.lazy_copy b (List.length branches))
+  let split (uid, strategy) (a,b) =
+    if (Atom.uid a) != uid then
+      let branches = B.split (uid, strategy) b in
+      List.combine (Atom.lazy_copy a (List.length branches)) branches
+    else
+      let branches = Atom.split (uid, strategy) a in
+      List.combine branches (B.lazy_copy b (List.length branches))
 
   let volume (a,b) = (Atom.volume a) *. (B.volume b)
 
@@ -444,14 +449,19 @@ struct
   struct
     type t = {
       uid: ad_uid;
-      prod: P.t
+      prod: P.t;
+      (* See `split` for the usage of these strategies. *)
+      initial_strategy: search_strategy;
+      strategy: search_strategy;
     }
     type var_id = P.var_id
     type rconstraint = P.rconstraint
     let exact_interpretation = P.exact_interpretation
     let wrap p prod = {p with prod}
-    let init uid prod = { uid; prod=(P.init prod) }
-    let empty uid = { uid=(uid + P.count); prod=(P.empty' uid)}
+    let init uid prod = { uid; prod=(P.init prod);
+      initial_strategy=Simple; strategy=Simple }
+    let empty uid = { uid=(uid + P.count); prod=(P.empty' uid);
+      initial_strategy=Simple; strategy=Simple }
     let to_logic_var p vid = P.to_logic_var p.prod vid
     let to_abstract_var p vname = P.to_abstract_var p.prod vname
     let local_vars p vname =
@@ -495,10 +505,16 @@ struct
 
   let state (p:t) = P.state p.prod
 
-  type snapshot = P.snapshot
+  type snapshot = P.snapshot * search_strategy * search_strategy
 
-  let restore p s = I.wrap p (P.restore p.prod s)
-  let lazy_copy (p:t) n = P.lazy_copy p.prod n
+  let restore p (s,s1,s2) =
+    let p = I.wrap p (P.restore p.prod s) in
+    { p with initial_strategy=s1; strategy=s2 }
+
+  let make_snapshot (p:t) s = (s,p.initial_strategy, p.strategy)
+
+  let lazy_copy (p:t) n =
+    List.map (make_snapshot p) (P.lazy_copy p.prod n)
 
   let project (p:t) v_id = P.project p.prod v_id
   let embed (p:t) v_id (l,u) = I.wrap p (P.embed p.prod v_id (l,u))
@@ -506,7 +522,26 @@ struct
   let entailment (p:t) c =
     let (p', c, b) = P.entailment p.prod c in
     (I.wrap p p', c, b)
-  let split (p:t) = P.split p.prod
+
+  let split ?strategy:(strat=Simple) (p:t) =
+    let p =
+      if strat == p.initial_strategy then p
+      else { p with initial_strategy=strat; strategy=strat } in
+    let sequence_of s =
+      Sequence(List.map (fun (uid,_) -> (uid, s)) (P.type_of p.prod)) in
+    let rec aux s =
+      match s with
+      | Simple | VarView _ -> aux (sequence_of s)
+      | Sequence [] -> s, []
+      | Sequence (strat::l) ->
+          let branches = P.split strat p.prod in
+          if branches = [] then
+            aux (Sequence l)
+          else
+            s, branches in
+    let strategy, branches = aux p.strategy in
+    List.map (make_snapshot { p with strategy }) branches
+
   let volume (p:t) = P.volume p.prod
   let print fmt (p:t) = P.print fmt p.prod
 

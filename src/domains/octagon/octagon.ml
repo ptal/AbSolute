@@ -12,6 +12,7 @@
 
 open Core
 open Dbm
+open Lang.Ast
 open Typing.Ad_type
 open Typing.Tast
 open Octagon_interpretation
@@ -137,7 +138,8 @@ struct
     let octagon = weak_incremental_closure octagon {v=itv.lb; d=(B.neg (B.mul_up l B.two))} in
     weak_incremental_closure octagon {v=itv.ub; d=(B.mul_up u B.two)}
 
-  let split octagon =
+  let split ?strategy:(strat=Simple) octagon =
+    if strat <> Simple then raise (Wrong_modelling "Octagon.split: Only the simple strategy is supported.");
     let branches = Split.split octagon.dbm in
     (* print_oc ("branch(" ^ (string_of_int (List.length branches)) ^ ")") octagon branches; *)
     let octagons = lazy_copy octagon (List.length branches) in

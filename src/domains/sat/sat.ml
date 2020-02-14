@@ -175,7 +175,8 @@ struct
       sat, c, false
     with Satisfiable -> sat, c, true
 
-  let split b =
+  let split ?strategy:(strat=Simple) b =
+    if strat <> Simple then raise (Wrong_modelling "SAT.split: Only the simple strategy is supported.");
     (* New variable decision: *)
     let next = splitOnLit () in
     if next = dummy_lit then []

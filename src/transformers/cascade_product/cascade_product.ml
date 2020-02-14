@@ -167,7 +167,7 @@ struct
 
   (* State is ultimately decided by the sub-domains as this domain does not owned variables. *)
   let state _ = True
-  let split _ = []
+  let split ?strategy:_ _ = []
   let volume _ = 1.
   let print _ _ = ()
 

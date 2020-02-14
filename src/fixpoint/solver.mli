@@ -17,5 +17,5 @@ module Make(A: Abstract_domain):
 sig
   module T: module type of Transformer.Make(A)
 
-  val solve: T.t -> T.t
+  val solve: ?strategy:search_strategy -> T.t -> T.t
 end

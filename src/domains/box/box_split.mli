@@ -16,7 +16,8 @@ open Box_interpretation
 module type Variable_order = functor (R: Box_interpretation_sig) ->
 sig
   module R: Box_interpretation_sig
-  val select: R.Store.t -> (R.var_id * R.var_dom) option
+  type t = R.var_id list
+  val select: t -> R.Store.t -> t * (R.var_id * R.var_dom) option
 end with module R=R
 
 module type Value_order = functor (R: Box_interpretation_sig) ->
@@ -33,8 +34,9 @@ end with module R=R
 
 module type Box_split_sig = functor (R: Box_interpretation_sig) ->
 sig
+  type t = R.var_id list
   module R: Box_interpretation_sig
-  val split: R.t -> R.Store.t -> R.rconstraint list
+  val split: t -> R.t -> R.Store.t -> t * R.rconstraint list
 end with module R=R
 
 module Input_order : Variable_order

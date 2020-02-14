@@ -107,6 +107,15 @@ let fold_map f a l =
   let (a, l') = List.fold_left f (a, []) l in
   (a, List.rev l')
 
+let filter_map f l =
+  let rec aux = function
+    | [] -> []
+    | x::l ->
+        match f x with
+        | Some v -> v::(aux l)
+        | None -> aux l in
+  aux l
+
 let find_index v l =
   let rec aux i = function
     | [] -> raise Not_found

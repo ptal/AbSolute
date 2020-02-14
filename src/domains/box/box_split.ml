@@ -10,13 +10,15 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
    Lesser General Public License for more details. *)
 
+open Core
 open Lang
 open Box_interpretation
 
 module type Variable_order = functor (R: Box_interpretation_sig) ->
 sig
   module R: Box_interpretation_sig
-  val select: R.Store.t -> (R.var_id * R.var_dom) option
+  type t = R.var_id list
+  val select: t -> R.Store.t -> t * (R.var_id * R.var_dom) option
 end with module R=R
 
 module type Value_order = functor (R: Box_interpretation_sig) ->
@@ -33,8 +35,9 @@ end with module R=R
 
 module type Box_split_sig = functor (R: Box_interpretation_sig) ->
 sig
+  type t = R.var_id list
   module R: Box_interpretation_sig
-  val split: R.t -> R.Store.t -> R.rconstraint list
+  val split: t -> R.t -> R.Store.t -> t * R.rconstraint list
 end with module R=R
 
 module Input_order(R: Box_interpretation_sig) =
@@ -43,12 +46,17 @@ struct
   module Store = R.Store
   module V = R.Vardom
 
-  exception Found_var of R.var_id * R.var_dom
-  let select store =
-    try
-      Store.iter (fun v d -> if not (V.is_singleton d) then raise (Found_var (v,d))) store;
-      None
-    with Found_var (v,d) -> Some (v,d)
+  type t = R.var_id list
+
+  let rec select vids store =
+    match vids with
+    | [] -> vids, None
+    | vid::vids ->
+        let value = Store.get store vid in
+        if V.is_singleton value then
+          select vids store
+        else
+          vids, Some (vid, value)
 end
 
 (* This module factorizes `First_fail` and `Anti_first_fail`. *)
@@ -56,36 +64,44 @@ module Width_order(R: Box_interpretation_sig) =
 struct
   module R=R
   module V = R.Vardom
+  module Store = R.Store
   module B = V.B
-  let select store width_cmp =
+  let select vids store width_cmp =
     let size (l,h) = B.sub_up h l in
-    let var =
-      R.Store.fold (fun a v d ->
-        if V.is_singleton d then a
-        else
-          let width = size (V.to_range d) in
-          match a with
-          | Some (best,_,_) when width_cmp width best -> Some (width,v,d)
+    let vids_values =
+      Tools.filter_map (fun vid ->
+        let d = Store.get store vid in
+        if V.is_singleton d then None else Some (vid,d)
+      ) vids in
+    let var, vids =
+      Tools.fold_map (fun a (vid,d) ->
+        let width = size (V.to_range d) in
+        let best = match a with
+          | Some (best,_,_) when width_cmp width best -> Some (width,vid,d)
           | Some _ -> a
-          | None -> Some (width,v,d))
-      None store in
+          | None -> Some (width,vid,d) in
+        best, vid
+      ) None vids_values in
     match var with
-    | Some (_, v,d) -> Some (v,d)
-    | None -> None
+    | Some (_, vid,d) -> vids, Some (vid,d)
+    | None -> vids, None
+
 end
 
 module First_fail(R: Box_interpretation_sig) =
 struct
   module R=R
   module W = Width_order(R)
-  let select store = W.select store R.Vardom.B.lt
+  type t = R.var_id list
+  let select vids store = W.select vids store R.Vardom.B.lt
 end
 
 module Anti_first_fail(R: Box_interpretation_sig) =
 struct
   module R=R
   module W = Width_order(R)
-  let select store = W.select store R.Vardom.B.gt
+  type t = R.var_id list
+  let select vids store = W.select vids store R.Vardom.B.gt
 end
 
 module Middle (R: Box_interpretation_sig) =
@@ -156,12 +172,14 @@ struct
   module Value = VALUE(R)
   module Distrib = DISTRIB(R)
 
-  let split repr store =
-    match Variable.select store with
-    | None -> []
-    | Some (var_idx, vardom) ->
+  type t = R.var_id list
+
+  let split vids repr store =
+    match Variable.select vids store with
+    | vids, None -> vids, []
+    | vids, Some (var_idx, vardom) ->
         let value = R.Vardom.of_bound (Value.select vardom) in
-        Distrib.distribute repr var_idx value
+        vids, Distrib.distribute repr var_idx value
 end
 
 module First_fail_bisect = Make(First_fail)(Middle)(Bisect)
