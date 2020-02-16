@@ -3,6 +3,11 @@
 We describe the main changes operated in each version of AbSolute.
 This is especially useful when analyzing the results in [kobe-database](https://github.com/ptal/kobe-database).
 
+Version 0.9.0:
+  * Add the domain product `Cascade_product` which transfers a constraint to a more specialized domain when instantiated enough.
+  * `Propagator_completion` now automatically exchanges equalities over its sub-domains.
+  * Add a minimalist search strategy language.
+
 Version 0.8.0:
   * Add an `embed` function which is the inverse of `project` in abstract domain, it increases the efficiency of the HC4 algorithm.
   * Fix the min/max filtering in interval.

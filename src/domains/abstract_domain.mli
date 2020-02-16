@@ -158,7 +158,7 @@ sig
 
       Note: A search strategy contains variable `vname` which are string.
             For efficiency, it is better if the abstract domain evaluates these `vname` to `var_id` once.
-            It can be done by testing for physical equality the strategy argument and evaluating these vname only when it changes. *)
+            It can be done by testing for physical equality the strategy argument and evaluating these vname only when it changes (see [Box.split]). *)
   val split: ?strategy:search_strategy -> t -> snapshot list
 
   (** The volume is crucial to get information on the current state of

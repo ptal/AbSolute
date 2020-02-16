@@ -55,6 +55,7 @@ struct
     r: I.t;
     split_data: Split.t;
     strategy: search_strategy;
+    init_strategy: bool;
     store: Store.t;
   }
 
@@ -74,6 +75,7 @@ struct
     store=Store.empty;
     split_data=[];
     strategy=Simple;
+    init_strategy=false;
   }
 
   let uid box = I.uid box.r
@@ -142,20 +144,23 @@ struct
   let state _ = True
 
   let init_strategy box strategy =
-    if box.strategy == strategy then box
+    if box.strategy == strategy && box.init_strategy then box
     else
-      match strategy with
-      | Simple -> { box with strategy }
-      | VarView vars ->
-          let vids = List.map (fun v -> fst (I.to_abstract_var box.r v)) vars in
-          { box with split_data=vids; strategy }
-      | Sequence _ -> raise (Wrong_modelling "Box.split: The sequence strategy is not supported.")
+      let vids =
+        match strategy with
+        | Simple ->
+            let vids = Store.fold (fun vids vid _ -> vid::vids) [] box.store in
+            List.rev vids
+        | VarView vars ->
+            List.map (fun v -> fst (I.to_abstract_var box.r v)) vars
+        | Sequence _ -> raise (Wrong_modelling "Box.split: The sequence strategy is not supported.") in
+      { box with split_data=vids; strategy; init_strategy=true }
 
   let split ?strategy:(strat=Simple) box =
     let box = init_strategy box strat in
     let split_data, branches = Split.split box.split_data box.r box.store in
     (* print Format.std_formatter box; *)
-    (* Printf.printf "Box.Split %d: " (List.length branches); flush_all (); *)
+    (* Printf.printf "Box.Split %d (split_data: %d): " (List.length branches) (List.length box.split_data); flush_all (); *)
     let boxes = lazy_copy { box with split_data } (List.length branches) in
     let branches = List.flatten (List.map2 (fun box branch ->
       (* let _ = Format.printf "%a \\/ " Lang.Pretty_print.print_formula (tformula_to_formula (quantifier_free_of (I.to_qformula box.r [branch]))); flush_all () in *)

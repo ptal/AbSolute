@@ -140,6 +140,7 @@ struct
 
   let split ?strategy:(strat=Simple) octagon =
     if strat <> Simple then raise (Wrong_modelling "Octagon.split: Only the simple strategy is supported.");
+    (* Printf.printf "Octagon.split\n"; *)
     let branches = Split.split octagon.dbm in
     (* print_oc ("branch(" ^ (string_of_int (List.length branches)) ^ ")") octagon branches; *)
     let octagons = lazy_copy octagon (List.length branches) in

@@ -293,16 +293,20 @@ struct
 
   (* This search strategy split on the OR constraints in their occurrence order. *)
   let split ?strategy:(strat=Simple) lc =
+    (* Printf.printf "%s.split (%d actives)\n" name lc.num_active_tasks; *)
     if strat <> Simple then
       raise (Wrong_modelling
         "Logical_completion.split: only the Simple search strategy is supported.");
-    let aux c_idx =
+    let rec aux c_idx =
       if c_idx >= Parray.length lc.constraints then []
       else
         match Parray.get lc.constraints c_idx with
         | POr(f1, f2) ->
-            [{lc with constraints=(Parray.set lc.constraints c_idx f1)};
-             {lc with constraints=(Parray.set lc.constraints c_idx f2)}]
+            (* Printf.printf "LC.split: %s \\/ %s\n"
+              (Tast.string_of_tqformula (Tools.unwrap (type_of lc)) (I.to_qformula lc.repr [f1.positive.tell]))
+              (Tast.string_of_tqformula (Tools.unwrap (type_of lc)) (I.to_qformula lc.repr [f2.positive.tell])); flush_all (); *)
+            [{lc with constraints=(Parray.set lc.constraints c_idx f1.positive.tell)};
+             {lc with constraints=(Parray.set lc.constraints c_idx f2.positive.tell)}]
         | _ -> aux (c_idx + 1)
     in
     aux 0
@@ -319,10 +323,12 @@ struct
     Pretty_print.print_formula fmt f *)
 
   let exec_task lc (_,c_idx) =
-    (* let _ = Printf.printf "exec_task %d remaining\n" lc.num_active_tasks; flush_all () in *)
     let f = Parray.get lc.constraints c_idx in
     (* if lc.num_active_tasks = 1 then *)
     (* Printf.printf "%s" (Tast.string_of_tqformula (Tools.unwrap (type_of lc)) (I.to_qformula lc.repr [f])); flush_all (); *)
+(*       let _ = Printf.printf "exec_task %d remaining\n" lc.num_active_tasks; flush_all () in
+      let _ = Format.printf "%a \n" Lang.Pretty_print.print_formula (tformula_to_formula (quantifier_free_of (I.to_qformula lc.repr [f]))) in
+      let _ = Format.printf "%a \n" A.print (unwrap lc) in () in *)
     let lc, f' = incremental_closure lc f in
     let constraints, entailed =
       match f' with
