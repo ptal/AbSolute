@@ -44,7 +44,7 @@ struct
                 aux (bss@stack) (gs,bs)
         with T.Backjump (n, t) ->
           let rec cut_below d = function
-            | (depth,bs)::stack when depth > d -> cut_below d stack
+            | (depth,_)::stack when depth > d -> cut_below d stack
             | stack -> stack in
           aux (cut_below (depth-n) stack) (T.on_fail t)
     in aux [(0,bs)] (gs,bs)

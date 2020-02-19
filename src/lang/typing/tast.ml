@@ -180,9 +180,9 @@ let replace_uid uid tf =
     | TCmp c -> uid, TCmp c
     | TFVar v -> uid, TFVar v
     | TEquiv (tf1,tf2) -> uid, TEquiv (aux tf1, aux tf2)
-    | TImply (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
-    | TAnd (tf1,tf2) -> uid, TOr (aux tf1, aux tf2)
-    | TOr (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TImply (tf1,tf2) -> uid, TImply (aux tf1, aux tf2)
+    | TAnd (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TOr (tf1,tf2) -> uid, TOr (aux tf1, aux tf2)
     | TNot tf -> uid, TNot (aux tf)
   in aux tf
 
@@ -208,8 +208,8 @@ let instantiate_vars vars tf =
         with Not_found -> uid, TFVar v
       end
     | TEquiv (tf1,tf2) -> uid, TEquiv (aux tf1, aux tf2)
-    | TImply (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
-    | TAnd (tf1,tf2) -> uid, TOr (aux tf1, aux tf2)
-    | TOr (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TImply (tf1,tf2) -> uid, TImply (aux tf1, aux tf2)
+    | TAnd (tf1,tf2) -> uid, TAnd (aux tf1, aux tf2)
+    | TOr (tf1,tf2) -> uid, TOr (aux tf1, aux tf2)
     | TNot tf -> uid, TNot (aux tf) in
   aux tf
