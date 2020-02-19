@@ -539,8 +539,10 @@ struct
             aux (Sequence l)
           else
             s, branches in
-    let strategy, branches = aux p.strategy in
-    List.map (make_snapshot { p with strategy }) branches
+    (* let strategy, branches = aux p.strategy in
+    List.map (make_snapshot { p with strategy }) branches *)
+    let _, branches = aux p.strategy in
+    List.map (make_snapshot p) branches
 
   let volume (p:t) = P.volume p.prod
   let print fmt (p:t) = P.print fmt p.prod

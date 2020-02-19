@@ -297,8 +297,22 @@ struct
     if strat <> Simple then
       raise (Wrong_modelling
         "Logical_completion.split: only the Simple search strategy is supported.");
-    let rec aux c_idx =
+(*     let rec split_imply c_idx =
       if c_idx >= Parray.length lc.constraints then []
+      else
+        match Parray.get lc.constraints c_idx with
+        | PImply(f1, f2) ->
+          begin
+            match f2.positive.tell with
+            | POr(f1, f2) ->
+              [{lc with constraints=(Parray.set lc.constraints c_idx f2.positive.tell)};
+               {lc with constraints=(Parray.set lc.constraints c_idx f2.positive.tell)};
+               {lc with constraints=(Parray.set lc.constraints c_idx f1.negative.tell)}]
+            | _ -> split_imply (c_idx + 1)
+          end
+        | _ -> split_imply (c_idx + 1) in *)
+    let rec split_or c_idx =
+      if c_idx >= Parray.length lc.constraints then [] (*  split_imply 0 *)
       else
         match Parray.get lc.constraints c_idx with
         | POr(f1, f2) ->
@@ -307,9 +321,9 @@ struct
               (Tast.string_of_tqformula (Tools.unwrap (type_of lc)) (I.to_qformula lc.repr [f2.positive.tell])); flush_all (); *)
             [{lc with constraints=(Parray.set lc.constraints c_idx f1.positive.tell)};
              {lc with constraints=(Parray.set lc.constraints c_idx f2.positive.tell)}]
-        | _ -> aux (c_idx + 1)
+        | _ -> split_or (c_idx + 1)
     in
-    aux 0
+    split_or 0
 
   (* This abstract domain has no variable, we symbolically attribute a volume corresponding to the number of active formulas. *)
   let volume lc =

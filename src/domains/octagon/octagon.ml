@@ -123,7 +123,14 @@ struct
   let weak_incremental_closure octagon oc =
     (* print_oc "inc(oct)" octagon [oc]; *)
     if entailment' octagon oc then octagon
-    else { octagon with constraints=oc::octagon.constraints }
+    else
+      let rec replace_or_add = function
+        | [] -> [oc]
+        | x::l when x.v = oc.v ->
+            if B.lt oc.d x.d then oc::l
+            else x::l
+        | x::l -> x::(replace_or_add l) in
+      { octagon with constraints=(replace_or_add octagon.constraints) }
 
   let incremental_closure octagon oc =
     let octagon' = (weak_incremental_closure octagon oc) in

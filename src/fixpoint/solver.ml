@@ -17,28 +17,36 @@ module Make(A: Abstract_domain) =
 struct
   module T=Transformer.Make(A)
 
-  let rec solve ?strategy:(strategy=Simple) (gs,bs) =
-    try
-      (* Restore the current abstract domain with the snapshot registered in BS. *)
-      let gs = T.{gs with domain=(A.restore gs.domain bs.snapshot)} in
-      let (gs,bs) = T.on_node (gs,bs) in
-      let (gs,bs) = T.wrap_exception (gs,bs) (fun (gs,bs) ->
-        let rec fixpoint_closure (domain, has_changed) =
-          if has_changed then fixpoint_closure (A.closure domain)
-          else domain in
-        ({gs with domain=(fixpoint_closure (gs.domain,true))}, bs)) in
-      match A.state gs.domain with
-      | Kleene.False -> T.on_fail (gs,bs)
-      | Kleene.True -> T.on_solution (gs,bs)
-      | Kleene.Unknown ->
-          let (gs,bs) = T.on_unknown (gs,bs) in
-          let branches = A.split ~strategy gs.domain in
-          (* In an `unknown` setting, an empty set of branches means that all the children nodes were detected inconsistent. *)
-          if branches = [] then T.on_fail (gs,bs)
-          else
-            let bss = List.map (fun snapshot -> {bs with snapshot}) branches in
-            List.fold_left (fun (gs,_) bs -> solve ~strategy (gs,bs)) (gs,bs) bss
-    with
-    | T.Backjump (0, t) -> T.on_fail t
-    | T.Backjump (n, t) -> raise (T.Backjump ((n-1), t))
+  let solve ?strategy:(strategy=Simple) (gs,bs) =
+    let rec aux stack (gs,bs) =
+      match stack with
+      | [] -> (gs,bs)
+      | (depth,bs)::stack ->
+        try
+          (* Restore the current abstract domain with the snapshot registered in BS. *)
+          let gs = T.{gs with domain=(A.restore gs.domain bs.snapshot)} in
+          let (gs,bs) = T.on_node (gs,bs) in
+          let (gs,bs) = T.wrap_exception (gs,bs) (fun (gs,bs) ->
+            let rec fixpoint_closure (domain, has_changed) =
+              if has_changed then fixpoint_closure (A.closure domain)
+              else domain in
+            ({gs with domain=(fixpoint_closure (gs.domain,true))}, bs)) in
+          match A.state gs.domain with
+          | Kleene.False -> aux stack (T.on_fail (gs,bs))
+          | Kleene.True -> aux stack (T.on_solution (gs,bs))
+          | Kleene.Unknown ->
+              let (gs,bs) = T.on_unknown (gs,bs) in
+              let branches = A.split ~strategy gs.domain in
+              (* In an `unknown` setting, an empty set of branches means that all the children nodes were detected inconsistent. *)
+              if branches = [] then T.on_fail (gs,bs)
+              else
+                let bss = List.map (fun snapshot -> (depth+1),{bs with snapshot}) branches in
+                aux (bss@stack) (gs,bs)
+        with T.Backjump (n, t) ->
+          let rec cut_below d = function
+            | (depth,bs)::stack when depth > d -> cut_below d stack
+            | stack -> stack in
+          aux (cut_below (depth-n) stack) (T.on_fail t)
+    in aux [(0,bs)] (gs,bs)
+
 end
