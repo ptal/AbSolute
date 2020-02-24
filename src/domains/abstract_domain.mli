@@ -127,9 +127,8 @@ sig
   (** Restore the abstract element to the same state as when the snapshot was created. *)
   val restore: t -> snapshot -> t
 
-  (** Closure of the abstract element: it tries to remove as much inconsistent values as possible from the abstract element according to the encapsulated constraints (added through `weak_incremental_closure`).
-      Returns `true` if a change on this abstract domain (or subdomain) occur, `false` otherwise (in this case `closure(t)=t`). *)
-  val closure: t -> (t * bool)
+  (** Closure of the abstract element: it tries to remove as much inconsistent values as possible from the abstract element according to the encapsulated constraints (added through `weak_incremental_closure`). *)
+  val closure: t -> t
 
   (** Weak incremental closure add the constraint into the abstract element.
       This operation should be of low time complexity.
@@ -179,6 +178,10 @@ sig
   (** Print the current element in the abstract element using the
       logical names of variables. *)
   val print: Format.formatter -> t -> unit
+
+  (** [has_changed t] is `true` if some events were generated in this abstract element and not yet drained (see [drain_events]).
+      If [has_changed t] is `true` after a call to `closure`, it means that `closure` is at a fixed point. *)
+  val has_changed: t -> bool
 
   (** [drain_events t] returns the events produced since the last call.
       The events are removed from `t`, so an immediate next call will return an empty list. *)

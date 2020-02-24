@@ -27,10 +27,11 @@ struct
           let gs = T.{gs with domain=(A.restore gs.domain bs.snapshot)} in
           let (gs,bs) = T.on_node (gs,bs) in
           let (gs,bs) = T.wrap_exception (gs,bs) (fun (gs,bs) ->
-            let rec fixpoint_closure (domain, has_changed) =
-              if has_changed then fixpoint_closure (A.closure domain)
+            let rec fixpoint_closure domain =
+              let domain = A.closure domain in
+              if A.has_changed domain then fixpoint_closure domain
               else domain in
-            ({gs with domain=(fixpoint_closure (gs.domain,true))}, bs)) in
+            ({gs with domain=(fixpoint_closure gs.domain)}, bs)) in
           match A.state gs.domain with
           | Kleene.False -> aux stack (T.on_fail (gs,bs))
           | Kleene.True -> aux stack (T.on_solution (gs,bs))

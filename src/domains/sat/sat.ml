@@ -144,7 +144,6 @@ struct
 
   (* This closure extracts the propagation and conflict resolution parts from `search` in minisatml. *)
   let closure b =
-    let props = numPropagations () in
     let b = propagate_conflict b in
     let b = propagate_decision b in
     let conflict_clause = ref (propagate ()) in
@@ -156,7 +155,7 @@ struct
       analyze conflict_clause b.learnt_clause backtrack_level;
       raise (Conflict !backtrack_level)
     end
-    else b, props <> (numPropagations ())
+    else b
 
   (** According to an assert in Minisatml, this can only be used at root level (not during solving). *)
   let weak_incremental_closure b c =
@@ -197,6 +196,8 @@ struct
     else Unknown
 
   let print _ _ = ()
+
+  let has_changed b = b.last_trail_idx < Vec.size (getTrail ())
 
   let drain_events b =
     let trail = getTrail () in

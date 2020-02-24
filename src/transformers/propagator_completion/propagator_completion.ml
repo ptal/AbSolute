@@ -163,7 +163,7 @@ struct
         if entailed then a, cons else a, c::cons
       ) ((unwrap pc),[]) pc.vars_equalities in
     let pc = wrap pc a in
-    { pc with vars_equalities=cons }, false (* Although some changes might have occur, it can be ignored. *)
+    { pc with vars_equalities=cons }
 
   (** We propagate the constraint immediately.
       If the constraint is not entailed, it is added into the pc. *)
@@ -195,6 +195,8 @@ struct
     let a, entailed = Closure.incremental_closure (unwrap pc) c in
     let num_active_tasks = pc.num_active_tasks - (if entailed then 1 else 0) in
     { (wrap pc a) with num_active_tasks }, entailed
+
+  let has_changed pc = A.has_changed (unwrap pc)
 
   let drain_events pc =
     let a, events = A.drain_events (unwrap pc) in

@@ -86,10 +86,15 @@ struct
   let over_approx_in_b avars_only c =
     let is_avar_only v = List.exists (fun av -> av = v) avars_only in
     match c with
-    | (_, TCmp(e1, op, Var v)) when op <> EQ && op <> NEQ ->
-        if is_avar_only v &&
+    | (_, TCmp(e1, op, (Var v as e2)))
+    | (_, TCmp(e1, op, (Unary(NEG, Var v) as e2))) ->
+        if op <> EQ && op <> NEQ &&
+           is_avar_only v &&
            List.for_all (fun av -> not (is_avar_only av)) (Rewritting.get_vars_expr e1) then
-          Some (e1,op,v)
+          match e2 with
+          | Var _ -> Some (e1,op,v)
+          | Unary(NEG, Var _) -> Some (Unary(NEG,e1),Rewritting.inv op,v)
+          | _ -> None
         else
           None
     | _ -> None
@@ -175,7 +180,7 @@ struct
   let embed _ _ _ = no_variable_exn "Cascade_product.embed"
 
   (* Closure is performed by `Event_loop` calling `exec_task`. *)
-  let closure cp = cp, false
+  let closure cp = cp
 
   let interpretation cp = cp.repr
   let map_interpretation cp f =
@@ -187,6 +192,10 @@ struct
   let lazy_copy cp n = List.init n (fun _ -> cp)
   let restore _ s = s
 
+  (* let print_box_cons fmt f =
+    Format.fprintf fmt "%a\n" Pretty_print.print_formula
+      (Tast.tformula_to_formula f) *)
+
   (* Classify the variables of the constraint `c` according to their instantiation status in `A`. *)
   let classify_a_var cp c =
     let aux (uninstantiated, fixed) (vid, tv) =
@@ -197,16 +206,24 @@ struct
         ((vid,tv,l,u)::uninstantiated, fixed) in
     List.fold_left aux ([],[]) c.avars_only
 
+  (* NOTE: this function is temporary and should be more general. *)
+  let propagate_constants (uid, tf) =
+    match tf with
+    | TCmp(Binary(e,SUB,Cst(a,_)), LEQ, Cst(b,ty)) -> (uid, TCmp(e,LEQ,Cst(Bound_rat.add a b, ty)))
+    | TCmp(Binary(e,SUB,Cst(a,_)), LEQ, Unary(NEG, Cst(b,ty))) -> (uid, TCmp(e,LEQ,Cst(Bound_rat.add (Bound_rat.neg b) a, ty)))
+    | _ -> (uid, tf)
+
   (* Given a constraint `c` and the set of instantiated variables, interpret the constraint `c` in `B`. *)
   let lazy_transfer_a_to_b cp c fixed =
-    let c = { c with tf=(instantiate_vars fixed c.tf) } in
-    let c = { c with tf=(replace_uid (B.uid (unwrap_b cp)) c.tf) } in
-    let b, bc = B.map_interpretation (unwrap_b cp) (fun i -> B.I.interpret i c.approx c.tf) in
+    let tf = c.tf
+      |> instantiate_vars fixed
+      |> propagate_constants
+      |> replace_uid (B.uid (unwrap_b cp)) in
+    let b, bc = B.map_interpretation (unwrap_b cp) (fun i -> B.I.interpret i c.approx tf) in
     (* Printf.printf "Successfully interpreted in octagon\n"; *)
-    wrap_b cp b, { c with avars_only=[]; is_in_b=true; bc}
+    wrap_b cp b, { c with avars_only=[]; is_in_b=true; bc; tf}
 
-  type constraint_place =
-    InA | OverApproxInB | InB
+  type constraint_place = InA | OverApproxInB | InB
 
   (* See `over_approx_in_b` and `try_lazy_transfer`. *)
   let partial_transfer_in_b cp c is_ask e op (l,u) =
@@ -226,8 +243,16 @@ struct
     if not c.is_in_b then
       let uninstantiated, fixed = classify_a_var cp c in
       match uninstantiated with
-      | [] -> lazy_transfer_a_to_b cp c fixed, InB
+      | [] ->
+          (* Format.printf "try_lazy_transfer: transfer from A to B: %a\n" print_box_cons c.tf;
+          List.iter (fun (v,_) -> Printf.printf "%s " v) fixed;
+          List.iter (fun (_,tv) -> Printf.printf "  ->> %s " tv.name) c.avars_only;
+          Printf.printf "\n"; *)
+          lazy_transfer_a_to_b cp c fixed, InB
       | _ ->
+        (* Format.printf "try_lazy_transfer of %a, uninstantiated: " print_box_cons c.tf;
+        List.iter (fun (_,tv,_,_) -> Printf.printf "%s " tv.name) uninstantiated;
+        Printf.printf " (with bc_over_approx=%s)\n" (match c.bc_over_approx with Some(_,_,v) -> v | _ -> "None"); *)
         let cp, c, place =
           match uninstantiated, c.bc_over_approx with
           | [(_,tv,l,u)], Some (e,op,v') when tv.name = v' ->
@@ -235,8 +260,7 @@ struct
               cp, c, OverApproxInB
           | _ -> cp, c, InA
         in
-        let uninstantiated = List.map (fun (a,b,_,_) -> (a,b)) uninstantiated in
-        (cp, { c with avars_only=uninstantiated }), place
+        (cp, c), place
     else
       (cp, c), InB
 
@@ -261,23 +285,21 @@ struct
     | OverApproxInB | InB -> entailment_b cp c
 
   (* Try to transfer `c` in `B`, and upon success commit the transfer in `B` using `weak_incremental_closure`. *)
-  let incremental_closure cp c new_constraint =
+  let incremental_closure cp c _new_constraint =
     let (cp, c), place = try_lazy_transfer false cp c in
     match place with
     | InA -> cp, c, false
     | OverApproxInB ->
+        (* Format.printf "Exchange over-approximations %a.\n" print_box_cons c.tf; *)
         let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
         wrap_b cp b, c, false
     | InB ->
-        let cp = if not new_constraint then
-          wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in
+        (* Format.printf "Exchange exact-approximations(%s) %a.\n" (if new_constraint then "true" else "false") print_box_cons c.tf; *)
+        (* let cp = if not new_constraint then
+          wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in *)
         let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
         wrap_b cp b, c, true
 
-  (* let print_box_cons fmt f =
-    Format.fprintf fmt "%a\n" Pretty_print.print_formula
-      (Tast.tformula_to_formula f)
- *)
   let weak_incremental_closure cp c =
     let cp, c, is_transferred = incremental_closure cp c true in
     if is_transferred then
@@ -293,7 +315,12 @@ struct
           new_tasks=c_idx::cp.new_tasks;
           num_active_tasks=cp.num_active_tasks+1 }
 
-  let drain_events cp = cp, []
+  let has_changed cp = A.has_changed (unwrap_a cp) || B.has_changed (unwrap_b cp)
+
+  let drain_events cp =
+    let a, ev1 = A.drain_events (unwrap_a cp) in
+    let b, ev2 = B.drain_events (unwrap_b cp) in
+    wrap_b (wrap_a cp a) b, ev1@ev2
 
   let events_of' cp c = List.flatten (
     List.map (fun (vid,_) -> A.events_of_var (unwrap_a cp) vid) c.avars_only)

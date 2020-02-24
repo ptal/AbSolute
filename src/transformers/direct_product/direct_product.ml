@@ -55,13 +55,14 @@ sig
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list
-  val closure: t -> (t * bool)
+  val closure: t -> t
   val weak_incremental_closure: t -> gconstraint -> t
   val entailment: t -> gconstraint -> t * gconstraint * bool
   val split: (ad_uid * search_strategy) -> t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
+  val has_changed: t -> bool
   val drain_events: t -> (t * event list)
   val events_of: t -> rconstraint -> event list
   val events_of_var: t -> var_id -> event list
@@ -206,9 +207,7 @@ struct
     | [] -> [A.I.to_qformula (interpretation pa) constraints]
     | _ -> do_not_belong_exn "qformula"
 
-  let closure pa =
-    let (a, has_changed) = A.closure !(pa.a) in
-    wrap pa a, has_changed
+  let closure pa = wrap pa (A.closure !(pa.a))
 
   let project pa (uid', v_id) =
     if uid pa != uid' then raise Not_found
@@ -281,6 +280,8 @@ struct
 
   let extend_var_one = extend_var
 
+  let has_changed pa = A.has_changed (unwrap pa)
+
   let drain_events pa =
     let a, events = A.drain_events (unwrap pa) in
     wrap pa a, events
@@ -347,10 +348,7 @@ struct
       if b_constraints = [] then [a_formula]
       else a_formula::(B.to_qformula b b_constraints)
 
-  let closure (a,b) =
-    let a, has_changed = Atom.closure a in
-    let b, has_changed' = B.closure b in
-    (a,b), has_changed || has_changed'
+  let closure (a,b) = (Atom.closure a, B.closure b)
 
  let wrap_wrong_modelling f1 f2 =
     try f1 ()
@@ -426,6 +424,8 @@ struct
   let print fmt (a,b) =
     Format.fprintf fmt "%a\n%a" Atom.print a B.print b
 
+  let has_changed (a,b) = Atom.has_changed a || B.has_changed b
+
   let drain_events (a,b) =
     let a, events = Atom.drain_events a in
     let b, events' = B.drain_events b in
@@ -499,9 +499,7 @@ struct
 
   let type_of (p:t) = Some (p.uid, Direct_product (P.type_of p.prod))
 
-  let closure (p:t) =
-    let prod, has_changed = P.closure p.prod in
-    I.wrap p prod, has_changed
+  let closure (p:t) = I.wrap p (P.closure p.prod)
 
   let state (p:t) = P.state p.prod
 
@@ -563,6 +561,8 @@ struct
     in
       let prod, cs = aux p.prod tqf in
       I.wrap p prod, cs
+
+  let has_changed (p:t) = P.has_changed p.prod
 
   let drain_events (p:t) =
     let prod, events = P.drain_events p.prod in

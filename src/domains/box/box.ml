@@ -129,7 +129,7 @@ struct
       vol
 
   (** A box is always directly closed when adding the constraint. *)
-  let closure box = box, false
+  let closure box = box
 
   let weak_incremental_closure box (vid, v) =
     let store = Store.set box.store vid v in
@@ -171,6 +171,11 @@ struct
 
   let make_events box vars : event list =
     List.map (fun v -> (uid box, v)) vars
+
+  let has_changed box =
+    match Store.delta box.store with
+    | _, [] -> false
+    | _, _ -> true
 
   let drain_events box =
     let store, deltas = Store.delta box.store in

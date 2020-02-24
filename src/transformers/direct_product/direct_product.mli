@@ -60,13 +60,14 @@ sig
   type snapshot
   val restore: t -> snapshot -> t
   val lazy_copy: t -> int -> snapshot list
-  val closure: t -> (t * bool)
+  val closure: t -> t
   val weak_incremental_closure: t -> gconstraint -> t
   val entailment: t -> gconstraint -> t * gconstraint * bool
   val split: (ad_uid * search_strategy) -> t -> snapshot list
   val volume: t -> float
   val state: t -> Kleene.t
   val print: Format.formatter -> t -> unit
+  val has_changed: t -> bool
   val drain_events: t -> (t * event list)
   val events_of: t -> rconstraint -> event list
   val events_of_var: t -> var_id -> event list

@@ -164,7 +164,7 @@ struct
             | GT | GEQ -> ub
             | _ -> failwith "BAB kind should be < or >." in
           let bound = Cst (A.B.to_rat bound, Types.to_concrete_ty tv.ty) in
-          (* let _ = Format.printf "Solution: [%a..%a]\n" A.B.pp_print lb A.B.pp_print ub; flush_all () in *)
+          let _ = Format.printf "Solution: [%a..%a] - %d\n" A.B.pp_print lb A.B.pp_print ub gs.stats.nodes; flush_all () in
           let tqf = TQFFormula (tv.uid, TCmp (Var (snd bab.objective), bab.kind, bound)) in
           let a = List.hd (A.lazy_copy gs.domain 1) in
           (gs,bs), BAB {bab with best=Some(a, tqf)}

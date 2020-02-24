@@ -92,11 +92,13 @@ struct
     uid: ad_uid;
     l: L.t;
     pengine: Pengine2D.t;
+    has_changed: bool;
   }
 
   let init uid l = {
     uid; l;
     pengine=Pengine2D.empty ();
+    has_changed=false;
   }
 
   let uid p = p.uid
@@ -111,7 +113,9 @@ struct
     (* Printf.printf "E.closure: num active tasks %d\n" (Pengine2D.num_active_tasks pengine); *)
     let pengine, l, has_changed = Pengine2D.fixpoint pengine L.consume_task l in
     (* if has_changed then Printf.printf "E.closure: has_changed\n" else Printf.printf "E.closure: NOT has_changed\n"; *)
-    {p with l; pengine}, has_changed
+    {p with l; pengine; has_changed}
+
+  let has_changed p = p.has_changed
 
   let state _ = Kleene.True
   let split ?strategy:_ _ = []

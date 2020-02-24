@@ -275,7 +275,7 @@ struct
         end
 
   (* Closure is performed by `Event_loop` calling `exec_task`. *)
-  let closure lc = lc, false
+  let closure lc = lc
 
   (* We propagate the constraint immediately.
      If the constraint is not entailed, it is added into the abstract element. *)
@@ -350,6 +350,8 @@ struct
       | Some f -> Parray.set lc.constraints c_idx f, false in
     let num_active_tasks = lc.num_active_tasks - (if entailed then 1 else 0) in
     { lc with constraints; num_active_tasks; }, entailed
+
+  let has_changed lc = A.has_changed (unwrap lc)
 
   let drain_events lc =
     let a, events = A.drain_events (unwrap lc) in

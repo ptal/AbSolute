@@ -29,7 +29,7 @@ sig
     module B := B
 
   (** Perform the incremental closure of the DBM with the constraint. *)
-  val incremental_closure: t -> I.rconstraint -> t * bool
+  val incremental_closure: t -> I.rconstraint -> t
 
   (** Low-level access to the DBM. *)
   val unwrap: t -> DBM.t

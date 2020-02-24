@@ -34,7 +34,7 @@ sig
     module B := B
 
   (** Perform the incremental closure of the DBM with the constraint. *)
-  val incremental_closure: t -> I.rconstraint -> t * bool
+  val incremental_closure: t -> I.rconstraint -> t
 
   (** Low-level access to the DBM. *)
   val unwrap: t -> DBM.t
@@ -112,7 +112,7 @@ struct
         |> Closure.closure
       else
         List.fold_left Closure.incremental_closure octagon.dbm octagon.constraints in
-    {octagon with dbm; constraints=[]}, DBM.has_changed octagon.dbm
+    {octagon with dbm; constraints=[]}
 
   (* let print_oc msg octagon oc =
     Format.fprintf Format.std_formatter "%s: %a\n" msg Lang.Pretty_print.print_formula
@@ -137,7 +137,7 @@ struct
     if (List.length octagon.constraints) <> (List.length octagon'.constraints) then
       closure octagon'
     else
-      octagon, false
+      octagon
 
   let embed octagon v (l,u) =
     let itv = as_interval v in
@@ -184,6 +184,8 @@ struct
 
   let make_events octagon vars : event list =
     List.map (fun v -> (uid octagon, v)) vars
+
+  let has_changed octagon = DBM.has_changed octagon.dbm
 
   let drain_events octagon =
     let dbm, deltas = DBM.delta octagon.dbm in
