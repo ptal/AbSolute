@@ -21,6 +21,7 @@ type global_statistics = {
   nodes: int;
   fails: int;
   sols: int;
+  nodes_before_last_sol: int;
   prunes: int;
   depth_max: int;
   restarts: int;
@@ -32,6 +33,7 @@ let init_global_stats () = {
   nodes=0;
   fails=0;
   sols=0;
+  nodes_before_last_sol=0;
   prunes=0;
   depth_max=0;
   restarts=0;
@@ -150,7 +152,8 @@ struct
 
   let on_solution (gs,bs) =
     let sols = gs.stats.sols+1 in
-    let gs = {gs with stats={gs.stats with sols}} in
+    let nodes_before_last_sol = gs.stats.nodes in
+    let gs = {gs with stats={gs.stats with sols; nodes_before_last_sol}} in
     let apply (gs,bs) transformer =
       match transformer with
       | BAB bab ->
@@ -164,7 +167,7 @@ struct
             | GT | GEQ -> ub
             | _ -> failwith "BAB kind should be < or >." in
           let bound = Cst (A.B.to_rat bound, Types.to_concrete_ty tv.ty) in
-          let _ = Format.printf "Solution: [%a..%a] - %d\n" A.B.pp_print lb A.B.pp_print ub gs.stats.nodes; flush_all () in
+          (* let _ = Format.printf "Solution: [%a..%a] - %d\n" A.B.pp_print lb A.B.pp_print ub gs.stats.nodes; flush_all () in *)
           let tqf = TQFFormula (tv.uid, TCmp (Var (snd bab.objective), bab.kind, bound)) in
           let a = List.hd (A.lazy_copy gs.domain 1) in
           (gs,bs), BAB {bab with best=Some(a, tqf)}

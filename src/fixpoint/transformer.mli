@@ -36,6 +36,7 @@ type global_statistics = {
   nodes: int;
   fails: int;
   sols: int;
+  nodes_before_last_sol: int;
   prunes: int;
   depth_max: int;
   restarts: int;

@@ -285,7 +285,7 @@ struct
     | OverApproxInB | InB -> entailment_b cp c
 
   (* Try to transfer `c` in `B`, and upon success commit the transfer in `B` using `weak_incremental_closure`. *)
-  let incremental_closure cp c _new_constraint =
+  let incremental_closure cp c new_constraint =
     let (cp, c), place = try_lazy_transfer false cp c in
     match place with
     | InA -> cp, c, false
@@ -295,8 +295,8 @@ struct
         wrap_b cp b, c, false
     | InB ->
         (* Format.printf "Exchange exact-approximations(%s) %a.\n" (if new_constraint then "true" else "false") print_box_cons c.tf; *)
-        (* let cp = if not new_constraint then
-          wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in *)
+        let cp = if not new_constraint then
+          wrap_a cp (A.remove (unwrap_a cp) c.ac) else cp in
         let b = List.fold_left B.weak_incremental_closure (unwrap_b cp) c.bc in
         wrap_b cp b, c, true
 
