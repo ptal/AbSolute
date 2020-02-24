@@ -134,14 +134,14 @@ let test_octagon_Z () =
   let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
   begin
     OctagonTesterZ.expect_dbm "init(Z)" (OctagonZ.DBM.to_list (OctagonZ.unwrap octagon)) inf_dbm;
-    let octagon = fst (OctagonZ.closure octagon) in
+    let octagon = OctagonZ.closure octagon in
     OctagonTesterZ.expect_dbm "closure(Z)" (OctagonZ.DBM.to_list (OctagonZ.unwrap octagon)) closed_dbm;
   end
 
 let test_octagon_incremental_Z () =
   let octagon = octagon_empty2D in
   let constraints = octagon_2D in
-  let octagon = List.fold_left (fun o c -> fst (OctagonZ.incremental_closure o c)) octagon constraints in
+  let octagon = List.fold_left OctagonZ.incremental_closure octagon constraints in
   (OctagonZ.print Format.std_formatter octagon;
   OctagonTesterZ.expect_dbm "closure(Z)" (OctagonZ.DBM.to_list (OctagonZ.unwrap octagon)) closed_dbm)
 
@@ -158,7 +158,7 @@ let test_octagon_entailment_Z () =
   let octagon = octagon_empty2D in
   let constraints = octagon_2D in
   let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
-  let octagon = fst (OctagonZ.closure octagon) in
+  let octagon = OctagonZ.closure octagon in
   let entailment_constraints = [
     {v=x; d=Z.of_int_up (-1)};
     {v=x; d=Z.of_int_up (-2)};

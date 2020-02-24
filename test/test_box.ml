@@ -110,16 +110,16 @@ let test_Z () =
   begin
     BT.expect_domain_eq box [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
     let box = BT.init_constraints box constraints_Z in
-    let box, changed = BT.A.closure box in
-    Alcotest.(check bool) "closure1 - changed" changed true;
+    let box = BT.A.closure box in
+    Alcotest.(check bool) "closure1 - changed" (BT.A.has_changed box) true;
     Printf.printf "closure changed succeeded.\n";
     let box_expected = [("x",-1,3); ("y",0,4)] in
     BT.expect_domain_eq box box_expected;
     Printf.printf "first closure succeeded.\n";
     let box = BT.init_constraints box [x_eq_one] in
     BT.expect_domain_eq box [("x",1,1); ("y",0,4)];
-    let box, changed = BT.A.closure box in
-    Alcotest.(check bool) "closure2 - changed" changed true;
+    let box = BT.A.closure box in
+    Alcotest.(check bool) "closure2 - changed" (BT.A.has_changed box) true;
     BT.expect_domain_eq box [("x",1,1); ("y",0,2)];
     Printf.printf "second closure succeeded.\n";
   end
@@ -133,11 +133,11 @@ begin
   let (module BT : Abstract_tester_sig) = (module Box_tester(Box)) in
   let box = BT.init_vars ["x"; "y"] in
   let box = BT.init_constraints box (x_eq_one::constraints_Z) in
-  let box, _ = BT.A.closure box in
+  let box = BT.A.closure box in
   let boxes = BT.A.split box in
   Alcotest.(check int) (name ^ " (length)") 2 (List.length boxes);
   let box = BT.A.restore box (List.hd boxes) in
-  let box, _ = BT.A.closure box in
+  let box = BT.A.closure box in
   BT.expect_domain_eq box left_branch;
   Printf.printf "left branch succeeded.\n";
   let box = BT.A.restore box (List.nth boxes 1) in

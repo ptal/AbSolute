@@ -78,15 +78,15 @@ let test_interpretation_lc () =
   begin
     LCT.expect_domain_eq lc [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
     let lc = LCT.init_constraints lc constraints_Z in
-    let lc, changed = LCT.A.closure lc in
-    Alcotest.(check bool) "closure1 - changed" changed false;
+    let lc = LCT.A.closure lc in
+    Alcotest.(check bool) "closure1 - changed" (LCT.A.has_changed lc) false;
     Printf.printf "closure changed succeeded.\n";
     LCT.expect_domain_eq lc [("x", B.minus_inf, B.inf); ("y", B.minus_inf, B.inf)];
     Printf.printf "first closure succeeded.\n";
     let lc = LCT.init_constraints lc [x_eq_one] in
     LCT.expect_domain_eq lc [("x",1,1); ("y", B.minus_inf, B.inf)];
-    let lc, changed = LCT.A.closure lc in
-    Alcotest.(check bool) "closure2 - changed" changed false;
+    let lc = LCT.A.closure lc in
+    Alcotest.(check bool) "closure2 - changed" (LCT.A.has_changed lc) false;
     LCT.expect_domain_eq lc [("x",1,1); ("y", B.minus_inf, B.inf)];
     Printf.printf "second closure succeeded.\n";
   end

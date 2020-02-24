@@ -26,16 +26,16 @@ let test_middle () =
   let octagon = octagon_empty2D in
   let constraints = octagon_2D in
   let octagon = List.fold_left OctagonZ.weak_incremental_closure octagon constraints in
-  let (octagon,_) = OctagonZ.closure octagon in
+  let octagon = OctagonZ.closure octagon in
   let r = init_rewriter Test_rewriter.vars in
   begin
     (* `x` is between [1..5] ([2..10] as DBM.project). Middle should be `6`. *)
     let middle = Middle.select (OctagonZ.unwrap octagon) (Dbm.as_interval Test_rewriter.x_i) in
     Alcotest.(check bool) ("middle of [2..10] is " ^ (Z.to_string middle)) true (Z.equal middle (Z.of_int_up 6));
-    let (octagon,_) = OctagonZ.incremental_closure octagon (List.hd (snd (I.interpret r Exact (0, TCmp (Var "x", LEQ, Cst (Bound_rat.of_int 2, Int)))))) in
+    let octagon = OctagonZ.incremental_closure octagon (List.hd (snd (I.interpret r Exact (0, TCmp (Var "x", LEQ, Cst (Bound_rat.of_int 2, Int)))))) in
     let middle = Middle.select (OctagonZ.unwrap octagon) (Dbm.as_interval Test_rewriter.x_i) in
     Alcotest.(check bool) ("middle of [2..4] is " ^ (Z.to_string middle)) true (Z.equal middle (Z.of_int_up 3));
-    let (octagon,_) = OctagonZ.incremental_closure octagon (List.hd (snd (I.interpret r Exact (0, TCmp (Var "x", LEQ, Cst (Bound_rat.of_int 1, Int)))))) in
+    let octagon = OctagonZ.incremental_closure octagon (List.hd (snd (I.interpret r Exact (0, TCmp (Var "x", LEQ, Cst (Bound_rat.of_int 1, Int)))))) in
     let middle = Middle.select (OctagonZ.unwrap octagon) (Dbm.as_interval Test_rewriter.x_i) in
     Alcotest.(check bool) ("middle of [2..2] is " ^ (Z.to_string middle)) true (Z.equal middle (Z.of_int_up 2));
   end
