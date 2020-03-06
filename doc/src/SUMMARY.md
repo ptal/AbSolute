@@ -10,3 +10,4 @@
   * [SAT Data Sets](sat-data.md)
 * [Guide for Contributors](contributing.md)
 * [Guide for Researchers](research.md)
+* [Changelog](changelog.md)

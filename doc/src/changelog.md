@@ -8,6 +8,7 @@ Version 0.10.0:
   * Fix bugs in `CascadeProduct`.
 
 Version 0.9.2: Fix a bugs in `replace_uid` and `instantiate_vars` where constraints were wrongly rewritten.
+
 Version 0.9.1: Rewrite the `solve` function in CPS to avoid possible stack overflow.
 
 Version 0.9.0:
