@@ -12,7 +12,7 @@ Version 0.9.2: Fix a bugs in `replace_uid` and `instantiate_vars` where constrai
 Version 0.9.1: Rewrite the `solve` function in CPS to avoid possible stack overflow.
 
 Version 0.9.0:
-  * Add the domain product `Cascade_product` which transfers a constraint to a more specialized domain when instantiated enough.
+  * Add the domain product `Delayed_product` which transfers a constraint to a more specialized domain when instantiated enough.
   * `Propagator_completion` now automatically exchanges equalities over its sub-domains.
   * Add a minimalist search strategy language.
 

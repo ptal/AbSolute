@@ -26,7 +26,7 @@ type ad_ty_ =
   | SAT
   | Logic_completion of ad_ty
   | Propagator_completion of ad_ty
-  | Cascade_product of ad_ty * ad_ty
+  | Delayed_product of ad_ty * ad_ty
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
 
@@ -43,7 +43,7 @@ let string_of_adty adty =
     | SAT -> "SAT"
     | Logic_completion adty -> "LC(" ^ (aux true adty) ^ ")"
     | Propagator_completion adty -> "PC(" ^ (aux true adty) ^ ")"
-    | Cascade_product (adty1,adty2) -> "CP(" ^ (aux true adty1) ^ ", " ^ (aux true adty2)  ^ ")"
+    | Delayed_product (adty1,adty2) -> "CP(" ^ (aux true adty1) ^ ", " ^ (aux true adty2)  ^ ")"
     | Direct_product adtys ->
         let sty =
           List.fold_left (fun msg adty -> msg ^ " X " ^ (aux false adty))
@@ -75,7 +75,7 @@ let rec subtype a1 a2 =
     | SAT | Box _ | Octagon _ -> false
     | Propagator_completion a2
     | Logic_completion a2 -> subtype a1 a2
-    | Cascade_product _ -> failwith "Cascade_product type inference is not yet implemented."
+    | Delayed_product _ -> failwith "Delayed_product type inference is not yet implemented."
     | Direct_product adtys -> List.exists (subtype a1) adtys
 
 let rec is_more_specialized (u1,a1) (u2,a2) =
@@ -100,8 +100,8 @@ let rec is_more_specialized (u1,a1) (u2,a2) =
         | _ -> Unknown)
     | Propagator_completion a1, a2
     | Logic_completion a1, a2 -> not_kleene (is_more_specialized (u2,a2) a1)
-    | Cascade_product _, _ | _, Cascade_product _ ->
-        failwith "Cascade_product type inference is not yet implemented."
+    | Delayed_product _, _ | _, Delayed_product _ ->
+        failwith "Delayed_product type inference is not yet implemented."
     | Direct_product adtys, a2 ->
         let specs = List.map (is_more_specialized (u2,a2)) adtys in
         if List.for_all (fun s -> s = True) specs then False
@@ -119,7 +119,7 @@ let build_adenv adty =
     | Logic_completion adty'
     | Propagator_completion adty' ->
         UID2Adty.add uid adty (aux env adty')
-    | Cascade_product (adty1, adty2) ->
+    | Delayed_product (adty1, adty2) ->
         UID2Adty.add uid adty (aux (aux env adty1) adty2)
     | Direct_product adtys ->
         UID2Adty.add uid adty (List.fold_left aux env adtys)
@@ -140,7 +140,7 @@ let uids_of adty =
     | SAT -> [uid]
     | Logic_completion adty
     | Propagator_completion adty -> uid::(aux adty)
-    | Cascade_product (adty1, adty2) -> uid::(aux adty1)@(aux adty2)
+    | Delayed_product (adty1, adty2) -> uid::(aux adty1)@(aux adty2)
     | Direct_product adtys ->
         List.fold_left (fun r adty -> r@(aux adty)) [uid] adtys
   in List.sort_uniq compare (aux adty)

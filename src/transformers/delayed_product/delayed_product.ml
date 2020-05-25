@@ -22,7 +22,7 @@ open Domains.Interpretation
 open Domains.Abstract_domain
 open Event_loop.Schedulable_abstract_domain
 
-module type Cascade_product_interpretation_sig =
+module type Delayed_product_interpretation_sig =
 sig
   module A: Schedulable_abstract_domain
   module B: Abstract_domain
@@ -46,7 +46,7 @@ end
 
 let no_variable_exn msg = no_variable_exn msg; failwith "unreachable"
 
-module Cascade_product_interpretation(A: Schedulable_abstract_domain)(B: Abstract_domain) =
+module Delayed_product_interpretation(A: Schedulable_abstract_domain)(B: Abstract_domain) =
 struct
   module A = A
   module B = B
@@ -74,12 +74,12 @@ struct
   }
 
   let exact_interpretation = A.I.exact_interpretation && B.I.exact_interpretation
-  let name = "Cascade_product(" ^ A.name ^ ", " ^ B.name ^ ")"
+  let name = "Delayed_product(" ^ A.name ^ ", " ^ B.name ^ ")"
 
-  let empty _ = raise (Wrong_modelling "`Cascade_product_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Cascade_product`.")
-  let to_logic_var _ _ = no_variable_exn "Cascade_product_interpretation.to_logic_var"
-  let to_abstract_var _ _ = no_variable_exn "Cascade_product_interpretation.to_abstract_var"
-  let local_vars _ _ = no_variable_exn "Cascade_product_interpretation.local_vars"
+  let empty _ = raise (Wrong_modelling "`Delayed_product_interpretation.empty` is not supported, you should first create the abstract domains and then create the `Delayed_product`.")
+  let to_logic_var _ _ = no_variable_exn "Delayed_product_interpretation.to_logic_var"
+  let to_abstract_var _ _ = no_variable_exn "Delayed_product_interpretation.to_abstract_var"
+  let local_vars _ _ = no_variable_exn "Delayed_product_interpretation.local_vars"
 
   (* For constraints of the form `e <|>|>=|<= v` where all variables in `e` occurs in `B` and `v` only occurs in `A`,
      we can send some constraints to `B` before `v` is instantiated by taking its lower or upper bounds. *)
@@ -133,9 +133,9 @@ struct
     A.I.to_qformula (A.interpretation !(r.a)) (List.map (fun c -> c.ac) cs)
 end
 
-module Cascade_product(A: Schedulable_abstract_domain)(B: Abstract_domain) =
+module Delayed_product(A: Schedulable_abstract_domain)(B: Abstract_domain) =
 struct
-  module I = Cascade_product_interpretation(A)(B)
+  module I = Delayed_product_interpretation(A)(B)
 
   open I
 
@@ -147,7 +147,7 @@ struct
     num_active_tasks: int;
   }
 
-  let empty _ = raise (Wrong_modelling ("Cascade_product must be initialized with `init`."))
+  let empty _ = raise (Wrong_modelling ("Delayed_product must be initialized with `init`."))
   let name = I.name
 
   let init repr = {
@@ -166,7 +166,7 @@ struct
 
   let type_of cp =
     match A.type_of (unwrap_a cp), B.type_of (unwrap_b cp) with
-    | Some t1, Some t2 -> Some (uid cp, Cascade_product (t1,t2))
+    | Some t1, Some t2 -> Some (uid cp, Delayed_product (t1,t2))
     | _ -> raise (Wrong_modelling
         "The two domains underlying the cascade product must not be meta-domains (they must have a type).")
 
@@ -176,8 +176,8 @@ struct
   let volume _ = 1.
   let print _ _ = ()
 
-  let project _ _ = no_variable_exn "Cascade_product.project"
-  let embed _ _ _ = no_variable_exn "Cascade_product.embed"
+  let project _ _ = no_variable_exn "Delayed_product.project"
+  let embed _ _ _ = no_variable_exn "Delayed_product.embed"
 
   (* Closure is performed by `Event_loop` calling `exec_task`. *)
   let closure cp = cp
@@ -356,7 +356,7 @@ struct
     ({ cp with new_tasks=[] }, tasks_events)
 
   let interpret cp approx = function
-  | TExists (_, _) -> no_variable_exn "Cascade_product.interpret"
+  | TExists (_, _) -> no_variable_exn "Delayed_product.interpret"
   | TQFFormula tf ->
       let (repr, cs) = I.interpret cp.repr approx tf in
       { cp with repr }, cs

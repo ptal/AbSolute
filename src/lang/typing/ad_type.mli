@@ -32,7 +32,7 @@ type ad_ty_ =
   | SAT
   | Logic_completion of ad_ty
   | Propagator_completion of ad_ty
-  | Cascade_product of ad_ty * ad_ty
+  | Delayed_product of ad_ty * ad_ty
   | Direct_product of ad_ty list
 and ad_ty = ad_uid * ad_ty_
 

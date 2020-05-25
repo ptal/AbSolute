@@ -18,7 +18,7 @@ open Domains.Abstract_domain
 open Domains.Interpretation
 open Event_loop.Schedulable_abstract_domain
 
-module type Cascade_product_interpretation_sig =
+module type Delayed_product_interpretation_sig =
 sig
   module A: Schedulable_abstract_domain
   module B: Abstract_domain
@@ -40,9 +40,9 @@ sig
   val to_qformula: t -> rconstraint list -> Tast.tqformula
 end
 
-module Cascade_product(A: Schedulable_abstract_domain)(B: Abstract_domain):
+module Delayed_product(A: Schedulable_abstract_domain)(B: Abstract_domain):
 sig
-  module I : Cascade_product_interpretation_sig
+  module I : Delayed_product_interpretation_sig
   include Schedulable_abstract_domain with module I := I
   val init: I.t -> t
 end with module B = Bound_unit and module I.A = A and module I.B = B

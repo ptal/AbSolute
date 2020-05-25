@@ -30,7 +30,7 @@ In addition, new abstract domains can be derived from existing ones using _abstr
 | `Direct_product(A1,..,An)` | Union of `A1`,...,`An`. | Component-wise propagation of each subdomains. | In addition to the classical direct product of abstract interpretation, it has some facilities for transformers that shares subdomains. |
 | `Logic_completion(A)` | Quantifier-free logic formula where predicates are constraints in `A` | Based on the entailment of constraint in `A`. | Equip an abstract domain `A` with logical formula. Also called "natural domain SMT". |
 | `Propagator_completion(A)` | Arithmetic constraints, functions (`sin`, `cos`, `sqrt`,...). |  HC4 algorithm | Equip an abstract domain `A` with propagators (functions implementing arithmetic constraints). |
-| `Cascade_product(A,B)` | Union of `A` and `B`. | Transfer over-approximation `A`-constraints into `B`, and then an exact approximation whenever the constraint is instantiated enough. | Can be used to transfer non-linear constraints to a linear solver whenever the non-linear variables are instantiated. |
+| `Delayed_product(A,B)` | Union of `A` and `B`. | Transfer over-approximation `A`-constraints into `B`, and then an exact approximation whenever the constraint is instantiated enough. | Can be used to transfer non-linear constraints to a linear solver whenever the non-linear variables are instantiated. |
 | `Event_loop(A1,...,An)` | None | Propagation loop of the propagators in `A1`,...,`An` | Meta abstract domain, computing the closure of `A1`...`An` more efficiently than `Direct_product`. `Ai` closure must be decomposable into propagators (i.e. sub-closure operators). |
 
 In addition, each domain is equipped with numerous splitting strategies that can impact the performance.

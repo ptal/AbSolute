@@ -29,6 +29,6 @@ sig
 
   (** [remove t c] discards a constraint `c` previously added through `weak_incremental_closure`.
       Next time `exec_task` is called, the constraint will be considered entailed.
-      Rational: It is necessary to move a constraint from a domain to another such as in `Cascade_product`. *)
+      Rational: It is necessary to move a constraint from a domain to another such as in `Delayed_product`. *)
   val remove: t -> I.rconstraint -> t
 end
