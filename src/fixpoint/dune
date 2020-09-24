@@ -2,7 +2,7 @@
   (name fixpoint)
   (public_name absolute.fixpoint)
   (libraries absolute.core absolute.bounds absolute.lang absolute.domains
-             mtime mtime.clock.os containers.data)
+             mtime mtime.clock.os containers-data)
   (flags :standard)
   (ocamlopt_flags (:standard -O3))
   ;(ocamlopt_flags (:standard -p))

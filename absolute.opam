@@ -1,5 +1,5 @@
 url {
-  src: "https://github.com/ptal/AbSolute/zipball/v0.10.2"
+  src: "https://github.com/ptal/AbSolute/zipball/v0.10.3"
 }
 opam-version: "2.0"
 maintainer: "Pierre Talbot <pierre.talbot@uni.lu>"
@@ -23,7 +23,7 @@ depends: [
   "dune" {build}
   "ocaml" {>= "4.09.0"}
   "extlib"
-  "containers"
+  "containers-data" {>= "3.0.1"}
   "minisatml" {>= "0.3.0"}
   "mlgmpidl"
   "mtime"

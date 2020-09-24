@@ -8,22 +8,28 @@ The following is a list of the dependencies to build AbSolute; note that we expl
 
 * An ANSI C compiler
 * [OCaml](http://ocaml.org/) >= 4.09.0
+* [GMP library](https://gmplib.org/)
+* [MPFR library](https://www.mpfr.org/)
 
 ## Installation
 
 We install OCaml and AbSolute through the OCaml package manager [opam](http://opam.ocaml.org/).
-First, [install opam](http://opam.ocaml.org/doc/Install.html) with your package manager and initialize it:
+First, [install opam](http://opam.ocaml.org/doc/Install.html) and the necessary libraries with your package manager and initialize opam:
 ```sh
-apt-get install opam # on Debian, see opam documentation for other distributions.
+sudo apt-get install libgmp3-dev
+sudo apt-get install libmpfr-dev
+sh <(curl -sL https://raw.githubusercontent.com/ocaml/opam/master/shell/install.sh) # see opam documentation for alternatives.
 opam init --comp 4.09.0+flambda # Initialize ~/.opam with a freshly compiled OCaml 4.07.1
 ```
+The version of OPAM must be greater than 2.0.
+Note that only the version 1.2 is available in the stable packages of Debian, the version 2 can be installed with the command given above.
 
 The next step is to download and build AbSolute.
 If you intent to modify the source code and possibly contribute to the project, jump to the [contributing chapter](contributing.html).
 Otherwise, you can install it from `opam`:
 
 ```sh
-opam repo add solvers git@github.com:ptal/solvers-opam.git
+opam repo add solvers https://github.com/ptal/solvers-opam.git
 opam install absolute
 ```
 
