@@ -92,16 +92,32 @@ let print_formula fmt e =
     | FVar v -> Format.fprintf fmt "%s" v
     | Equiv (b1,b2) -> Format.fprintf fmt "(%a <=> %a)" aux b1 aux b2
     | Imply (b1,b2) -> Format.fprintf fmt "(%a => %a)" aux b1 aux b2
-    | And (b1,b2) -> Format.fprintf fmt "(%a && %a)" aux b1 aux b2
-    | Or (b1,b2) -> Format.fprintf fmt "(%a || %a)" aux b1 aux b2
+    | And (b1,b2) -> Format.fprintf fmt "(%a /\\ %a)" aux b1 aux b2
+    | Or (b1,b2) -> Format.fprintf fmt "(%a \\/ %a)" aux b1 aux b2
     | Not b -> Format.fprintf fmt "not %a" aux b in
-  aux fmt e
+  let aux_no_paren fmt = function
+    | Equiv (b1,b2) -> Format.fprintf fmt "%a <=> %a" aux b1 aux b2
+    | Imply (b1,b2) -> Format.fprintf fmt "%a => %a" aux b1 aux b2
+    | And (b1,b2) -> Format.fprintf fmt "%a /\\ %a" aux b1 aux b2
+    | Or (b1,b2) -> Format.fprintf fmt "%a \\/ %a" aux b1 aux b2
+    | f -> aux fmt f in
+  let rec aux_top first fmt = function
+    | And (b1,b2) -> Format.fprintf fmt "%a\n%a" (aux_top false) b1 (aux_top false) b2
+    | f when first -> aux_no_paren fmt f
+    | f -> aux fmt f in
+  aux_top true fmt e
 
 let rec print_qformula fmt = function
   | Exists(v,ty,qf) ->
-      Format.fprintf fmt "(%s:%s)%a"
+      Format.fprintf fmt "let %s:%s in\n%a"
         v (Types.string_of_ty ty) print_qformula qf
   | QFFormula f -> Format.fprintf fmt "%a" print_formula f
+
+let print_bab_qformula fmt bf =
+  match bf.optimise with
+  | Minimize(v) -> Format.fprintf fmt "%a\nminimize %s" print_qformula bf.qf v
+  | Maximize(v) -> Format.fprintf fmt "%a\nmaximize %s" print_qformula bf.qf v
+  | Satisfy -> print_qformula fmt bf.qf
 
 let print_constraint fmt c =
   Format.fprintf fmt "%a" print_formula (Cmp c)
@@ -117,4 +133,12 @@ let string_of_constraint c =
 
 let string_of_formula f =
   Format.fprintf Format.str_formatter "%a" print_formula f;
+  Format.flush_str_formatter ()
+
+let string_of_qformula qf =
+  Format.fprintf Format.str_formatter "%a" print_qformula qf;
+  Format.flush_str_formatter ()
+
+let string_of_bab_qformula bf =
+  Format.fprintf Format.str_formatter "%a" print_bab_qformula bf;
   Format.flush_str_formatter ()

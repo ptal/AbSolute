@@ -3,6 +3,7 @@
 We describe the main changes operated in each version of AbSolute.
 This is especially useful when analyzing the results in [kobe-database](https://github.com/ptal/kobe-database).
 
+Version 0.10.3: Fix dependency "containers" to "containers-data".
 Version 0.10.0:
   * Add a function `has_changed` in `Abstract_domain` to detect fixed point of the closure operator more precisely.
   * Fix bugs in `CascadeProduct`.

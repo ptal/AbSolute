@@ -9,7 +9,7 @@ Make sure you installed [OCaml and Opam](getting-started.html).
 Install dependencies, clone and build AbSolute from the Github repository:
 
 ```sh
-opam install dune extlib containers mlgmpidl mtime alcotest
+opam install dune extlib containers-data mlgmpidl mtime alcotest
 git clone https://github.com/ptal/AbSolute
 cd AbSolute
 make build

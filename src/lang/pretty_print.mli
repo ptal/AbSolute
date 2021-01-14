@@ -27,6 +27,7 @@ val must_parenthesis_right: expr -> expr -> bool
 val print_expr: formatter -> expr -> unit
 val print_formula: formatter -> formula -> unit
 val print_qformula: formatter -> qformula -> unit
+val print_bab_qformula: formatter -> bab_qformula -> unit
 val print_constraint: formatter -> bconstraint -> unit
 
 val output_constraints: bconstraint list -> unit
@@ -34,3 +35,5 @@ val print_constraints: formatter -> formula list -> unit
 
 val string_of_constraint: bconstraint -> string
 val string_of_formula: formula -> string
+val string_of_qformula: qformula -> string
+val string_of_bab_qformula: bab_qformula -> string

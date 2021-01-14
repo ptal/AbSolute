@@ -1,6 +1,4 @@
-url {
-  src: "https://github.com/ptal/AbSolute/zipball/v0.10.3"
-}
+
 opam-version: "2.0"
 maintainer: "Pierre Talbot <pierre.talbot@uni.lu>"
 authors: [
@@ -32,3 +30,5 @@ depends: [
 
 synopsis: "AbSolute solver"
 description: "AbSolute is a constraint solver based on abstract domains from the theory of abstract interpretation."
+name: "absolute"
+version: "0.10.3"
