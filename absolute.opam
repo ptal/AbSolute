@@ -1,4 +1,6 @@
-
+url {
+  src: "https://github.com/ptal/AbSolute/zipball/v0.10.4"
+}
 opam-version: "2.0"
 maintainer: "Pierre Talbot <pierre.talbot@uni.lu>"
 authors: [
