@@ -5,7 +5,7 @@
 [travis-image]: https://travis-ci.org/ptal/AbSolute.png?branch=master
 [travis]: https://travis-ci.org/ptal/AbSolute
 
-Please consult the [AbSolute book](http://ptal.github.io) for *research*, tutorial and general information.
+Please consult the [AbSolute book](https://ptal.github.io/absolute/) for *research*, tutorial and general information.
 
 _This fork is a lighter but cleaned version_ of the [initial project](https://github.com/mpelleau/AbSolute).
 Features that have been removed might be reintroduced later if we need them.
